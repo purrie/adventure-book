@@ -40,22 +40,21 @@ pub fn capture_adventures() -> Vec<Adventure> {
                     };
                     // and then we read the file, skipping the folder if it fails
                     if let Err(_) = file.read_to_string(&mut text) {
-                        continue
+                        continue;
                     }
-
-                    // next we parse the text into adventure. Parsing can fail if the text file isn't correctly formated or is incomplete, we skip over those.
-                    let mut adventure = match Adventure::parse_from_string(text) {
-                        Err(_) => continue,
-                        Ok(a) => a,
-                    };
 
                     // removing the last bit to get folder path
                     path.pop();
 
                     // then we save it into our adventure for future reference
-                    adventure.path = match path.to_str() {
+                    let path_text = match path.to_str() {
                         None => continue,
                         Some(p) => p.to_string(),
+                    };
+                    // next we parse the text into adventure. Parsing can fail if the text file isn't correctly formated or is incomplete, we skip over those.
+                    let adventure = match Adventure::parse_from_string(text, path_text) {
+                        Err(_) => continue,
+                        Ok(a) => a,
                     };
 
                     // and at last we push the completed adventure metadata
@@ -68,8 +67,7 @@ pub fn capture_adventures() -> Vec<Adventure> {
     ret
 }
 
-pub fn read_page(path : &String) -> Result<Page, ()> {
-
+pub fn read_page(path: &String) -> Result<Page, ()> {
     // opening the file
     let mut p = match File::open(path) {
         Err(_) => return Err(()),
@@ -86,5 +84,4 @@ pub fn read_page(path : &String) -> Result<Page, ()> {
         Err(_) => return Err(()),
         Ok(p) => return Ok(p),
     }
-
 }

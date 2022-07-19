@@ -20,6 +20,7 @@ pub struct Record {
     pub name: String,
     pub value: f64,
 }
+#[derive(Debug, Eq, PartialEq)]
 pub enum Comparison {
     Greater,
     GreaterEqual,
@@ -52,6 +53,10 @@ pub struct Condition {
     pub comparison: Comparison,
     pub expression_l: String,
 }
+// those are for matching tags in choice so we can figure out which choices should be connected to other elements.
+static REGEX_CONDITION_IN_CHOICE: &str = r"\{\s*condition:\s*(\w+(?:\s|\w)*)\s*\}";
+static REGEX_TEST_IN_CHOICE: &str = r"\{\s*test:\s*(\w+(?:\s|\w)*)\s*\}";
+static REGEX_RESULT_IN_CHOICE: &str = r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}";
 
 impl Adventure {
     /// Creates a new empty adventure data
@@ -69,8 +74,8 @@ impl Adventure {
     /// The function goes through text line by line and looks for keywords at start, if it finds a keyword, it will process it.
     /// In case where line doesn't start in a keyword, the line will be added to adventure description if that's the last keyword that was read.
     ///
-    /// Note that returned Adventure will not contain folder path, setting it is a responsibility of the caller function.
-    pub fn parse_from_string(text: String) -> Result<Adventure, ()> {
+    /// Note that path can be relative or absolute
+    pub fn parse_from_string(text: String, path: String) -> Result<Adventure, ()> {
         let mut adv = Adventure::new();
 
         let lines = text.lines();
@@ -78,13 +83,13 @@ impl Adventure {
         for line in lines {
             if line.starts_with("title:") {
                 flag = 0;
-                adv.title = line.replacen("title:", "", 1);
+                adv.title = line.replacen("title:", "", 1).trim().to_string();
             } else if line.starts_with("description:") {
                 flag = 1;
-                adv.description = line.replacen("description:", "", 1);
+                adv.description = line.replacen("description:", "", 1).trim().to_string();
             } else if line.starts_with("start:") {
                 flag = 0;
-                adv.start = line.replacen("start:", "", 1);
+                adv.start = line.replacen("start:", "", 1).trim().to_string();
             } else if line.starts_with("record:") {
                 flag = 0;
                 let text = line.replacen("record:", "", 1);
@@ -101,6 +106,7 @@ impl Adventure {
                 }
             }
         }
+        adv.path = path;
 
         if adv.is_valid() {
             return Ok(adv);
@@ -147,10 +153,9 @@ impl Page {
         // next we break the text into lines and create regex lookups to match and connect parts of the page
         let lines = text.lines();
 
-        // those are for matching tags in choice so we can figure out which choices should be connected to other elements.
-        let match_condition = Regex::new(r"\{\s*condition:\s*(\w+(?:\s|\w)*)\s*\}").unwrap();
-        let match_test = Regex::new(r"\{\s*test:\s*(\w+(?:\s|\w)*)\s*\}").unwrap();
-        let match_result = Regex::new(r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}").unwrap();
+        let match_condition = Regex::new(REGEX_CONDITION_IN_CHOICE).unwrap();
+        let match_test = Regex::new(REGEX_TEST_IN_CHOICE).unwrap();
+        let match_result = Regex::new(REGEX_RESULT_IN_CHOICE).unwrap();
 
         for line in lines {
             // the flag marks if we're at a story line, this allows story lines to be broken up into multiple lines later on
@@ -159,11 +164,11 @@ impl Page {
             if line.starts_with("title:") {
                 // matching title by keyword
                 flag = 0;
-                page.title = line.replacen("title:", "", 1);
+                page.title = line.replacen("title:", "", 1).trim().to_string();
             } else if line.starts_with("story:") {
                 // same with the story, we set the flag to 1 here to signify that any following line that doesn't match any keyword can be added to story
                 flag = 1;
-                page.story = line.replacen("story:", "", 1);
+                page.story = line.replacen("story:", "", 1).trim().to_string();
             } else if line.starts_with("choice:") {
                 flag = 0;
                 // first we get the actual story text
@@ -244,7 +249,7 @@ macro_rules! insert_in_choice {
             let whole = c.get(0).unwrap();
             let name = c.get(1).unwrap();
             // we stuff the name into provided target
-            $target = name.as_str().to_string();
+            $target = name.as_str().trim().to_string();
             // and then remove the whole keyword from source text
             $source.replace_range(whole.range(), "");
         }
@@ -273,10 +278,10 @@ impl Choice {
         // we use macros here to extract appropriate keywords into their places.
         insert_in_choice!(match_condition, choice.condition, text);
         insert_in_choice!(match_test, choice.test, text);
-        insert_in_choice!(match_result, choice.test, text);
+        insert_in_choice!(match_result, choice.result, text);
 
         // we finish up by assigning text with keywords extracted and push it into the page
-        choice.text = text;
+        choice.text = text.trim().to_string();
         if choice.is_valid() {
             Ok(choice)
         } else {
@@ -284,10 +289,13 @@ impl Choice {
         }
     }
     pub fn is_valid(&self) -> bool {
-        if self.test.len() < 1 {
+        if self.text.len() < 1 {
             return false;
         }
         if self.test.len() == 0 && self.result.len() == 0 {
+            return false;
+        }
+        if self.test.len() > 0 && self.result.len() > 0 {
             return false;
         }
         true
@@ -331,9 +339,9 @@ impl Condition {
         // constructing the condition.
         Ok(Condition {
             name: args[0].to_string(),
-            expression_r: args[1].to_string(),
+            expression_l: args[1].to_string(),
             comparison: Comparison::from(args[2]),
-            expression_l: args[3].to_string(),
+            expression_r: args[3].to_string(),
         })
     }
 }
@@ -361,9 +369,9 @@ impl Test {
 
         Ok(Test {
             name: args[0].to_string(),
-            expression_r: args[1].to_string(),
+            expression_l: args[1].to_string(),
             comparison: Comparison::from(args[2]),
-            expression_l: args[3].to_string(),
+            expression_r: args[3].to_string(),
             success_result: args[4].to_string(),
             failure_result: args[5].to_string(),
         })
@@ -395,13 +403,18 @@ impl StoryResult {
 }
 impl Record {
     pub fn new() -> Record {
-        Record { category: String::new(), name: String::new(), value: 0.0 }
+        Record {
+            category: String::new(),
+            name: String::new(),
+            value: 0.0,
+        }
     }
+    /// Creates a record from a text data.
     pub fn parse_from_string(text: String) -> Result<Record, ()> {
-        let args : Vec<&str> = text
+        let args: Vec<&str> = text
             .split(";")
             .map(|x| x.trim())
-            .filter(|x| x.len() > 0 )
+            .filter(|x| x.len() > 0)
             .collect();
 
         let len = args.len();
@@ -417,5 +430,181 @@ impl Record {
             },
             value: 0.0,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use regex::Regex;
+
+    use crate::adventure::Comparison;
+
+    use super::{Choice, Condition, Record, StoryResult, Test, Page, Adventure};
+
+    #[test]
+    fn record_parse() {
+        let data = "strength; attributes;".to_string();
+        let rec = Record::parse_from_string(data).unwrap();
+        assert_eq!(rec.name, "strength");
+        assert_eq!(rec.category, "attributes");
+    }
+    #[test]
+    fn result_parse() {
+        let data = "proceed; next scene".to_string();
+        let res = StoryResult::parse_from_string(data).unwrap();
+        assert_eq!(res.name, "proceed");
+        assert_eq!(res.expression, "next scene");
+    }
+    #[test]
+    fn result_record_mod_parse() {
+        let data = "proceed; strength; 1; next_scene;".to_string();
+        let res = StoryResult::parse_from_string(data).unwrap();
+        assert_eq!(res.name, "proceed");
+        assert_eq!(res.expression, "strength; 1; next_scene;");
+    }
+    #[test]
+    fn test_parse() {
+        let data = "bravery; 1d20; <=; [confidence]; proceed; cowardness;".to_string();
+        let t = Test::parse_from_string(data).unwrap();
+        assert_eq!(t.name, "bravery");
+        assert_eq!(t.expression_l, "1d20");
+        assert_eq!(t.expression_r, "[confidence]");
+        assert_eq!(t.comparison, Comparison::LessEqual);
+        assert_eq!(t.success_result, "proceed");
+        assert_eq!(t.failure_result, "cowardness");
+    }
+    #[test]
+    fn condition_parse() {
+        let data = "wealth; [wealth]; >=; 1d100+15;".to_string();
+        let con = Condition::parse_from_string(data).unwrap();
+        assert_eq!(con.name, "wealth");
+        assert_eq!(con.comparison, Comparison::GreaterEqual);
+        assert_eq!(con.expression_l, "[wealth]");
+        assert_eq!(con.expression_r, "1d100+15");
+    }
+    #[test]
+    fn comparison_conversion() {
+        let mut comp: Comparison = ">".into();
+        assert_eq!(comp, Comparison::Greater);
+        comp = ">=".into();
+        assert_eq!(comp, Comparison::GreaterEqual);
+        comp = "=".into();
+        assert_eq!(comp, Comparison::Equal);
+        comp = "!".into();
+        assert_eq!(comp, Comparison::NotEqual);
+        comp = "<".into();
+        assert_eq!(comp, Comparison::Less);
+        comp = "<=".into();
+        assert_eq!(comp, Comparison::LessEqual);
+    }
+    // TODO write test that would make parsing double links in choices invalid, like having two results for example
+    #[test]
+    fn choice_parse_condition_result() {
+        let data = "Do something brave! {condition: brave} {result: proceed}".to_string();
+        let match_condition = Regex::new(super::REGEX_CONDITION_IN_CHOICE).unwrap();
+        let match_test = Regex::new(super::REGEX_TEST_IN_CHOICE).unwrap();
+        let match_result = Regex::new(super::REGEX_RESULT_IN_CHOICE).unwrap();
+        let cho =
+            Choice::parse_from_string(data, &match_condition, &match_test, &match_result).unwrap();
+        assert_eq!(cho.text, "Do something brave!");
+        assert_eq!(cho.test, "");
+        assert_eq!(cho.condition, "brave");
+        assert_eq!(cho.result, "proceed");
+    }
+    #[test]
+    fn choice_parse_test() {
+        let data = "Do something brave! { test: bravery }".to_string();
+        let match_condition = Regex::new(super::REGEX_CONDITION_IN_CHOICE).unwrap();
+        let match_test = Regex::new(super::REGEX_TEST_IN_CHOICE).unwrap();
+        let match_result = Regex::new(super::REGEX_RESULT_IN_CHOICE).unwrap();
+        let cho =
+            Choice::parse_from_string(data, &match_condition, &match_test, &match_result).unwrap();
+        assert_eq!(cho.text, "Do something brave!");
+        assert_eq!(cho.test, "bravery");
+        assert_eq!(cho.condition, "");
+        assert_eq!(cho.result, "");
+    }
+    #[test]
+    fn choice_parse() {
+        let data = "Do something brave! { result: proceed }".to_string();
+        let match_condition = Regex::new(super::REGEX_CONDITION_IN_CHOICE).unwrap();
+        let match_test = Regex::new(super::REGEX_TEST_IN_CHOICE).unwrap();
+        let match_result = Regex::new(super::REGEX_RESULT_IN_CHOICE).unwrap();
+        let cho =
+            Choice::parse_from_string(data, &match_condition, &match_test, &match_result).unwrap();
+        assert_eq!(cho.text, "Do something brave!");
+        assert_eq!(cho.test, "");
+        assert_eq!(cho.condition, "");
+        assert_eq!(cho.result, "proceed");
+    }
+    #[test]
+    fn choice_valid() {
+        let mut cho = Choice {
+            text: String::from("Do something brave!"),
+            condition: String::new(),
+            result: String::from("Proceed"),
+            test: String::new(),
+        };
+        assert!(cho.is_valid());
+        cho.result = String::new();
+        cho.test = String::from("bravery");
+        assert!(cho.is_valid());
+    }
+    #[test]
+    fn choice_invalid() {
+        let mut cho = Choice {
+            text: String::from("Do something brave!"),
+            condition: String::new(),
+            result: String::new(),
+            test: String::new(),
+        };
+        assert!(!cho.is_valid());
+        cho.result = String::from("proceed");
+        cho.test = String::from("bravery");
+        assert!(!cho.is_valid());
+    }
+    #[test]
+    fn page_parse() {
+        let data = "title: At the Castle Ruins
+story: [name] arrived at the ruined castle where the fabled dragon has kidnapped the princess to. The air is stale, filled with stench of sulfour and roars of the beast can be heard in the distance.
+choice: Proceed through the gate! {test: bravery}
+choice: Run away! {result: coward}
+choice: Prepare stuffed animal spiked with poison. {condition: animal}{result: victory}
+condition: animal; [stuffed animals]; >; 1;
+test: bravery; [confidence]; >=; 1d20; victory; coward;
+result: victory; victory_scene
+result: coward; confidence; -1; coward_scene;".to_string();
+        let page = Page::parse_from_string(data).unwrap();
+
+        assert_eq!(page.title, "At the Castle Ruins");
+        assert_eq!(page.story, "[name] arrived at the ruined castle where the fabled dragon has kidnapped the princess to. The air is stale, filled with stench of sulfour and roars of the beast can be heard in the distance.");
+        assert_eq!(page.choices.len(), 3);
+        assert_eq!(page.conditions.len(), 1);
+        assert_eq!(page.tests.len(), 1);
+        assert_eq!(page.results.len(), 2);
+
+        for choice in page.choices {
+            assert!(choice.is_valid());
+        }
+    }
+    #[test]
+    fn adventure_parse() {
+        let data = "title: Damsel in Distress
+description: This is a story about a knight who faces a dragon to save the princess
+start: at_the_castle_ruins
+record: confidence; attributes;
+record: stuffed animals; resources;".to_string();
+        let adventure = Adventure::parse_from_string(data, "damsel".to_string()).unwrap();
+
+        assert_eq!(adventure.title, "Damsel in Distress");
+        assert_eq!(adventure.description, "This is a story about a knight who faces a dragon to save the princess");
+        assert_eq!(adventure.start, "at_the_castle_ruins");
+        assert_eq!(adventure.records.len(), 2);
+
+        assert_eq!(adventure.records[0].name, "confidence");
+        assert_eq!(adventure.records[0].category, "attributes");
+        assert_eq!(adventure.records[1].name, "stuffed animals");
+        assert_eq!(adventure.records[1].category, "resources");
     }
 }
