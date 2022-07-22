@@ -12,6 +12,7 @@ pub fn capture_adventures() -> Vec<Adventure> {
     let paths = [
         "$HOME/.local/share/adventure-book/",
         "/usr/share/adventure-book/",
+        "./books/",
     ];
 
     // going over the paths
