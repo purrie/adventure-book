@@ -1,0 +1,4 @@
+title: Charmed
+story: Your smooth words and seductive whispers touch dragon's feelings and soon enough it melts in wave of compliments you deliver. The dragon agrees to release the princess in exchange of your hand in marriage. It doesn't take a week before you both end up in front of an altar in nearby cathedral, blessed to live happily ever after.
+choice: Victory? {result: win}
+result: win; end;

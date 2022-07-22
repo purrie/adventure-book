@@ -1,0 +1,4 @@
+title: Caught!
+story: You move towards the prison tower but you slip, and a small rubble of rocks tumbles down right on top of the dragon. The beast roars with anger and its gaze darts towards you. You don't have enough time to react as the dragon swipes at you, knocking you off the wall to fall to your death.
+choice: Death... {result: dead}
+result: dead; end;

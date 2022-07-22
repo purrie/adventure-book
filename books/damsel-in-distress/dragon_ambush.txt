@@ -1,0 +1,8 @@
+title: Ambushed!
+story: You call out to the dragon to face you in a fair duel but before you finish your declaration, the dragon swoops in with its claws drawn, striking you while you're not paying attention.
+choice: Strike back! {result: double kill}
+choice: Block with your shield! {test: block}
+test: block; 1d20; <; 1d20; win; loss;
+result: double kill; both_dead;
+result: win; facing_the_dragon;
+result: loss; defeat;

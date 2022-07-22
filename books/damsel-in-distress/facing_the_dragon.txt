@@ -1,0 +1,12 @@
+title: Facing the Dragon
+story: You call out to the dragon, challenging it to a duel and you don't have to wait long. The dragon flies up from behind the walls and lands in front of you, blocking the entrance to the ruin. "You're a brave one, human. I shall accept your challenge and duel you" the dragon roared.
+choice: Fight fairly. {test: fight}
+choice: Fight dirty. {test: dirty}
+choice: Seduce the dragon. {condition: suave} {test: charm}
+condition: suave; [confidence]; >=; 1;
+test: charm; 1d20; <; 1d10+[confidence]; charmed; defeat;
+test: fight; 1d20; <; 1d10+[confidence]; victory; defeat;
+test: dirty; 1d20; <; 10-1d6+1d6; victory; defeat;
+result: victory; princess_rescued;
+result: defeat; defeated_by_dragon;
+result: charm; charmed_the_dragon;

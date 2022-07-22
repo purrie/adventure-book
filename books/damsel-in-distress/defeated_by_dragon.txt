@@ -1,0 +1,4 @@
+title: Defeat
+story: The Dragon lashes out at you faster than you would expect out of such large creature. You fly in the air from the blow and land on your back defeated. The dragon triumphantly stands over you with a smirk on its face. The last thing you see is the beast retreating back into the ruin.
+choice: You're defeated! {result: loss}
+result: loss; end;

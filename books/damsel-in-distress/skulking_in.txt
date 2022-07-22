@@ -1,0 +1,9 @@
+title: In the shadows
+story: You sneak into the ruin, being watchful for the beast. The roars of the beast help you avoid it until you find yourself in advantageous position from where you can strike. You can also see a light in nearby tower and you're certain that's where the dragon keeps the princess.
+choice: Ambush the dragon {test: ambush}
+choice: Sneak away with the princess. {test: sneaking}
+test: ambush; 1d20; <; 2d20; ambush; defeat;
+test: sneaking; 1d20; <; 2d20; sneaking; defeat;
+result: ambush; princess_rescued;
+result: sneaking; unkidnapped;
+result: defeat; caught;

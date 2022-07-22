@@ -1,0 +1,4 @@
+title: Rescued
+story: You managed to sneak past the dragon and unlock the prison cell where princess was kept. Through careful movements, both of you managed to sneak back out of the ruin, with dragon nonethewiser to your clever thinking.
+choice: Princess returns home! You win! {result: win}
+result: win; end;
