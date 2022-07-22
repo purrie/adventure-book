@@ -20,16 +20,17 @@ struct MainMenu {
     adventure_choice: Group,
     adventure_title: Label,
     adventure_description: TextDisplay,
+    adventure_picker: SelectBrowser,
 }
 
 type Label = Frame;
 
 impl MainWindow {
-    pub fn create(game_data: &Vec<Adventure>) -> MainWindow {
+    pub fn create() -> MainWindow {
         let mut window = Window::default()
             .with_size(1000, 750)
             .with_label("Adventure Book");
-        let main_menu = MainMenu::create(game_data);
+        let main_menu = MainMenu::create();
 
         window.end();
         window.show();
@@ -46,9 +47,12 @@ impl MainWindow {
     pub fn set_adventure_choice(&mut self, adventure: &Adventure) {
         self.main_menu.set_adventure_text(adventure);
     }
+    pub fn fill_adventure_choices(&mut self, adventures: &Vec<Adventure>) {
+        self.main_menu.fill_adventure_choices(adventures);
+    }
 }
 impl MainMenu {
-    fn create(game_data: &Vec<Adventure>) -> MainMenu {
+    fn create() -> MainMenu {
         let group = Group::default().size_of_parent();
 
         let main = Group::default().size_of_parent();
@@ -81,9 +85,7 @@ impl MainMenu {
         quit_but.emit(send.clone(), Event::Quit);
         accept.emit(send.clone(), Event::StartAdventure);
 
-        for adv in game_data {
-            picker.add(&adv.title);
-        }
+
         picker.set_callback(move |x| {
             if let Some(txt) = x.selected_text() {
                 send.send(Event::SelectAdventure(txt));
@@ -96,6 +98,7 @@ impl MainMenu {
             adventure_choice: starting,
             adventure_title: title,
             adventure_description: description,
+            adventure_picker: picker,
         }
     }
     fn show_main(&mut self) {
@@ -114,5 +117,11 @@ impl MainMenu {
     fn set_adventure_text(&mut self, adventure: &Adventure) {
         self.adventure_title.set_label(&adventure.title);
         self.adventure_description.buffer().as_mut().unwrap().set_text(&adventure.description);
+    }
+    fn fill_adventure_choices(&mut self, adventures: &Vec<Adventure>) {
+        self.adventure_picker.clear();
+        for adv in adventures {
+            self.adventure_picker.add(&adv.title);
+        }
     }
 }

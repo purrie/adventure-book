@@ -14,7 +14,7 @@ impl Game {
     pub fn create() -> Self {
         let app = App::default();
         let adventures = capture_adventures();
-        let window = MainWindow::create(&adventures);
+        let window = MainWindow::create();
         let (_s, receiver) = app::channel();
 
         Game {
@@ -29,7 +29,10 @@ impl Game {
         while self.app.wait() {
             if let Some(msg) = self.receiver.recv() {
                 match msg {
-                    Event::DisplayAdventureSelect => self.window.switch_to_adventure_choice(),
+                    Event::DisplayAdventureSelect => {
+                        self.window.fill_adventure_choices(&self.adventures);
+                        self.window.switch_to_adventure_choice();
+                    },
                     Event::DisplayMainMenu => self.window.switch_to_main_menu(),
                     Event::StartAdventure => {}
                     Event::Quit => {
