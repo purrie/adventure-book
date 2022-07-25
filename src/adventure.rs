@@ -6,6 +6,16 @@ pub struct Adventure {
     pub path: String,
     pub start: String,
     pub records: Vec<Record>,
+    pub names: Vec<Name>,
+}
+pub struct Record {
+    pub category: String,
+    pub name: String,
+    pub value: f64,
+}
+pub struct Name {
+    pub keyword: String,
+    pub name: String,
 }
 pub struct Page {
     pub title: String,
@@ -15,11 +25,7 @@ pub struct Page {
     pub tests: Vec<Test>,
     pub results: Vec<StoryResult>,
 }
-pub struct Record {
-    pub category: String,
-    pub name: String,
-    pub value: f64,
-}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum Comparison {
     Greater,
@@ -54,9 +60,9 @@ pub struct Condition {
     pub expression_l: String,
 }
 // those are for matching tags in choice so we can figure out which choices should be connected to other elements.
-static REGEX_CONDITION_IN_CHOICE: &str = r"\{\s*condition:\s*(\w+(?:\s|\w)*)\s*\}";
-static REGEX_TEST_IN_CHOICE: &str = r"\{\s*test:\s*(\w+(?:\s|\w)*)\s*\}";
-static REGEX_RESULT_IN_CHOICE: &str = r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}";
+const REGEX_CONDITION_IN_CHOICE: &str = r"\{\s*condition:\s*(\w+(?:\s|\w)*)\s*\}";
+const REGEX_TEST_IN_CHOICE: &str = r"\{\s*test:\s*(\w+(?:\s|\w)*)\s*\}";
+const REGEX_RESULT_IN_CHOICE: &str = r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}";
 
 impl Adventure {
     /// Creates a new empty adventure data
@@ -67,6 +73,7 @@ impl Adventure {
             path: String::new(),
             start: String::new(),
             records: Vec::<Record>::new(),
+            names: Vec::<Name>::new(),
         }
     }
     /// Creates an adventure from text string
@@ -97,6 +104,14 @@ impl Adventure {
 
                 if let Ok(r) = rec {
                     adv.records.push(r);
+                } else {
+                    return Err(());
+                }
+            } else if line.starts_with("name:") {
+                flag = 0;
+                let text = line.replacen("record:", "", 1);
+                if let Ok(name) = Name::parse_from_string(text) {
+                    adv.names.push(name);
                 } else {
                     return Err(());
                 }
@@ -429,6 +444,34 @@ impl Record {
                 false => String::new(),
             },
             value: 0.0,
+        })
+    }
+}
+impl Name {
+    pub fn new() -> Name {
+        Name {
+            keyword: String::new(),
+            name: String::new(),
+        }
+    }
+    pub fn parse_from_string(text: String) -> Result<Name, ()> {
+        let args: Vec<&str> = text
+            .split(";")
+            .map(|x| x.trim())
+            .filter(|x| x.len() > 0)
+            .collect();
+
+        let len = args.len();
+        if len == 0 || len > 2 {
+            return Err(());
+        }
+
+        Ok(Name {
+            keyword: args[0].to_string(),
+            name: match len == 2 {
+                true => args[1].to_string(),
+                false => String::new(),
+            }
         })
     }
 }
