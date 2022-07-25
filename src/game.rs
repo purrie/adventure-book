@@ -45,6 +45,12 @@ impl Game {
                             self.window.set_adventure_choice(adventure);
                         }
                     }
+                    Event::StoryChoice(index) => {
+
+                    }
+                    Event::QuitToMainMenu => {
+
+                    }
                 }
             }
         }
@@ -59,6 +65,8 @@ pub enum Event {
     DisplayMainMenu,
     DisplayAdventureSelect,
     StartAdventure,
+    QuitToMainMenu,
     Quit,
     SelectAdventure(String),
+    StoryChoice(usize),
 }

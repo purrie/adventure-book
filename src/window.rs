@@ -1,11 +1,15 @@
+use std::collections::HashMap;
+
 use fltk::{
     app,
     browser::SelectBrowser,
     button::Button,
+    draw::Rect,
     frame::Frame,
-    group::Group,
+    group::{Flex, Group, Scroll},
     prelude::*,
-    window::Window, text::{TextDisplay, TextBuffer},
+    text::{TextBuffer, TextDisplay},
+    window::Window,
 };
 
 use crate::{adventure::Adventure, game::Event};
@@ -21,6 +25,28 @@ struct MainMenu {
     adventure_title: Label,
     adventure_description: TextDisplay,
     adventure_picker: SelectBrowser,
+}
+struct GameWindow {
+    game_window: Group,
+    pub records: RecordWindow,
+    pub story: StoryWindow,
+    pub choices: ChoiceWindow,
+}
+struct RecordWindow {
+    window: Flex,
+    categories: HashMap<String, RecordCategory>,
+}
+struct RecordCategory {
+    group: Flex,
+    entries: HashMap<String, Frame>,
+}
+struct ChoiceWindow {
+    window: Scroll,
+    button_container: Flex,
+}
+struct StoryWindow {
+    window: Group,
+    text: TextDisplay,
 }
 
 type Label = Frame;
@@ -85,7 +111,6 @@ impl MainMenu {
         quit_but.emit(send.clone(), Event::Quit);
         accept.emit(send.clone(), Event::StartAdventure);
 
-
         picker.set_callback(move |x| {
             if let Some(txt) = x.selected_text() {
                 send.send(Event::SelectAdventure(txt));
@@ -116,12 +141,198 @@ impl MainMenu {
     }
     fn set_adventure_text(&mut self, adventure: &Adventure) {
         self.adventure_title.set_label(&adventure.title);
-        self.adventure_description.buffer().as_mut().unwrap().set_text(&adventure.description);
+        self.adventure_description
+            .buffer()
+            .as_mut()
+            .unwrap()
+            .set_text(&adventure.description);
     }
     fn fill_adventure_choices(&mut self, adventures: &Vec<Adventure>) {
         self.adventure_picker.clear();
         for adv in adventures {
             self.adventure_picker.add(&adv.title);
         }
+    }
+}
+
+impl GameWindow {
+    /// creates UI for interacting with the story
+    pub fn create(area: Rect) -> Self {
+        let width_large = (area.w as f64 * 0.7) as i32;
+        let width_small = area.w - width_large;
+        let height_large = (area.h as f64 * 0.7) as i32;
+        let height_small = area.h - height_large;
+
+        let choice_area = Rect {
+            x: area.x,
+            y: area.y + height_large,
+            w: area.w,
+            h: height_small,
+        };
+        let record_area = Rect {
+            x: area.x,
+            y: area.y,
+            w: width_small,
+            h: height_large,
+        };
+        let story_area = Rect {
+            x: area.x + width_small,
+            y: area.y,
+            w: width_large,
+            h: height_large,
+        };
+
+        let game_window = Group::new(area.x, area.y, area.w, area.h, "");
+
+        let choices = ChoiceWindow::create(choice_area);
+        let records = RecordWindow::create(record_area);
+        let story = StoryWindow::create(story_area);
+
+        game_window.end();
+
+        Self {
+            game_window,
+            choices,
+            records,
+            story,
+        }
+    }
+    /// shows the game play UI
+    pub fn show(&mut self) {
+        self.game_window.show();
+    }
+    /// hides the game play UI
+    pub fn hide(&mut self) {
+        self.game_window.hide();
+    }
+}
+impl RecordWindow {
+    /// Creates a new record window in provided area
+    ///
+    /// The window will be empty, use add_record and update_record to display things
+    ///
+    /// Record window also stores game specific buttons, like returning to main menu
+    pub fn create(rect: Rect) -> Self {
+        let root_window = Group::new(rect.x, rect.y, rect.w, rect.h, "");
+        let window = Flex::new(rect.x, rect.y, rect.w, rect.h - 40, "").column();
+        window.end();
+        let mut butt = Button::new(rect.x, rect.h - 30, 20, 20, "@returnarrow");
+        root_window.end();
+
+        let (s, _r) = app::channel();
+
+        butt.emit(s, Event::QuitToMainMenu);
+
+        RecordWindow {
+            window,
+            categories: HashMap::new(),
+        }
+    }
+    /// Shows the categories and records
+    pub fn show(&mut self) {
+        self.window.show();
+    }
+    /// Hides the categories and records
+    pub fn hide(&mut self) {
+        self.window.hide();
+    }
+    /// Removes all group and record displays
+    pub fn clear(&mut self) {
+        self.window.clear();
+    }
+    /// This will add a record into the window.
+    ///
+    /// Any groups for categories will be created if they haven't been already
+    pub fn add_record(&mut self, record: &str, category: &str) {
+        let &mut cat;
+
+        // creating a category if it haven't been created yet, otherwise we just grab it
+        if self.categories.contains_key(category) {
+            cat = self.categories.get_mut(category).unwrap();
+        } else {
+            // here is group creation
+            let mut group = Flex::default().column();
+            group.set_margin(4);
+            group.set_label(category);
+            group.end();
+            self.window.add(&group);
+
+            let ccat = RecordCategory {
+                group,
+                entries: HashMap::new(),
+            };
+            self.categories.insert(category.to_string(), ccat);
+            cat = self.categories.get_mut(category).unwrap();
+        }
+
+        if cat.entries.contains_key(record) == false {
+            let f = Frame::default().with_label(format!("{}: 0", record).as_str());
+            cat.group.add(&f);
+            cat.entries.insert(record.to_string(), f);
+        }
+    }
+    /// Updates displayed value for the record.
+    ///
+    /// It will silently fail if the record or group haven't been found
+    pub fn update_record(&mut self, record: &str, category: &str, value: i32) {
+        if let Some(cat) = self.categories.get_mut(category) {
+            if let Some(rec) = cat.entries.get_mut(record) {
+                rec.set_label(format!("{}: {}", record, value).as_str());
+            }
+        }
+    }
+}
+impl ChoiceWindow {
+    /// Creates empty choice menu
+    ///
+    /// Use add_choice and clear_choices to populate and clear the menu
+    fn create(area: Rect) -> Self {
+        let window = Scroll::new(area.x, area.y, area.w, area.h, "");
+        let button_container = Flex::default().size_of_parent().column();
+        window.end();
+
+        Self {
+            window,
+            button_container,
+        }
+    }
+    /// Adds a button with supplied text as available choice
+    pub fn add_choice(&mut self, text: &str) {
+        let count = self.button_container.children();
+        let mut butt = Button::default().with_label(format!("{}: {}", count + 1, text).as_str());
+
+        let (s, _r) = app::channel();
+        butt.set_callback(move |_| {
+            s.send(Event::StoryChoice(count as usize));
+        });
+        self.button_container.add(&butt);
+    }
+    /// Removes all choice buttons from the menu
+    pub fn clear_choices(&mut self) {
+        self.button_container.clear();
+    }
+}
+impl StoryWindow {
+    /// Creates empty story area
+    ///
+    /// The story window is where the main story events are displayed
+    fn create(area: Rect) -> Self {
+        let window = Group::new(area.x, area.y, area.w, area.h, "");
+        let mut buff = TextBuffer::default();
+        buff.set_text("");
+        let mut text = TextDisplay::default().size_of_parent();
+        text.set_buffer(buff);
+        text.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
+        window.end();
+
+        StoryWindow { window, text }
+    }
+    /// Sets text to the display
+    pub fn set_text(&mut self, text: &str) {
+        self.text.buffer().as_mut().unwrap().set_text(text);
+    }
+    /// Removes all text from the display
+    pub fn clear_text(&mut self) {
+        self.text.buffer().as_mut().unwrap().set_text("");
     }
 }
