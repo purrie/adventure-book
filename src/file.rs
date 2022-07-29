@@ -2,6 +2,7 @@ use crate::adventure::*;
 
 use std::fs::{read_dir, File};
 use std::io::Read;
+use std::path::PathBuf;
 use std::vec::Vec;
 
 /// Iterates over folders with adventure data and collects all possible adventures to run
@@ -67,10 +68,24 @@ pub fn capture_adventures() -> Vec<Adventure> {
 
     ret
 }
+/// Opens a page file and reads its contents, creating Page object
+///
+/// path: this is a path to adventure folder
+/// name: this is a name of the page
+///
+/// The function automatically applies expected extension to the page name
+pub fn read_page(path: &String, name: &String) -> Result<Page, ()> {
+    let mut path_to_file = PathBuf::new();
+    path_to_file.push(path);
+    path_to_file.push(name);
+    path_to_file.set_extension("txt");
 
-pub fn read_page(path: &String) -> Result<Page, ()> {
+    if path_to_file.exists() == false {
+        return Err(());
+    }
+
     // opening the file
-    let mut p = match File::open(path) {
+    let mut p = match File::open(path_to_file.as_path()) {
         Err(_) => return Err(()),
         Ok(f) => f,
     };
@@ -86,3 +101,4 @@ pub fn read_page(path: &String) -> Result<Page, ()> {
         Ok(p) => return Ok(p),
     }
 }
+
