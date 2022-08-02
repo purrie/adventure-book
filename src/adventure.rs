@@ -1,5 +1,6 @@
 use regex::Regex;
 
+#[derive(Clone)]
 pub struct Adventure {
     pub title: String,
     pub description: String,
@@ -8,14 +9,16 @@ pub struct Adventure {
     pub records: Vec<Record>,
     pub names: Vec<Name>,
 }
+#[derive(Clone)]
 pub struct Record {
     pub category: String,
     pub name: String,
     pub value: f64,
 }
+#[derive(Clone)]
 pub struct Name {
     pub keyword: String,
-    pub name: String,
+    pub value: String,
 }
 pub struct Page {
     pub title: String,
@@ -451,7 +454,7 @@ impl Name {
     pub fn new() -> Name {
         Name {
             keyword: String::new(),
-            name: String::new(),
+            value: String::new(),
         }
     }
     pub fn parse_from_string(text: String) -> Result<Name, ()> {
@@ -468,7 +471,7 @@ impl Name {
 
         Ok(Name {
             keyword: args[0].to_string(),
-            name: match len == 2 {
+            value: match len == 2 {
                 true => args[1].to_string(),
                 false => String::new(),
             }
