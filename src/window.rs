@@ -315,7 +315,7 @@ impl RecordWindow {
         let root_window = Group::new(rect.x, rect.y, rect.w, rect.h, "");
         let window = Flex::new(rect.x, rect.y, rect.w, rect.h - 40, "").column();
         window.end();
-        let mut butt = Button::new(rect.x, rect.h - 30, 20, 20, "@returnarrow");
+        let mut butt = Button::new(rect.x + 10, rect.h - 30, 20, 20, "@returnarrow");
         root_window.end();
 
         let (s, _r) = app::channel();
