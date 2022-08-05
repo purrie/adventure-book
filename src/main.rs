@@ -8,6 +8,7 @@ mod game;
 mod adventure;
 mod file;
 mod window;
+mod evaluation;
 
 fn main() {
     let game = Game::create();

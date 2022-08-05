@@ -332,15 +332,19 @@ impl From<&str> for Comparison {
         }
     }
 }
-impl Condition {
-    pub fn new() -> Condition {
-        Condition {
-            name: String::new(),
-            expression_r: String::new(),
-            comparison: Comparison::Less,
-            expression_l: String::new(),
+impl Comparison {
+    pub fn compare(&self, rhv: i32, lhv: i32) -> bool {
+        match self {
+            Comparison::Greater => rhv > lhv,
+            Comparison::GreaterEqual => rhv >= lhv,
+            Comparison::Less => rhv < lhv,
+            Comparison::LessEqual => rhv <= lhv,
+            Comparison::Equal => rhv == lhv,
+            Comparison::NotEqual => rhv != lhv,
         }
     }
+}
+impl Condition {
     pub fn parse_from_string(text: String) -> Result<Condition, ()> {
         // splitting the text into parts. Expected order of data is name, exp right, comparison, exp left. We filter out empty strings
         let args: Vec<&str> = text
@@ -364,16 +368,6 @@ impl Condition {
     }
 }
 impl Test {
-    pub fn new() -> Test {
-        Test {
-            name: String::new(),
-            expression_r: String::new(),
-            comparison: Comparison::Less,
-            expression_l: String::new(),
-            success_result: String::new(),
-            failure_result: String::new(),
-        }
-    }
     pub fn parse_from_string(text: String) -> Result<Test, ()> {
         let args: Vec<&str> = text
             .split(";")
@@ -396,12 +390,6 @@ impl Test {
     }
 }
 impl StoryResult {
-    pub fn new() -> StoryResult {
-        StoryResult {
-            name: String::new(),
-            expression: String::new(),
-        }
-    }
     pub fn parse_from_string(text: String) -> Result<StoryResult, ()> {
         let args: Vec<&str> = text
             .splitn(2, ";")
@@ -420,13 +408,6 @@ impl StoryResult {
     }
 }
 impl Record {
-    pub fn new() -> Record {
-        Record {
-            category: String::new(),
-            name: String::new(),
-            value: 0.0,
-        }
-    }
     /// Creates a record from a text data.
     pub fn parse_from_string(text: String) -> Result<Record, ()> {
         let args: Vec<&str> = text
