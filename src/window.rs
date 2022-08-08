@@ -9,7 +9,6 @@ use fltk::{
     group::{Flex, Group, Scroll},
     prelude::*,
     text::{TextBuffer, TextDisplay},
-    window::Window,
 };
 
 use crate::game::Event;
@@ -17,7 +16,6 @@ use crate::adventure::Record;
 use crate::adventure::Adventure;
 
 pub struct MainWindow {
-    window: Window,
     pub main_menu: MainMenu,
     pub game_window: GameWindow,
 }
@@ -58,24 +56,15 @@ impl MainWindow {
     ///
     /// window_area: size and position of the window
     /// ui_area: area within the window that will be used for placing the controls
-    pub fn create(window_area: Rect, ui_area: Rect) -> MainWindow {
-        let mut window = Window::new(
-            window_area.x,
-            window_area.y,
-            window_area.w,
-            window_area.h,
-            "Adventure Book",
-        );
+    pub fn create(ui_area: Rect) -> MainWindow {
+
         let main_menu = MainMenu::create(ui_area);
 
         let mut game_window = GameWindow::create(ui_area);
         game_window.hide();
 
-        window.end();
-        window.show();
 
         MainWindow {
-            window,
             main_menu,
             game_window,
         }
@@ -278,9 +267,9 @@ impl GameWindow {
     pub fn display_story(&mut self, story: String) {
         self.story.set_text(&story);
     }
-    pub fn update_records(&mut self, records: &Vec<Record>) {
+    pub fn update_records(&mut self, records: &HashMap<String, Record>) {
         for rec in records.iter() {
-            self.records.update_record(rec);
+            self.records.update_record(rec.1);
         }
     }
     /// Adds records to the record window

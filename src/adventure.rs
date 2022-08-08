@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
 use regex::Regex;
+
+use crate::evaluation::{evaluate_and_compare, Random};
 
 #[derive(Clone)]
 pub struct Adventure {
@@ -6,14 +10,14 @@ pub struct Adventure {
     pub description: String,
     pub path: String,
     pub start: String,
-    pub records: Vec<Record>,
-    pub names: Vec<Name>,
+    pub records: HashMap<String, Record>,
+    pub names: HashMap<String, Name>,
 }
 #[derive(Clone)]
 pub struct Record {
     pub category: String,
     pub name: String,
-    pub value: f64,
+    pub value: i32,
 }
 #[derive(Clone)]
 pub struct Name {
@@ -24,9 +28,9 @@ pub struct Page {
     pub title: String,
     pub story: String,
     pub choices: Vec<Choice>,
-    pub conditions: Vec<Condition>,
-    pub tests: Vec<Test>,
-    pub results: Vec<StoryResult>,
+    pub conditions: HashMap<String, Condition>,
+    pub tests: HashMap<String, Test>,
+    pub results: HashMap<String, StoryResult>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -75,8 +79,8 @@ impl Adventure {
             description: String::new(),
             path: String::new(),
             start: String::new(),
-            records: Vec::<Record>::new(),
-            names: Vec::<Name>::new(),
+            records: HashMap::<String, Record>::new(),
+            names: HashMap::<String, Name>::new(),
         }
     }
     /// Creates an adventure from text string
@@ -106,7 +110,7 @@ impl Adventure {
                 let rec = Record::parse_from_string(text);
 
                 if let Ok(r) = rec {
-                    adv.records.push(r);
+                    adv.records.insert(r.name.clone(), r);
                 } else {
                     return Err(());
                 }
@@ -114,7 +118,7 @@ impl Adventure {
                 flag = 0;
                 let text = line.replacen("record:", "", 1);
                 if let Ok(name) = Name::parse_from_string(text) {
-                    adv.names.push(name);
+                    adv.names.insert(name.keyword.clone(), name);
                 } else {
                     return Err(());
                 }
@@ -156,9 +160,9 @@ impl Page {
             title: String::new(),
             story: String::new(),
             choices: Vec::<Choice>::new(),
-            conditions: Vec::<Condition>::new(),
-            tests: Vec::<Test>::new(),
-            results: Vec::<StoryResult>::new(),
+            conditions: HashMap::<String, Condition>::new(),
+            tests: HashMap::<String, Test>::new(),
+            results: HashMap::<String, StoryResult>::new(),
         }
     }
 
@@ -166,7 +170,6 @@ impl Page {
     pub fn parse_from_string(text: String) -> Result<Page, ()> {
         // creating empty page to populate
         let mut page = Page::new();
-        let flag = 0;
 
         // next we break the text into lines and create regex lookups to match and connect parts of the page
         let lines = text.lines();
@@ -175,21 +178,21 @@ impl Page {
         let match_test = Regex::new(REGEX_TEST_IN_CHOICE).unwrap();
         let match_result = Regex::new(REGEX_RESULT_IN_CHOICE).unwrap();
 
+        let mut story_line = false;
         for line in lines {
             // the flag marks if we're at a story line, this allows story lines to be broken up into multiple lines later on
-            let mut flag = 0;
 
             if line.starts_with("title:") {
                 // matching title by keyword
-                flag = 0;
+                story_line = false;
                 page.title = line.replacen("title:", "", 1).trim().to_string();
             } else if line.starts_with("story:") {
                 // same with the story, we set the flag to 1 here to signify that any following line that doesn't match any keyword can be added to story
-                flag = 1;
+                story_line = true;
                 page.story = line.replacen("story:", "", 1).trim().to_string();
             } else if line.starts_with("choice:") {
-                flag = 0;
-                // first we get the actual story text
+                story_line = false;
+                // Reading choice from the line
                 let cho = Choice::parse_from_string(
                     line.replacen("choice:", "", 1),
                     &match_condition,
@@ -197,43 +200,44 @@ impl Page {
                     &match_result,
                 );
 
+                // if read succeeds, we push the choice in
                 if let Ok(c) = cho {
                     page.choices.push(c);
                 } else {
                     return Err(());
                 }
             } else if line.starts_with("condition:") {
-                flag = 0;
+                story_line = false;
 
                 let con = Condition::parse_from_string(line.replacen("condition:", "", 1));
 
                 // reading condition data can fail, in that case we fail the page
                 if let Ok(c) = con {
-                    page.conditions.push(c);
+                    page.conditions.insert(c.name.clone(), c);
                 } else {
                     return Err(());
                 }
             } else if line.starts_with("test:") {
-                flag = 0;
+                story_line = false;
 
                 // we fail the page if the test doesn't load in correctly
                 let test = Test::parse_from_string(line.replacen("test:", "", 1));
                 if let Ok(t) = test {
-                    page.tests.push(t);
+                    page.tests.insert(t.name.clone(), t);
                 } else {
                     return Err(());
                 }
             } else if line.starts_with("result:") {
-                flag = 0;
+                story_line = false;
 
                 // failing the page if result doesn't load correctly, like in other cases
                 let res = StoryResult::parse_from_string(line.replacen("result:", "", 1));
                 if let Ok(r) = res {
-                    page.results.push(r);
+                    page.results.insert(r.name.clone(), r);
                 } else {
                     return Err(());
                 }
-            } else if flag == 1 {
+            } else if story_line {
                 // adding a line to story if it's immediately after story keyword and doesn't match any other keywords
                 page.story += line;
             }
@@ -306,6 +310,10 @@ impl Choice {
             Err(())
         }
     }
+    /// Tests if this choice is valid
+    ///
+    /// It will return flase if it doesn't have test or result name
+    /// or if it has both
     pub fn is_valid(&self) -> bool {
         if self.text.len() < 1 {
             return false;
@@ -317,6 +325,15 @@ impl Choice {
             return false;
         }
         true
+    }
+    /// Tests if this choice always leads to the same result or not
+    ///
+    /// Will return false if it leads to a test instead
+    pub fn is_constant(&self) -> bool {
+        self.result.len() > 0
+    }
+    pub fn has_condition(&self) -> bool {
+        self.condition.len() > 0
     }
 }
 impl From<&str> for Comparison {
@@ -333,14 +350,14 @@ impl From<&str> for Comparison {
     }
 }
 impl Comparison {
-    pub fn compare(&self, rhv: i32, lhv: i32) -> bool {
+    pub fn compare(&self, lhv: i32, rhv: i32) -> bool {
         match self {
-            Comparison::Greater => rhv > lhv,
-            Comparison::GreaterEqual => rhv >= lhv,
-            Comparison::Less => rhv < lhv,
-            Comparison::LessEqual => rhv <= lhv,
-            Comparison::Equal => rhv == lhv,
-            Comparison::NotEqual => rhv != lhv,
+            Comparison::Greater => lhv > rhv,
+            Comparison::GreaterEqual => lhv >= rhv,
+            Comparison::Less => lhv < rhv,
+            Comparison::LessEqual => lhv <= rhv,
+            Comparison::Equal => lhv == rhv,
+            Comparison::NotEqual => lhv != rhv,
         }
     }
 }
@@ -366,6 +383,20 @@ impl Condition {
             expression_r: args[3].to_string(),
         })
     }
+    pub fn evaluate(&self, records: &HashMap<String, Record>, rand: &mut Random) -> bool {
+        if let Ok(ok) = evaluate_and_compare(
+            &self.expression_l,
+            &self.expression_r,
+            &self.comparison,
+            records,
+            rand,
+        ) {
+            ok
+        } else {
+            // TODO probably some error handling should be in order here
+            false
+        }
+    }
 }
 impl Test {
     pub fn parse_from_string(text: String) -> Result<Test, ()> {
@@ -387,6 +418,24 @@ impl Test {
             success_result: args[4].to_string(),
             failure_result: args[5].to_string(),
         })
+    }
+    pub fn evaluate(&self, records: &HashMap<String, Record>, rand: &mut Random) -> &String {
+        if let Ok(ok) = evaluate_and_compare(
+            &self.expression_l,
+            &self.expression_r,
+            &self.comparison,
+            records,
+            rand,
+        ) {
+            if ok {
+                &self.success_result
+            } else {
+                &self.failure_result
+            }
+        } else {
+            // TODO do proper error handling
+            panic!("Invalid evaluation of test {}", self.name);
+        }
     }
 }
 impl StoryResult {
@@ -427,17 +476,14 @@ impl Record {
                 true => args[1].to_string(),
                 false => String::new(),
             },
-            value: 0.0,
+            value: 0,
         })
+    }
+    pub fn value_as_string(&self) -> String {
+        (self.value as i32).to_string()
     }
 }
 impl Name {
-    pub fn new() -> Name {
-        Name {
-            keyword: String::new(),
-            value: String::new(),
-        }
-    }
     pub fn parse_from_string(text: String) -> Result<Name, ()> {
         let args: Vec<&str> = text
             .split(";")
@@ -455,7 +501,7 @@ impl Name {
             value: match len == 2 {
                 true => args[1].to_string(),
                 false => String::new(),
-            }
+            },
         })
     }
 }
@@ -467,7 +513,7 @@ mod tests {
 
     use crate::adventure::Comparison;
 
-    use super::{Choice, Condition, Record, StoryResult, Test, Page, Adventure};
+    use super::{Adventure, Choice, Condition, Page, Record, StoryResult, Test};
 
     #[test]
     fn record_parse() {
@@ -621,17 +667,47 @@ result: coward; confidence; -1; coward_scene;".to_string();
 description: This is a story about a knight who faces a dragon to save the princess
 start: at_the_castle_ruins
 record: confidence; attributes;
-record: stuffed animals; resources;".to_string();
+record: stuffed animals; resources;"
+            .to_string();
         let adventure = Adventure::parse_from_string(data, "damsel".to_string()).unwrap();
 
         assert_eq!(adventure.title, "Damsel in Distress");
-        assert_eq!(adventure.description, "This is a story about a knight who faces a dragon to save the princess");
+        assert_eq!(
+            adventure.description,
+            "This is a story about a knight who faces a dragon to save the princess"
+        );
         assert_eq!(adventure.start, "at_the_castle_ruins");
         assert_eq!(adventure.records.len(), 2);
 
-        assert_eq!(adventure.records[0].name, "confidence");
-        assert_eq!(adventure.records[0].category, "attributes");
-        assert_eq!(adventure.records[1].name, "stuffed animals");
-        assert_eq!(adventure.records[1].category, "resources");
+        let con = adventure.records.get("confidence").unwrap();
+        let stuff = adventure.records.get("stuffed animals").unwrap();
+        assert_eq!(con.name, "confidence");
+        assert_eq!(con.category, "attributes");
+        assert_eq!(stuff.name, "stuffed animals");
+        assert_eq!(stuff.category, "resources");
+    }
+    #[test]
+    fn comparison_greater() {
+        assert!(Comparison::Greater.compare(20, 10));
+    }
+    #[test]
+    fn comparison_greater_equal() {
+        assert!(Comparison::GreaterEqual.compare(10, 10));
+    }
+    #[test]
+    fn comparison_less() {
+        assert!(Comparison::Less.compare(10, 20));
+    }
+    #[test]
+    fn comparison_less_equal() {
+        assert!(Comparison::LessEqual.compare(10, 10));
+    }
+    #[test]
+    fn comparison_equal() {
+        assert!(Comparison::Equal.compare(10, 10));
+    }
+    #[test]
+    fn comparison_not_equal() {
+        assert!(Comparison::NotEqual.compare(10, 20));
     }
 }
