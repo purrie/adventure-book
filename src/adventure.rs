@@ -390,19 +390,18 @@ impl Condition {
             expression_r: args[3].to_string(),
         })
     }
-    pub fn evaluate(&self, records: &HashMap<String, Record>, rand: &mut Random) -> bool {
-        if let Ok(ok) = evaluate_and_compare(
+    pub fn evaluate(
+        &self,
+        records: &HashMap<String, Record>,
+        rand: &mut Random,
+    ) -> Result<bool, String> {
+        evaluate_and_compare(
             &self.expression_l,
             &self.expression_r,
             &self.comparison,
             records,
             rand,
-        ) {
-            ok
-        } else {
-            // TODO probably some error handling should be in order here
-            false
-        }
+        )
     }
 }
 impl Test {
@@ -426,22 +425,22 @@ impl Test {
             failure_result: args[5].to_string(),
         })
     }
-    pub fn evaluate(&self, records: &HashMap<String, Record>, rand: &mut Random) -> &String {
-        if let Ok(ok) = evaluate_and_compare(
+    pub fn evaluate(&self, records: &HashMap<String, Record>, rand: &mut Random) -> Result<&String, String> {
+        match evaluate_and_compare(
             &self.expression_l,
             &self.expression_r,
             &self.comparison,
             records,
             rand,
         ) {
-            if ok {
-                &self.success_result
-            } else {
-                &self.failure_result
-            }
-        } else {
-            // TODO do proper error handling
-            panic!("Invalid evaluation of test {}", self.name);
+            Ok(v) => {
+                if v {
+                    Ok(&self.success_result)
+                } else {
+                    Ok(&self.failure_result)
+                }
+            },
+            Err(e) => Err(e)
         }
     }
 }
@@ -481,7 +480,7 @@ impl Record {
                 name = args[0].to_string();
                 category = String::new();
                 value = 0;
-            },
+            }
             2 => {
                 name = args[0].to_string();
                 if let Ok(n) = args[1].parse() {
@@ -491,7 +490,7 @@ impl Record {
                     value = 0;
                     category = args[1].to_string();
                 }
-            },
+            }
             3 => {
                 name = args[0].to_string();
                 category = args[1].to_string();
@@ -500,7 +499,7 @@ impl Record {
                 } else {
                     return Err(());
                 }
-            },
+            }
             _ => return Err(()),
         }
         Ok(Record {

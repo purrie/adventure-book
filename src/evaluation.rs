@@ -7,14 +7,18 @@ use crate::adventure::{Comparison, Record};
 ///
 /// # Errors
 /// If the expression can't be evaluated or contains undefined records or calculations then an error will be returned instead.
-pub fn evaluate_expression(exp: &str, records: &HashMap<String, Record>, rand: &mut Random) -> Result<i32, ()> {
+pub fn evaluate_expression(
+    exp: &str,
+    records: &HashMap<String, Record>,
+    rand: &mut Random,
+) -> Result<i32, String> {
     let tokens: Vec<&str> = exp.split_inclusive(&['+', '-', '*', '/'][..]).collect();
     // this function evaluates name of a record into its value, it defaults to 0 on records not found
     // Although, record not found should probably result in an error instead of 0
     let eval_rec = |x: &str| {
         let expected = x.replace("[", "").replace("]", "");
-        if records.contains_key(&expected) {
-            return records.get(&expected).unwrap().value_as_string();
+        if let Some(v) = records.get(&expected) {
+            return v.value_as_string();
         }
         return "0".to_string();
     };
@@ -25,19 +29,37 @@ pub fn evaluate_expression(exp: &str, records: &HashMap<String, Record>, rand: &
         if let Some(p) = pool {
             cut.push(p);
         }
+        let mut err = String::new();
         let r: Vec<i32> = x
             .split(&cut[..])
-            .map(|x| x.parse::<i32>().unwrap())
+            .map(|x| {
+                if let Ok(ok) = x.parse() {
+                    ok
+                } else {
+                    err = format!("Couldn't process {}", x);
+                    0
+                }
+            })
             .collect();
+
+        if err.len() > 0 {
+            return Err(err);
+        }
 
         // need the result to be 2 or 3 parts, any other is an error
         if pool == None {
             if r.len() != 2 {
-                return Err(());
+                return Err(format!(
+                    "Die roll evaluation needs a die expression, like '1d6', got '{}' instead.",
+                    x
+                ));
             }
         } else {
             if r.len() != 3 {
-                return Err(());
+                return Err(format!(
+                    "Dice pool evaluation needs a die expression, like '4d6p4', got '{}' instead.",
+                    x
+                ));
             }
         }
 
@@ -67,7 +89,7 @@ pub fn evaluate_expression(exp: &str, records: &HashMap<String, Record>, rand: &
             if let Ok(v) = x.parse() {
                 return Ok(v);
             } else {
-                return Err(());
+                return Err(format!("{} doesn't appear to be a valid number", x));
             }
         }
         if x.contains('p') {
@@ -78,11 +100,7 @@ pub fn evaluate_expression(exp: &str, records: &HashMap<String, Record>, rand: &
             ev2 = None;
         }
 
-        if let Ok(evaluated) = eval_die(x, ev1, ev2) {
-            return Ok(evaluated);
-        } else {
-            return Err(());
-        }
+        eval_die(x, ev1, ev2)
     };
 
     let mut ops = Vec::new();
@@ -160,15 +178,13 @@ pub fn evaluate_expression(exp: &str, records: &HashMap<String, Record>, rand: &
                     next.replace_range(next.len() - 1..next.len(), "");
                 }
                 // evaluating expressions into their values
-                if let Ok(this_ev) = eval_exp(&this) {
-                    this_value = this_ev;
-                } else {
-                    return Err(());
+                match eval_exp(&this) {
+                    Ok(v) => this_value = v,
+                    Err(e) => return Err(e),
                 }
-                if let Ok(next_ev) = eval_exp(&next) {
-                    next_value = next_ev;
-                } else {
-                    return Err(());
+                match eval_exp(&next) {
+                    Ok(v) => next_value = v,
+                    Err(e) => return Err(e),
                 }
                 // now we obtain the final result
                 let res = match hi_or_lo {
@@ -186,10 +202,9 @@ pub fn evaluate_expression(exp: &str, records: &HashMap<String, Record>, rand: &
                 }
             }
         } else {
-            if let Ok(v) = eval_exp(&exp) {
-                ops.push((v, op, op_priority));
-            } else {
-                return Err(());
+            match eval_exp(&exp) {
+                Ok(v) => ops.push((v, op, op_priority)),
+                Err(e) => return Err(e),
             }
         }
     }
@@ -235,13 +250,18 @@ pub fn evaluate_and_compare(
     comp: &Comparison,
     records: &HashMap<String, Record>,
     rand: &mut Random,
-) -> Result<bool, ()> {
-    if let Ok(l) = evaluate_expression(lhe, records, rand) {
-        if let Ok(r) = evaluate_expression(rhe, records, rand) {
-            return Ok(comp.compare(l, r));
-        }
+) -> Result<bool, String> {
+    let l;
+    let r;
+    match evaluate_expression(lhe, records, rand) {
+        Ok(v) => l = v,
+        Err(e) => return Err(e),
     }
-    Err(())
+    match evaluate_expression(rhe, records, rand) {
+        Ok(v) => r = v,
+        Err(e) => return Err(e),
+    }
+    return Ok(comp.compare(l, r));
 }
 
 /// First value is the next page name, second is a list of record changes
@@ -250,7 +270,11 @@ type EvaluatedResult = Result<(String, Option<HashMap<String, i32>>), ()>;
 ///
 /// Returned tuple contains name of the next story page to move to
 /// and an optional list of name-value pairs for story records to modify by
-pub fn evaluate_result(res: &String, records: &HashMap<String, Record>, rand: &mut Random) -> EvaluatedResult {
+pub fn evaluate_result(
+    res: &String,
+    records: &HashMap<String, Record>,
+    rand: &mut Random,
+) -> EvaluatedResult {
     let mut args: VecDeque<&str> = res
         .split(";")
         .map(|x| x.trim())
@@ -581,7 +605,7 @@ mod tests {
     #[test]
     fn evaluate_result_die() {
         let mut rand = Random::new(69420);
-        let mut test =Random::new(69420);
+        let mut test = Random::new(69420);
         let records = HashMap::<String, Record>::new();
 
         let s = "strength; 1d6; next scene;".to_string();

@@ -16,7 +16,7 @@ pub fn render_page(
     adventure: &Adventure,
     page_name: &String,
     rand: &mut Random,
-) -> Page {
+) -> Result<Page, String> {
     let page;
     match read_page(&adventure.path, page_name) {
         Ok(p) => page = p,
@@ -26,12 +26,16 @@ pub fn render_page(
         }
     }
     let story = parse_story_text(&page.story, &adventure.records, &adventure.names);
-    let choices = parse_choices(&page.choices, &page.conditions, &adventure.records, rand);
+    let choices;
+    match parse_choices(&page.choices, &page.conditions, &adventure.records, rand) {
+        Ok(v) => choices = v,
+        Err(e) => return Err(e),
+    }
 
     main_window.game_window.fill_choices(choices);
     main_window.game_window.display_story(story);
     main_window.game_window.update_records(&adventure.records);
-    page
+    Ok(page)
 }
 /// Parses supplied text and returns string with tags replaced with their values as found in records and names maps
 fn parse_story_text(
@@ -64,13 +68,16 @@ fn parse_choices(
     conditions: &HashMap<String, Condition>,
     records: &HashMap<String, Record>,
     rand: &mut Random,
-) -> Vec<(bool, String)> {
+) -> Result<Vec<(bool, String)>, String> {
     let mut res = Vec::new();
     for choice in choices.iter() {
         let enabled;
         if choice.has_condition() {
             if let Some(con) = conditions.get(&choice.condition) {
-                enabled = con.evaluate(records, rand);
+                match con.evaluate(records, rand) {
+                    Ok(v) => enabled = v,
+                    Err(e) => return Err(e),
+                }
             } else {
                 // TODO probably error handlign in case condition doesn't exist
                 enabled = false;
@@ -81,7 +88,7 @@ fn parse_choices(
         res.push((enabled, choice.text.clone()));
     }
 
-    res
+    Ok(res)
 }
 
 #[derive(Clone)]
@@ -161,7 +168,7 @@ mod tests {
         let records = HashMap::new();
         let mut rand = Random::new(69420);
 
-        let res = parse_choices(&choices, &conditions, &records, &mut rand);
+        let res = parse_choices(&choices, &conditions, &records, &mut rand).unwrap();
         for r in res {
             assert!(r.0);
             assert_eq!(r.1, "Choose".to_string());
@@ -192,7 +199,7 @@ mod tests {
         );
         let records = HashMap::new();
 
-        let res = parse_choices(&choices, &conditions, &records, &mut rand);
+        let res = parse_choices(&choices, &conditions, &records, &mut rand).unwrap();
         for r in res {
             assert_eq!(r.0, lv > rv);
             assert_eq!(r.1, "Choose".to_string());

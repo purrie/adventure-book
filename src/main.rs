@@ -80,12 +80,15 @@ fn main() {
                 // Enters gameplay screen and starts a new game
                 Event::StartAdventure => {
                     active_storybook = adventures[selected_adventure].clone();
-                    active_page = render_page(
+                    match render_page(
                         &mut main_window,
                         &active_storybook,
                         &active_storybook.start,
                         &mut rng,
-                    );
+                    ) {
+                        Ok(v) => active_page = v,
+                        Err(e) => panic!("{e}")
+                    }
                     main_window.switch_to_game();
                 }
                 // Result of a choice button in gameplay screen, parses the choice and enters another storybook page into the screen
@@ -108,7 +111,12 @@ fn main() {
                             }
                         } else {
                             if let Some(test) = &active_page.tests.get(&choice.test) {
-                                let tres = test.evaluate(&active_storybook.records, &mut rng);
+                                let tres;
+                                match test.evaluate(&active_storybook.records, &mut rng) {
+                                    Ok(v) => tres = v,
+                                    Err(e) => panic!("{e}"),
+                                }
+
                                 if let Some(res) = active_page.results.get(tres) {
                                     result = res;
                                 } else {
@@ -139,12 +147,15 @@ fn main() {
                                 }
                             }
                             // now we move on to the next scene
-                            active_page = render_page(
+                            match render_page(
                                 &mut main_window,
                                 &active_storybook,
                                 &evaluated_result.0,
                                 &mut rng,
-                            );
+                            ) {
+                                Ok(v) => active_page = v,
+                                Err(e) => panic!("{e}")
+                            }
                         } else {
                             // TODO handle this better
                             panic!(
