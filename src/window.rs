@@ -292,6 +292,7 @@ impl GameWindow {
         for choice in choices {
             self.choices.add_choice(&choice.1, choice.0);
         }
+        self.choices.window.redraw();
     }
 }
 impl RecordWindow {
