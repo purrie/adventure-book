@@ -466,17 +466,40 @@ impl Record {
             .collect();
 
         let len = args.len();
-        if len == 0 || len > 2 {
-            return Err(());
-        }
-
-        Ok(Record {
-            name: args[0].to_string(),
-            category: match len == 2 {
-                true => args[1].to_string(),
-                false => String::new(),
+        let name;
+        let category;
+        let value;
+        match len {
+            1 => {
+                name = args[0].to_string();
+                category = String::new();
+                value = 0;
             },
-            value: 0,
+            2 => {
+                name = args[0].to_string();
+                if let Ok(n) = args[1].parse() {
+                    value = n;
+                    category = String::new();
+                } else {
+                    value = 0;
+                    category = args[1].to_string();
+                }
+            },
+            3 => {
+                name = args[0].to_string();
+                category = args[1].to_string();
+                if let Ok(n) = args[2].parse() {
+                    value = n;
+                } else {
+                    return Err(());
+                }
+            },
+            _ => return Err(()),
+        }
+        Ok(Record {
+            name,
+            category,
+            value,
         })
     }
     pub fn value_as_string(&self) -> String {
