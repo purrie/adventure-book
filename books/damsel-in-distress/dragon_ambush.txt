@@ -5,4 +5,4 @@ choice: Block with your shield! {test: block}
 test: block; 1d20; <; 1d20; win; loss;
 result: double kill; both_dead;
 result: win; facing_the_dragon;
-result: loss; defeat;
+result: loss; defeated_by_dragon;

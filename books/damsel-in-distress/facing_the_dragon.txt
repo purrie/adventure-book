@@ -4,7 +4,7 @@ choice: Fight fairly. {test: fight}
 choice: Fight dirty. {test: dirty}
 choice: Seduce the dragon. {condition: suave} {test: charm}
 condition: suave; [confidence]; >=; 1;
-test: charm; 1d20; <; 1d10+[confidence]; charmed; defeat;
+test: charm; 1d20; <; 1d10+[confidence]; charm; defeat;
 test: fight; 1d20; <; 1d10+[confidence]; victory; defeat;
 test: dirty; 1d20; <; 10-1d6+1d6; victory; defeat;
 result: victory; princess_rescued;

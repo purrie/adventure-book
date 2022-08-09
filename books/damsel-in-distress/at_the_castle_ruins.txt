@@ -4,7 +4,7 @@ choice: Announce your presence to the dragon! {test: bravery}
 choice: Sneak in. {result: sneaking}
 choice: Run away! {result: coward}
 test: bravery; 1d20; <; 10+[confidence]; proceed; tough fight;
-result: proceed; ability; confidence; 1; facing_the_dragon;
+result: proceed; confidence; 1; facing_the_dragon;
 result: tough fight; dragon_ambush;
 result: sneaking; skulking_in;
 result: coward; cowardly_retreat;
