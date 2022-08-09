@@ -256,7 +256,11 @@ impl Page {
             return false;
         }
         if self.results.len() < 1 {
-            return false;
+            for choice in self.choices.iter() {
+                if choice.is_game_over() == false {
+                    return false;
+                }
+            }
         }
         true
     }
@@ -331,6 +335,9 @@ impl Choice {
     /// Will return false if it leads to a test instead
     pub fn is_constant(&self) -> bool {
         self.result.len() > 0
+    }
+    pub fn is_game_over(&self) -> bool {
+        self.result == "game over"
     }
     pub fn has_condition(&self) -> bool {
         self.condition.len() > 0
