@@ -18,14 +18,12 @@ pub fn render_page(
     rand: &mut Random,
 ) -> Page {
     let page;
-    if let Ok(p) = read_page(&adventure.path, page_name) {
-        page = p;
-    } else {
-        // TODO panic for now, replace with proper error handling later
-        panic!(
-            "Adventure {} or its starting page is corrupted!",
-            adventure.title
-        );
+    match read_page(&adventure.path, page_name) {
+        Ok(p) => page = p,
+        Err(e) => {
+            // TODO do proper error handling
+            panic!("Page {} of {} failed to load due to: {}", page_name, adventure.title, e);
+        }
     }
     let story = parse_story_text(&page.story, &adventure.records, &adventure.names);
     let choices = parse_choices(&page.choices, &page.conditions, &adventure.records, rand);

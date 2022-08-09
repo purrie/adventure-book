@@ -74,30 +74,30 @@ pub fn capture_adventures() -> Vec<Adventure> {
 /// name: this is a name of the page
 ///
 /// The function automatically applies expected extension to the page name
-pub fn read_page(path: &String, name: &String) -> Result<Page, ()> {
+pub fn read_page(path: &String, name: &String) -> Result<Page, String> {
     let mut path_to_file = PathBuf::new();
     path_to_file.push(path);
     path_to_file.push(name);
     path_to_file.set_extension("txt");
 
     if path_to_file.exists() == false {
-        return Err(());
+        return Err(format!("Page '{}' doesn't exist", name));
     }
 
     // opening the file
     let mut p = match File::open(path_to_file.as_path()) {
-        Err(_) => return Err(()),
+        Err(_) => return Err(format!("Failed to open page {}", name)),
         Ok(f) => f,
     };
 
     // reading file's contents, in case it fails then we return error
     let mut text = String::new();
     if let Err(_) = p.read_to_string(&mut text) {
-        return Err(());
+        return Err(format!("Failed to read page {}", name));
     }
 
     match Page::parse_from_string(text) {
-        Err(_) => return Err(()),
+        Err(e) => return Err(e),
         Ok(p) => return Ok(p),
     }
 }

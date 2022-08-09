@@ -167,7 +167,7 @@ impl Page {
     }
 
     /// Parses string into Page. It will return error if the text isn't valid page
-    pub fn parse_from_string(text: String) -> Result<Page, ()> {
+    pub fn parse_from_string(text: String) -> Result<Page, String> {
         // creating empty page to populate
         let mut page = Page::new();
 
@@ -179,7 +179,7 @@ impl Page {
         let match_result = Regex::new(REGEX_RESULT_IN_CHOICE).unwrap();
 
         let mut story_line = false;
-        for line in lines {
+        for (i, line) in lines.enumerate() {
             // the flag marks if we're at a story line, this allows story lines to be broken up into multiple lines later on
 
             if line.starts_with("title:") {
@@ -204,7 +204,7 @@ impl Page {
                 if let Ok(c) = cho {
                     page.choices.push(c);
                 } else {
-                    return Err(());
+                    return Err(format!("Failed to load choice on line {}", i));
                 }
             } else if line.starts_with("condition:") {
                 story_line = false;
@@ -215,7 +215,7 @@ impl Page {
                 if let Ok(c) = con {
                     page.conditions.insert(c.name.clone(), c);
                 } else {
-                    return Err(());
+                    return Err(format!("Failed to load choice on line {}", i));
                 }
             } else if line.starts_with("test:") {
                 story_line = false;
@@ -225,7 +225,7 @@ impl Page {
                 if let Ok(t) = test {
                     page.tests.insert(t.name.clone(), t);
                 } else {
-                    return Err(());
+                    return Err(format!("Failed to load test on line {}", i));
                 }
             } else if line.starts_with("result:") {
                 story_line = false;
@@ -235,7 +235,7 @@ impl Page {
                 if let Ok(r) = res {
                     page.results.insert(r.name.clone(), r);
                 } else {
-                    return Err(());
+                    return Err(format!("Failed to load result on line {}", i));
                 }
             } else if story_line {
                 // adding a line to story if it's immediately after story keyword and doesn't match any other keywords
@@ -245,7 +245,7 @@ impl Page {
         if page.is_valid() {
             Ok(page)
         } else {
-            Err(())
+            Err(format!("Page didn't load correctly"))
         }
     }
     pub fn is_valid(&self) -> bool {
