@@ -1,4 +1,3 @@
 title: Retreat!
 story: You're not sure why you're even here. It's princess' fault for getting kidnapped, she shouldn't have been a princess, the dragon then wouldn't care about her! You run out of there, leaving the princess to rescue herself.
-choice: Going far away... {result: run}
-result: run; end;
+choice: Going far away... {result: game over}

@@ -1,3 +1,4 @@
 title: Victory, but at what cost...
 story: Dragon's claw pierces your chest through. Your vision blurs and you cough blood. The dragon brings you up to its maw to deliver the final blow, but in that moment you swing your sword and pierce beast's head through its eye. The dragon flies into rage, tosses you away and grasps onto its bleeding head, but it's too late, for both you and the beast. You watch each other as life bleeds out of both of you, observing each other final moment of life.
 In the end, you managed to save the princess but you weren't there to celebrate the achievement.
+choice: Unfortunate {result: game over}

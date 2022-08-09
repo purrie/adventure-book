@@ -1,4 +1,3 @@
 title: Pricess Rescued
 story: Through your prowess you manage to defeat the dragon and free the princess from her shackless.
-choice: Congratulations! You've won! {result: win}
-result: win; end;
+choice: Congratulations! You've won! {result: game over}
