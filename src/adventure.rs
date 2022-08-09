@@ -116,7 +116,7 @@ impl Adventure {
                 }
             } else if line.starts_with("name:") {
                 flag = 0;
-                let text = line.replacen("record:", "", 1);
+                let text = line.replacen("name:", "", 1);
                 if let Ok(name) = Name::parse_from_string(text) {
                     adv.names.insert(name.keyword.clone(), name);
                 } else {
