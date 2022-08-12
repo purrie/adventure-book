@@ -1,8 +1,7 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use fltk::{
     app,
-    browser::SelectBrowser,
     button::Button,
     draw::Rect,
     frame::Frame,
@@ -11,9 +10,12 @@ use fltk::{
     text::{TextBuffer, TextDisplay},
 };
 
-use crate::adventure::Record;
-use crate::{adventure::Adventure, widgets::TextRenderer};
-use crate::{file::get_image_png, game::Event};
+use crate::{
+    adventure::{Adventure, Record},
+    file::get_image_png,
+    game::Event,
+    widgets::{Selector, TextRenderer},
+};
 
 pub struct MainWindow {
     pub main_menu: MainMenu,
@@ -25,7 +27,7 @@ pub struct MainMenu {
     adventure_choice: Group,
     adventure_title: Label,
     adventure_description: TextRenderer,
-    adventure_picker: SelectBrowser,
+    adventure_picker: Rc<RefCell<Selector>>,
 }
 pub struct GameWindow {
     game_window: Group,
@@ -140,8 +142,7 @@ impl MainMenu {
             "",
         );
 
-        let mut picker =
-            SelectBrowser::new(middle_border, top_border, half_width, chooser_height, "");
+        let picker = Selector::new(middle_border, top_border, half_width, chooser_height);
 
         let mut back = Button::new(
             left_border + horizontal_margin,
@@ -163,9 +164,13 @@ impl MainMenu {
         quit_but.emit(send.clone(), Event::Quit);
         accept.emit(send.clone(), Event::StartAdventure);
 
-        picker.set_callback(move |x| {
-            if let Some(txt) = x.selected_text() {
-                send.send(Event::SelectAdventure(txt));
+        let picker = Rc::new(RefCell::new(picker));
+        picker.borrow_mut().set_callback({
+            let picker: Rc<RefCell<Selector>> = Rc::clone(&picker);
+            move |_| {
+                if let Some(txt) = picker.borrow().selected_text() {
+                    send.send(Event::SelectAdventure(txt));
+                }
             }
         });
 
@@ -201,9 +206,9 @@ impl MainMenu {
     }
     /// Fills chooser control with adventures to choose from
     pub fn fill_adventure_choices(&mut self, adventures: &Vec<Adventure>) {
-        self.adventure_picker.clear();
+        self.adventure_picker.borrow_mut().clear();
         for adv in adventures {
-            self.adventure_picker.add(&adv.title);
+            self.adventure_picker.borrow_mut().add(adv.title.clone());
         }
     }
 }
