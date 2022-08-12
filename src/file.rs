@@ -1,3 +1,5 @@
+use fltk::image::PngImage;
+
 use crate::adventure::*;
 
 use std::fs::{read_dir, File};
@@ -5,19 +7,25 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::vec::Vec;
 
+// expected paths where adventure data is stored
+macro_rules! paths {
+    ($path:expr) => {
+        [
+            ["$Home", ".local", "share", "adventure-book", $path].iter().collect::<PathBuf>(),
+            ["usr", "share", "adventure-book", $path].iter().collect::<PathBuf>(),
+            [".", "data", $path].iter().collect::<PathBuf>(),
+        ]
+
+    };
+}
+
 /// Iterates over folders with adventure data and collects all possible adventures to run
 pub fn capture_adventures() -> Vec<Adventure> {
     let mut ret = Vec::<Adventure>::new();
 
-    // expected paths where adventure data is stored
-    let paths = [
-        "$HOME/.local/share/adventure-book/",
-        "/usr/share/adventure-book/",
-        "./books/",
-    ];
 
     // going over the paths
-    for path in paths {
+    for path in paths!("books") {
         // reading all the directories on path
         if let Ok(it) = read_dir(path) {
             // going over directories, those are adventure folders
@@ -102,3 +110,15 @@ pub fn read_page(path: &String, name: &String) -> Result<Page, String> {
     }
 }
 
+pub fn get_image_png(name: &str) -> Result<PngImage, String> {
+    for mut path in paths!("images") {
+        path.push(name);
+        if path.exists() {
+            match PngImage::load(path) {
+                Ok(v) => return Ok(v),
+                Err(e) => return Err(format!("Couldn't load {}, {}", name, e)),
+            }
+        }
+    }
+    Err(format!("File {} not found", name))
+}
