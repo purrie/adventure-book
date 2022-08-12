@@ -11,9 +11,9 @@ use fltk::{
     text::{TextBuffer, TextDisplay},
 };
 
-use crate::game::Event;
 use crate::adventure::Record;
-use crate::adventure::Adventure;
+use crate::{adventure::Adventure, widgets::TextRenderer};
+use crate::{file::get_image_png, game::Event};
 
 pub struct MainWindow {
     pub main_menu: MainMenu,
@@ -24,7 +24,7 @@ pub struct MainMenu {
     start_menu: Group,
     adventure_choice: Group,
     adventure_title: Label,
-    adventure_description: TextDisplay,
+    adventure_description: TextRenderer,
     adventure_picker: SelectBrowser,
 }
 pub struct GameWindow {
@@ -57,12 +57,10 @@ impl MainWindow {
     /// window_area: size and position of the window
     /// ui_area: area within the window that will be used for placing the controls
     pub fn create(ui_area: Rect) -> MainWindow {
-
         let main_menu = MainMenu::create(ui_area);
 
         let mut game_window = GameWindow::create(ui_area);
         game_window.hide();
-
 
         MainWindow {
             main_menu,
@@ -97,6 +95,12 @@ impl MainMenu {
         let group = Group::new(area.x, area.y, area.w, area.h, "");
 
         let main = Group::default().size_of_parent();
+        if let Ok(image) = get_image_png("title.png") {
+            let mut background = Frame::default().size_of_parent();
+            background.set_image_scaled(Some(image));
+        }
+        let mut title = Frame::new(area.w / 2 - 100 + area.x, 150, 200, 40, "Adventure Book");
+        title.set_label_size(20);
         let but_x = area.w / 2 - 50 + area.x;
         let but_y = area.h / 2 - 50 + area.y;
         let mut new_but = Button::new(but_x, but_y, 100, 20, "New Game");
@@ -105,14 +109,19 @@ impl MainMenu {
 
         let mut starting = Group::default().size_of_parent();
 
-        let horizontal_margin = 50;
+        if let Ok(image) = get_image_png("choice.png") {
+            let mut background = Frame::default().size_of_parent();
+            background.set_image_scaled(Some(image));
+        }
+        let horizontal_margin = 80;
         let vertical_margin = 100;
 
         let left_border = area.x + horizontal_margin;
+        let half_width = area.w / 2 - horizontal_margin - horizontal_margin / 2;
+        let middle_border = area.w / 2 + horizontal_margin / 2;
+
         let top_border = area.y + vertical_margin;
-        let half_width = area.w / 2 - horizontal_margin * 2;
         let chooser_height = area.h - vertical_margin * 2;
-        let middle_border = area.w / 2 + horizontal_margin;
         let bottom_border = area.h - vertical_margin / 2;
 
         let title = Label::new(
@@ -122,18 +131,14 @@ impl MainMenu {
             20,
             "Select the Adventure",
         );
-        let mut desc_buffer = TextBuffer::default();
-        desc_buffer.set_text("");
 
-        let mut description = TextDisplay::new(
+        let description = TextRenderer::new(
             left_border,
             top_border + 30,
             half_width,
             chooser_height - 30,
             "",
         );
-        description.set_buffer(desc_buffer);
-        description.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
 
         let mut picker =
             SelectBrowser::new(middle_border, top_border, half_width, chooser_height, "");
@@ -192,11 +197,7 @@ impl MainMenu {
     /// Fills adventure information preview area with supplied adventure data
     pub fn set_adventure_preview_text(&mut self, adventure: &Adventure) {
         self.adventure_title.set_label(&adventure.title);
-        self.adventure_description
-            .buffer()
-            .as_mut()
-            .unwrap()
-            .set_text(&adventure.description);
+        self.adventure_description.set_text(&adventure.description);
     }
     /// Fills chooser control with adventures to choose from
     pub fn fill_adventure_choices(&mut self, adventures: &Vec<Adventure>) {
@@ -276,10 +277,10 @@ impl GameWindow {
     ///
     /// don't call more than once per game
     /// use update_records to update the screen
-    pub fn fill_records(&mut self, records: &Vec<Record>) {
+    pub fn fill_records(&mut self, records: &HashMap<String, Record>) {
         self.records.clear();
         for rec in records.iter() {
-            self.records.add_record(rec);
+            self.records.add_record(rec.1);
         }
     }
     /// Updates choices window
@@ -316,14 +317,6 @@ impl RecordWindow {
             window,
             categories: HashMap::new(),
         }
-    }
-    /// Shows the categories and records
-    fn show(&mut self) {
-        self.window.show();
-    }
-    /// Hides the categories and records
-    fn hide(&mut self) {
-        self.window.hide();
     }
     /// Removes all group and record displays
     fn clear(&mut self) {
@@ -424,9 +417,5 @@ impl StoryWindow {
     /// Sets text to the display
     fn set_text(&mut self, text: &str) {
         self.text.buffer().as_mut().unwrap().set_text(text);
-    }
-    /// Removes all text from the display
-    fn clear_text(&mut self) {
-        self.text.buffer().as_mut().unwrap().set_text("");
     }
 }

@@ -18,6 +18,7 @@ mod adventure;
 mod evaluation;
 mod file;
 mod game;
+mod widgets;
 mod window;
 
 fn main() {
@@ -80,6 +81,7 @@ fn main() {
                 // Enters gameplay screen and starts a new game
                 Event::StartAdventure => {
                     active_storybook = adventures[selected_adventure].clone();
+                    main_window.game_window.fill_records(&active_storybook.records);
                     match render_page(
                         &mut main_window,
                         &active_storybook,
