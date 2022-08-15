@@ -34,6 +34,7 @@ fn main() {
         window_size.h,
         "Adventure Book",
     );
+    window.make_resizable(true);
 
     let mut main_window = MainWindow::create(window_size);
 

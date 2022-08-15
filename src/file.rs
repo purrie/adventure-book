@@ -11,18 +11,20 @@ use std::vec::Vec;
 macro_rules! paths {
     ($path:expr) => {
         [
-            ["$Home", ".local", "share", "adventure-book", $path].iter().collect::<PathBuf>(),
-            ["usr", "share", "adventure-book", $path].iter().collect::<PathBuf>(),
+            ["$Home", ".local", "share", "adventure-book", $path]
+                .iter()
+                .collect::<PathBuf>(),
+            ["usr", "share", "adventure-book", $path]
+                .iter()
+                .collect::<PathBuf>(),
             [".", "data", $path].iter().collect::<PathBuf>(),
         ]
-
     };
 }
 
 /// Iterates over folders with adventure data and collects all possible adventures to run
 pub fn capture_adventures() -> Vec<Adventure> {
     let mut ret = Vec::<Adventure>::new();
-
 
     // going over the paths
     for path in paths!("books") {

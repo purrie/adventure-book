@@ -22,7 +22,10 @@ pub fn render_page(
         Ok(p) => page = p,
         Err(e) => {
             // TODO do proper error handling
-            panic!("Page {} of {} failed to load due to: {}", page_name, adventure.title, e);
+            panic!(
+                "Page {} of {} failed to load due to: {}",
+                page_name, adventure.title, e
+            );
         }
     }
     let story = parse_story_text(&page.story, &adventure.records, &adventure.names);
@@ -174,7 +177,7 @@ mod tests {
             assert_eq!(r.1, "Choose".to_string());
         }
     }
-#[test]
+    #[test]
     fn parsing_choices_expression() {
         let choices = vec![Choice {
             text: "Choose".to_string(),

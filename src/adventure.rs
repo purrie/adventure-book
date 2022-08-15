@@ -239,7 +239,7 @@ impl Page {
                 }
             } else if story_line {
                 // adding a line to story if it's immediately after story keyword and doesn't match any other keywords
-                page.story += line;
+                page.story = format!("{}\n\n{}", page.story, line);
             }
         }
         if page.is_valid() {
@@ -425,7 +425,11 @@ impl Test {
             failure_result: args[5].to_string(),
         })
     }
-    pub fn evaluate(&self, records: &HashMap<String, Record>, rand: &mut Random) -> Result<&String, String> {
+    pub fn evaluate(
+        &self,
+        records: &HashMap<String, Record>,
+        rand: &mut Random,
+    ) -> Result<&String, String> {
         match evaluate_and_compare(
             &self.expression_l,
             &self.expression_r,
@@ -439,8 +443,8 @@ impl Test {
                 } else {
                     Ok(&self.failure_result)
                 }
-            },
-            Err(e) => Err(e)
+            }
+            Err(e) => Err(e),
         }
     }
 }

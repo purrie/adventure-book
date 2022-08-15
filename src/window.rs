@@ -3,10 +3,13 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use fltk::{
     app,
     button::Button,
-    draw::{Rect, draw_text, push_clip, pop_clip, draw_text2},
+    draw::{draw_text, draw_text2, pop_clip, push_clip, Rect},
+    enums::Align,
     frame::Frame,
     group::{Group, Scroll},
-    prelude::*, widget::Widget, widget_extends, enums::Align,
+    prelude::*,
+    widget::Widget,
+    widget_extends,
 };
 
 use crate::{
@@ -91,9 +94,12 @@ impl MainMenu {
         let group = Group::new(area.x, area.y, area.w, area.h, "");
 
         let main = Group::default().size_of_parent();
-        if let Ok(image) = get_image_png("title.png") {
-            let mut background = Frame::default().size_of_parent();
-            background.set_image_scaled(Some(image));
+        if let Ok(mut image) = get_image_png("title.png") {
+            let mut img = Widget::default().size_of_parent();
+            img.draw(move |b| {
+                image.scale(b.width(), b.height(), false, true);
+                image.draw(b.x(), b.y(), b.width(), b.height());
+            });
         }
         let mut title = Frame::new(area.w / 2 - 100 + area.x, 150, 200, 40, "Adventure Book");
         title.set_label_size(20);
@@ -105,9 +111,12 @@ impl MainMenu {
 
         let mut starting = Group::default().size_of_parent();
 
-        if let Ok(image) = get_image_png("choice.png") {
-            let mut background = Frame::default().size_of_parent();
-            background.set_image_scaled(Some(image));
+        if let Ok(mut image) = get_image_png("choice.png") {
+            let mut img = Widget::default().size_of_parent();
+            img.draw(move |b| {
+                image.scale(b.width(), b.height(), false, true);
+                image.draw(b.x(), b.y(), b.width(), b.height());
+            });
         }
         let horizontal_margin = 80;
         let vertical_margin = 100;
@@ -243,9 +252,12 @@ impl GameWindow {
 
         let game_window = Group::new(area.x, area.y, area.w, area.h, "");
 
-        if let Ok(img) = get_image_png("story.png") {
-            let mut background = Frame::new(area.x, area.y, area.w, area.h, "");
-            background.set_image_scaled(Some(img));
+        if let Ok(mut image) = get_image_png("story.png") {
+            let mut img = Widget::default().size_of_parent();
+            img.draw(move |b| {
+                image.scale(b.width(), b.height(), false, true);
+                image.draw(b.x(), b.y(), b.width(), b.height());
+            });
         }
 
         let choices = ChoiceWindow::create(choice_area);
@@ -256,7 +268,6 @@ impl GameWindow {
         let (s, _r) = app::channel();
 
         butt.emit(s, Event::QuitToMainMenu);
-
 
         game_window.end();
 
@@ -316,7 +327,8 @@ impl RecordWindow {
         let categories = Rc::new(RefCell::new(HashMap::new()));
 
         widget.draw({
-            let categories : Rc<RefCell<HashMap<String, HashMap<String, i32>>>> = Rc::clone(&categories);
+            let categories: Rc<RefCell<HashMap<String, HashMap<String, i32>>>> =
+                Rc::clone(&categories);
             move |wid| {
                 let x = wid.x();
                 let y = wid.y();
@@ -327,7 +339,14 @@ impl RecordWindow {
                 let mut offset = font_size;
 
                 push_clip(x, y, w, h);
-                draw_text2("Story Records", x, y + offset, w - w/4, font_size, Align::Center);
+                draw_text2(
+                    "Story Records",
+                    x,
+                    y + offset,
+                    w - w / 4,
+                    font_size,
+                    Align::Center,
+                );
                 offset += font_size * 3;
                 for e in el.iter() {
                     draw_text(&e.0, x + 10, y + offset);
@@ -342,10 +361,7 @@ impl RecordWindow {
             }
         });
 
-        RecordWindow {
-            widget,
-            categories,
-        }
+        RecordWindow { widget, categories }
     }
     /// Removes all group and record displays
     fn clear(&mut self) {
@@ -370,7 +386,6 @@ impl RecordWindow {
         }
         cat.insert(record.name.clone(), record.value);
     }
-
 }
 impl ChoiceWindow {
     /// Creates empty choice menu
@@ -399,6 +414,19 @@ impl ChoiceWindow {
         butt.set_callback(move |_| {
             s.send(Event::StoryChoice(count as usize));
         });
+        butt.handle(|wid, ev| {
+            use fltk::enums::Event;
+            if let Event::Resize = ev {
+                let parent = wid.parent().unwrap();
+                let w = parent.w();
+                let h = wid.h();
+                wid.set_size(w, h);
+                wid.redraw();
+            }
+            // returning false because otherwise only the first button gets redrawn properly on resize
+            false
+        });
+
         self.window.add(&butt);
         if active {
             butt.activate();
@@ -416,7 +444,7 @@ impl StoryWindow {
     ///
     /// The story window is where the main story events are displayed
     fn create(area: Rect) -> Self {
-        let text = TextRenderer::new(area.x+30, area.y+100, area.w-80, area.h-100, "");
+        let text = TextRenderer::new(area.x + 30, area.y + 100, area.w - 80, area.h - 100, "");
 
         StoryWindow { text }
     }
