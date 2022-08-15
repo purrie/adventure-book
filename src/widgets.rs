@@ -38,7 +38,7 @@ impl TextRenderer {
                 push_clip(x, y, w, h);
                 for word in text.borrow().iter() {
                     let width = width(&word) as i32;
-                    if width + cursor_x > w {
+                    if width + cursor_x + whitespace_width > w {
                         cursor_x = 0;
                         line += size() + size() / 2;
                     }
@@ -55,7 +55,9 @@ impl TextRenderer {
             .split(&[' ', '\n'][..])
             .map(|x| x.to_string())
             .collect();
-        self.widget.redraw();
+        if let Some(mut p) = self.widget.parent() {
+            p.redraw();
+        }
     }
 }
 widget_extends!(TextRenderer, Widget, widget);
