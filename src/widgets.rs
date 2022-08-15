@@ -43,7 +43,11 @@ impl TextRenderer {
                         line += size() + size() / 2;
                     }
                     draw_text(&word, cursor_x + column_start, line);
-                    cursor_x += width + whitespace_width;
+                    if word.ends_with("\n") {
+                        cursor_x = 0;
+                        line += size() + size() / 2;
+                    }
+                    cursor_x += width;
                 }
                 pop_clip();
             }
@@ -52,7 +56,7 @@ impl TextRenderer {
     }
     pub fn set_text(&mut self, text: &str) {
         *self.text.borrow_mut() = text
-            .split(&[' ', '\n'][..])
+            .split_inclusive(&[' ', '\n'][..])
             .map(|x| x.to_string())
             .collect();
         if let Some(mut p) = self.widget.parent() {
@@ -80,6 +84,10 @@ impl Selector {
             let selected: Rc<RefCell<usize>> = Rc::clone(&selected);
             let highlight: Rc<RefCell<i32>> = Rc::clone(&highlight);
             move |wid| {
+                let x = wid.x();
+                let y = wid.y();
+                let w = wid.w();
+                let h = wid.h();
                 let opt = options.borrow();
                 let line_size = wid.label_size();
                 let margin = width(" ") as i32;
