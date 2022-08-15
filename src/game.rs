@@ -33,8 +33,8 @@ pub fn render_page(
     }
 
     main_window.game_window.fill_choices(choices);
+    main_window.game_window.fill_records(&adventure.records);
     main_window.game_window.display_story(story);
-    main_window.game_window.update_records(&adventure.records);
     Ok(page)
 }
 /// Parses supplied text and returns string with tags replaced with their values as found in records and names maps

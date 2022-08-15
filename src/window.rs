@@ -3,11 +3,10 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use fltk::{
     app,
     button::Button,
-    draw::Rect,
+    draw::{Rect, draw_text, push_clip, pop_clip, draw_text2},
     frame::Frame,
-    group::{Flex, Group, Scroll},
-    prelude::*,
-    text::{TextBuffer, TextDisplay},
+    group::{Group, Scroll},
+    prelude::*, widget::Widget, widget_extends, enums::Align,
 };
 
 use crate::{
@@ -36,19 +35,14 @@ pub struct GameWindow {
     choices: ChoiceWindow,
 }
 struct RecordWindow {
-    window: Flex,
-    categories: HashMap<String, RecordCategory>,
-}
-struct RecordCategory {
-    group: Flex,
-    entries: HashMap<String, Frame>,
+    widget: Widget,
+    categories: Rc<RefCell<HashMap<String, HashMap<String, i32>>>>,
 }
 struct ChoiceWindow {
     window: Scroll,
-    button_container: Flex,
 }
 struct StoryWindow {
-    text: TextDisplay,
+    text: TextRenderer,
 }
 
 type Label = Frame;
@@ -249,9 +243,20 @@ impl GameWindow {
 
         let game_window = Group::new(area.x, area.y, area.w, area.h, "");
 
+        if let Ok(img) = get_image_png("story.png") {
+            let mut background = Frame::new(area.x, area.y, area.w, area.h, "");
+            background.set_image_scaled(Some(img));
+        }
+
         let choices = ChoiceWindow::create(choice_area);
         let records = RecordWindow::create(record_area);
         let story = StoryWindow::create(story_area);
+
+        let mut butt = Button::new(record_area.x + 10, record_area.h - 30, 20, 20, "@<-");
+        let (s, _r) = app::channel();
+
+        butt.emit(s, Event::QuitToMainMenu);
+
 
         game_window.end();
 
@@ -270,22 +275,21 @@ impl GameWindow {
     fn hide(&mut self) {
         self.game_window.hide();
     }
+    /// fills the story window with provided text
     pub fn display_story(&mut self, story: String) {
         self.story.set_text(&story);
     }
-    pub fn update_records(&mut self, records: &HashMap<String, Record>) {
-        for rec in records.iter() {
-            self.records.update_record(rec.1);
-        }
+    /// Clears record window
+    pub fn clear_records(&mut self) {
+        self.records.clear();
     }
     /// Adds records to the record window
     ///
     /// don't call more than once per game
     /// use update_records to update the screen
     pub fn fill_records(&mut self, records: &HashMap<String, Record>) {
-        self.records.clear();
         for rec in records.iter() {
-            self.records.add_record(rec.1);
+            self.records.set_record(rec.1);
         }
     }
     /// Updates choices window
@@ -298,9 +302,9 @@ impl GameWindow {
         for choice in choices {
             self.choices.add_choice(&choice.1, choice.0);
         }
-        self.choices.window.redraw();
     }
 }
+widget_extends!(RecordWindow, Widget, widget);
 impl RecordWindow {
     /// Creates a new record window in provided area
     ///
@@ -308,68 +312,65 @@ impl RecordWindow {
     ///
     /// Record window also stores game specific buttons, like returning to main menu
     fn create(rect: Rect) -> Self {
-        let root_window = Group::new(rect.x, rect.y, rect.w, rect.h, "");
-        let window = Flex::new(rect.x, rect.y, rect.w, rect.h - 40, "").column();
-        window.end();
-        let mut butt = Button::new(rect.x + 10, rect.h - 30, 20, 20, "@returnarrow");
-        root_window.end();
+        let mut widget = Widget::new(rect.x, rect.y, rect.w, rect.h - 40, None);
+        let categories = Rc::new(RefCell::new(HashMap::new()));
 
-        let (s, _r) = app::channel();
+        widget.draw({
+            let categories : Rc<RefCell<HashMap<String, HashMap<String, i32>>>> = Rc::clone(&categories);
+            move |wid| {
+                let x = wid.x();
+                let y = wid.y();
+                let w = wid.w();
+                let h = wid.h();
+                let font_size = wid.label_size() + wid.label_size() / 4;
+                let el = categories.borrow();
+                let mut offset = font_size;
 
-        butt.emit(s, Event::QuitToMainMenu);
+                push_clip(x, y, w, h);
+                draw_text2("Story Records", x, y + offset, w - w/4, font_size, Align::Center);
+                offset += font_size * 3;
+                for e in el.iter() {
+                    draw_text(&e.0, x + 10, y + offset);
+                    offset += font_size;
+                    for c in e.1.iter() {
+                        let txt = format!("{}: {}", c.0, c.1);
+                        draw_text(&txt, x + 20, y + offset);
+                        offset += font_size;
+                    }
+                }
+                pop_clip();
+            }
+        });
 
         RecordWindow {
-            window,
-            categories: HashMap::new(),
+            widget,
+            categories,
         }
     }
     /// Removes all group and record displays
     fn clear(&mut self) {
-        self.window.clear();
-        self.categories.clear();
+        self.categories.borrow_mut().clear();
     }
     /// This will add a record into the window.
     ///
-    /// Any groups for categories will be created if they haven't been already
-    fn add_record(&mut self, record: &Record) {
+    /// Any records for categories will be created if they haven't been already
+    /// Existing records will be updated
+    fn set_record(&mut self, record: &Record) {
+        let mut categories = self.categories.borrow_mut();
         let &mut cat;
 
         // creating a category if it haven't been created yet, otherwise we just grab it
-        if self.categories.contains_key(&record.category) {
-            cat = self.categories.get_mut(&record.category).unwrap();
+        if let Some(v) = categories.get_mut(&record.category) {
+            cat = v
         } else {
             // here is group creation
-            let mut group = Flex::default().column();
-            group.set_margin(4);
-            group.set_label(&record.category);
-            group.end();
-            self.window.add(&group);
-
-            let ccat = RecordCategory {
-                group,
-                entries: HashMap::new(),
-            };
-            self.categories.insert(record.category.to_string(), ccat);
-            cat = self.categories.get_mut(&record.category).unwrap();
+            let new_group = HashMap::new();
+            categories.insert(record.category.clone(), new_group);
+            cat = categories.get_mut(&record.category).unwrap();
         }
-
-        if cat.entries.contains_key(&record.name) == false {
-            let f =
-                Frame::default().with_label(format!("{}: {}", record.name, record.value).as_str());
-            cat.group.add(&f);
-            cat.entries.insert(record.name.to_string(), f);
-        }
+        cat.insert(record.name.clone(), record.value);
     }
-    /// Updates displayed value for the record.
-    ///
-    /// It will silently fail if the record or group haven't been found
-    fn update_record(&mut self, record: &Record) {
-        if let Some(cat) = self.categories.get_mut(&record.category) {
-            if let Some(rec) = cat.entries.get_mut(&record.name) {
-                rec.set_label(format!("{}: {}", record.name, record.value).as_str());
-            }
-        }
-    }
+
 }
 impl ChoiceWindow {
     /// Creates empty choice menu
@@ -377,24 +378,28 @@ impl ChoiceWindow {
     /// Use add_choice and clear_choices to populate and clear the menu
     fn create(area: Rect) -> Self {
         let window = Scroll::new(area.x, area.y, area.w, area.h, "");
-        let button_container = Flex::new(area.x, area.y, area.w, area.h, "").column();
         window.end();
 
-        Self {
-            window,
-            button_container,
-        }
+        Self { window }
     }
     /// Adds a button with supplied text as available choice
     fn add_choice(&mut self, text: &str, active: bool) {
-        let count = self.button_container.children();
-        let mut butt = Button::default().with_label(format!("{}: {}", count + 1, text).as_str());
+        let count = self.window.children() - 2;
+        let label = format!("{}: {}", count + 1, text);
+        let mut butt = Button::new(
+            self.window.x(),
+            self.window.y() + count * 30,
+            self.window.width(),
+            25,
+            "",
+        );
+        butt.set_label(&label);
 
         let (s, _r) = app::channel();
         butt.set_callback(move |_| {
             s.send(Event::StoryChoice(count as usize));
         });
-        self.button_container.add(&butt);
+        self.window.add(&butt);
         if active {
             butt.activate();
         } else {
@@ -403,7 +408,7 @@ impl ChoiceWindow {
     }
     /// Removes all choice buttons from the menu
     fn clear_choices(&mut self) {
-        self.button_container.clear();
+        self.window.clear();
     }
 }
 impl StoryWindow {
@@ -411,16 +416,12 @@ impl StoryWindow {
     ///
     /// The story window is where the main story events are displayed
     fn create(area: Rect) -> Self {
-        let mut buff = TextBuffer::default();
-        buff.set_text("");
-        let mut text = TextDisplay::new(area.x, area.y, area.w, area.h, "");
-        text.set_buffer(buff);
-        text.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
+        let text = TextRenderer::new(area.x+30, area.y+100, area.w-80, area.h-100, "");
 
         StoryWindow { text }
     }
     /// Sets text to the display
     fn set_text(&mut self, text: &str) {
-        self.text.buffer().as_mut().unwrap().set_text(text);
+        self.text.set_text(text);
     }
 }
