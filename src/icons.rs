@@ -1,0 +1,179 @@
+
+pub const BIN_ICON: &str = r#"<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 19.2.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	width="15px" height="15px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve">
+<path d="M12.41,5.58l-1.34,8c-0.0433,0.2368-0.2493,0.4091-0.49,0.41H4.42c-0.2407-0.0009-0.4467-0.1732-0.49-0.41l-1.34-8
+	C2.5458,5.3074,2.731,5.0506,3.0035,5.0064C3.0288,5.0023,3.0544,5.0002,3.08,5h8.83c0.2761-0.0036,0.5028,0.2174,0.5064,0.4935
+	C12.4168,5.5225,12.4146,5.5514,12.41,5.58z M13,3.5C13,3.7761,12.7761,4,12.5,4h-10C2.2239,4,2,3.7761,2,3.5S2.2239,3,2.5,3H5V1.5
+	C5,1.2239,5.2239,1,5.5,1h4C9.7761,1,10,1.2239,10,1.5V3h2.5C12.7761,3,13,3.2239,13,3.5z M9,3V2H6v1H9z"/>
+</svg>"#;
+
+pub const GEAR_ICON: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:cc="http://web.resource.org/cc/"
+    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:svg="http://www.w3.org/2000/svg"
+    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+    xmlns:ns1="http://sozi.baierouge.fr"
+    id="svg2"
+    version="1.0"
+    viewBox="0 0 82 82"
+  >
+  <g
+      id="g3518"
+      transform="translate(-252.4 4.5158)"
+    >
+    <path
+        id="path58241"
+        style="stroke-linejoin:round;stroke-dashoffset:162;stroke:#2c2c2c;stroke-linecap:round;stroke-width:2;fill:#949096"
+        d="m293.4-3.5158c-2.74 0-5.41 0.2872-8 0.8125v6.1875c-3.47 0.8389-6.72 2.1847-9.68 4l-4.38-4.375c-2.24 1.4862-4.29 3.2298-6.19 5.125-1.89 1.8948-3.64 3.9448-5.12 6.1878l4.37 4.375c-1.81 2.967-3.16 6.212-4 9.687h-6.18c-0.53 2.585-0.82 5.261-0.82 8s0.29 5.415 0.82 8h6.18c0.84 3.475 2.19 6.72 4 9.688l-4.37 4.375c1.48 2.242 3.23 4.292 5.12 6.187 1.9 1.895 3.95 3.639 6.19 5.125l4.38-4.375c2.96 1.816 6.21 3.161 9.68 4v6.188c2.59 0.525 5.26 0.812 8 0.812s5.42-0.287 8-0.812v-6.188c3.48-0.839 6.72-2.184 9.69-4l4.38 4.375c2.24-1.486 4.29-3.23 6.18-5.125 1.9-1.895 3.64-3.945 5.13-6.187l-4.38-4.375c1.82-2.968 3.16-6.213 4-9.688h6.19c0.53-2.585 0.81-5.261 0.81-8s-0.28-5.415-0.81-8h-6.19c-0.84-3.475-2.18-6.72-4-9.687l4.38-4.375c-1.49-2.243-3.23-4.293-5.13-6.1878-1.89-1.8952-3.94-3.6388-6.18-5.125l-4.38 4.375c-2.97-1.8153-6.21-3.1611-9.69-4v-6.1875c-2.58-0.5253-5.26-0.8125-8-0.8125zm0 20c11.04 0 20 8.96 20 20s-8.96 20-20 20-20-8.96-20-20 8.96-20 20-20z"
+    />
+  </g
+  >
+  <metadata
+    >
+    <rdf:RDF
+      >
+      <cc:Work
+        >
+        <dc:format
+          >image/svg+xml</dc:format
+        >
+        <dc:type
+            rdf:resource="http://purl.org/dc/dcmitype/StillImage"
+        />
+        <cc:license
+            rdf:resource="http://creativecommons.org/licenses/publicdomain/"
+        />
+        <dc:publisher
+          >
+          <cc:Agent
+              rdf:about="http://openclipart.org/"
+            >
+            <dc:title
+              >Openclipart</dc:title
+            >
+          </cc:Agent
+          >
+        </dc:publisher
+        >
+        <dc:title
+          >Cog, cogwheel, gear, Zahnrad</dc:title
+        >
+        <dc:date
+          >2009-12-21T20:11:31</dc:date
+        >
+        <dc:description
+          >cog made as an icon for http://freegamedev.net but not used</dc:description
+        >
+        <dc:source
+          >https://openclipart.org/detail/28703/cog-cogwheel-gear-zahnrad-by-qubodup</dc:source
+        >
+        <dc:creator
+          >
+          <cc:Agent
+            >
+            <dc:title
+              >qubodup</dc:title
+            >
+          </cc:Agent
+          >
+        </dc:creator
+        >
+        <dc:subject
+          >
+          <rdf:Bag
+            >
+            <rdf:li
+              >cartoon</rdf:li
+            >
+            <rdf:li
+              >cog</rdf:li
+            >
+            <rdf:li
+              >cogwheel</rdf:li
+            >
+            <rdf:li
+              >eisen</rdf:li
+            >
+            <rdf:li
+              >gear</rdf:li
+            >
+            <rdf:li
+              >graphic</rdf:li
+            >
+            <rdf:li
+              >grau</rdf:li
+            >
+            <rdf:li
+              >gray</rdf:li
+            >
+            <rdf:li
+              >grey</rdf:li
+            >
+            <rdf:li
+              >iron</rdf:li
+            >
+            <rdf:li
+              >mechanical</rdf:li
+            >
+            <rdf:li
+              >mechanik</rdf:li
+            >
+            <rdf:li
+              >mechanisch</rdf:li
+            >
+            <rdf:li
+              >mechanism</rdf:li
+            >
+            <rdf:li
+              >metal</rdf:li
+            >
+            <rdf:li
+              >outline</rdf:li
+            >
+            <rdf:li
+              >simple</rdf:li
+            >
+            <rdf:li
+              >svgz</rdf:li
+            >
+            <rdf:li
+              >unchecked</rdf:li
+            >
+            <rdf:li
+              >zahnrad</rdf:li
+            >
+          </rdf:Bag
+          >
+        </dc:subject
+        >
+      </cc:Work
+      >
+      <cc:License
+          rdf:about="http://creativecommons.org/licenses/publicdomain/"
+        >
+        <cc:permits
+            rdf:resource="http://creativecommons.org/ns#Reproduction"
+        />
+        <cc:permits
+            rdf:resource="http://creativecommons.org/ns#Distribution"
+        />
+        <cc:permits
+            rdf:resource="http://creativecommons.org/ns#DerivativeWorks"
+        />
+      </cc:License
+      >
+    </rdf:RDF
+    >
+  </metadata
+  >
+</svg
+>"#;

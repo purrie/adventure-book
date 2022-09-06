@@ -14,6 +14,7 @@ use fltk::{
 
 use crate::{
     adventure::{Adventure, Record},
+    editor::EditorWindow,
     file::get_image_png,
     game::Event,
     widgets::{Selector, TextRenderer},
@@ -22,6 +23,7 @@ use crate::{
 pub struct MainWindow {
     pub main_menu: MainMenu,
     pub game_window: GameWindow,
+    pub editor_window: EditorWindow,
 }
 pub struct MainMenu {
     main_manu: Group,
@@ -57,13 +59,15 @@ impl MainWindow {
     /// ui_area: area within the window that will be used for placing the controls
     pub fn create(ui_area: Rect) -> MainWindow {
         let main_menu = MainMenu::create(ui_area);
-
         let mut game_window = GameWindow::create(ui_area);
+        let mut editor_window = EditorWindow::new(ui_area);
         game_window.hide();
+        editor_window.hide();
 
         MainWindow {
             main_menu,
             game_window,
+            editor_window,
         }
     }
 
@@ -73,6 +77,7 @@ impl MainWindow {
     pub fn switch_to_main_menu(&mut self) {
         self.game_window.hide();
         self.main_menu.show_main();
+        self.editor_window.hide();
     }
     /// Switches to adventure choice menu
     ///
@@ -87,6 +92,10 @@ impl MainWindow {
     pub fn switch_to_game(&mut self) {
         self.main_menu.hide();
         self.game_window.show();
+    }
+    pub fn switch_to_editor(&mut self) {
+        self.main_menu.hide();
+        self.editor_window.show();
     }
 }
 impl MainMenu {
@@ -106,7 +115,8 @@ impl MainMenu {
         let but_x = area.w / 2 - 50 + area.x;
         let but_y = area.h / 2 - 50 + area.y;
         let mut new_but = Button::new(but_x, but_y, 100, 20, "New Game");
-        let mut quit_but = Button::new(but_x, but_y + 30, 100, 20, "Quit");
+        let mut edit_but = Button::new(but_x, but_y + 30, 100, 20, "Editor");
+        let mut quit_but = Button::new(but_x, but_y + 60, 100, 20, "Quit");
         main.end();
 
         let mut starting = Group::default().size_of_parent();
@@ -163,6 +173,7 @@ impl MainMenu {
         let (send, _r) = app::channel();
 
         new_but.emit(send.clone(), Event::DisplayAdventureSelect);
+        edit_but.emit(send.clone(), Event::EditAdventure);
         back.emit(send.clone(), Event::DisplayMainMenu);
         quit_but.emit(send.clone(), Event::Quit);
         accept.emit(send.clone(), Event::StartAdventure);

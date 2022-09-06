@@ -4,7 +4,7 @@ use regex::Regex;
 
 use crate::evaluation::{evaluate_and_compare, Random};
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Adventure {
     pub title: String,
     pub description: String,
@@ -24,6 +24,7 @@ pub struct Name {
     pub keyword: String,
     pub value: String,
 }
+#[derive(Default)]
 pub struct Page {
     pub title: String,
     pub story: String,

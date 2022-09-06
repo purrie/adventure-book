@@ -1,9 +1,11 @@
 use adventure::{Adventure, Page};
+use dialog::{ask_for_text, ask_to_choose_adventure};
 use evaluation::{evaluate_result, Random};
 use file::capture_adventures;
 use fltk::{
     app::{self, App},
     draw::Rect,
+    image::SvgImage,
     prelude::*,
     window::Window,
 };
@@ -15,9 +17,12 @@ extern crate rand;
 extern crate regex;
 
 mod adventure;
+mod dialog;
+mod editor;
 mod evaluation;
 mod file;
 mod game;
+mod icons;
 mod widgets;
 mod window;
 
@@ -37,7 +42,6 @@ fn main() {
     window.make_resizable(true);
 
     let mut main_window = MainWindow::create(window_size);
-
     window.end();
     window.show();
 
@@ -169,6 +173,31 @@ fn main() {
                     }
                     window.redraw();
                 }
+                Event::EditAdventure => {
+                    if let Some(index) = ask_to_choose_adventure(&adventures) {
+                        main_window
+                            .editor_window
+                            .load_adventure(&adventures[index], index);
+                        main_window.switch_to_editor();
+                    }
+                }
+                Event::EditorAddPage => todo!(),
+                Event::EditorRemovePage => todo!(),
+                Event::EditorOpenMeta => todo!(),
+                Event::EditorOpenPage(_) => todo!(),
+                Event::EditorInsertRecord(_) => todo!(),
+                Event::EditorInsertName(_) => todo!(),
+                Event::EditorEditRecord(_) => todo!(),
+                Event::EditorEditName(_) => todo!(),
+                Event::EditorRemoveRecord(_) => todo!(),
+                Event::EditorRemoveName(_) => todo!(),
+                Event::EditorAddRecord => {
+                    let text = ask_for_text("Input new record name");
+                    println!("{:?}", text);
+                }
+                Event::EditorAddName => todo!(),
+                Event::EditorSelectInSubEditor(_) => todo!(),
+                Event::EditorSave => todo!(),
             }
         }
     }

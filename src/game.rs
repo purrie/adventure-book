@@ -103,6 +103,25 @@ pub enum Event {
     Quit,
     SelectAdventure(String),
     StoryChoice(usize),
+    EditAdventure,
+
+    EditorSave,
+
+    EditorAddPage,
+    EditorRemovePage,
+    EditorOpenMeta,
+    EditorOpenPage(String),
+    EditorAddRecord,
+    EditorAddName,
+    EditorInsertRecord(String),
+    EditorInsertName(String),
+    EditorEditRecord(usize),
+    EditorEditName(usize),
+    EditorRemoveRecord(usize),
+    EditorRemoveName(usize),
+
+    /// This event is used to select data block for sub editors in pages
+    EditorSelectInSubEditor(i32),
 }
 
 #[cfg(test)]
