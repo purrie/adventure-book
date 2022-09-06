@@ -1,11 +1,10 @@
-use adventure::{Adventure, Page};
-use dialog::{ask_for_text, ask_to_choose_adventure};
+use adventure::{Adventure, Page, is_keyword_valid };
+use dialog::{ask_to_choose_adventure, ask_for_record, ask_for_name};
 use evaluation::{evaluate_result, Random};
-use file::capture_adventures;
+use file::{capture_adventures, signal_error};
 use fltk::{
     app::{self, App},
     draw::Rect,
-    image::SvgImage,
     prelude::*,
     window::Window,
 };
@@ -192,10 +191,23 @@ fn main() {
                 Event::EditorRemoveRecord(_) => todo!(),
                 Event::EditorRemoveName(_) => todo!(),
                 Event::EditorAddRecord => {
-                    let text = ask_for_text("Input new record name");
-                    println!("{:?}", text);
+                    if let Some(rec) = ask_for_record() {
+                        if is_keyword_valid(&rec.name) {
+                            main_window.editor_window.add_record(rec);
+                        } else {
+                            signal_error!("The keyword {} is invalid, please use only letters and numbers", rec.name);
+                        }
+                    }
                 }
-                Event::EditorAddName => todo!(),
+                Event::EditorAddName => {
+                    if let Some(nam) = ask_for_name() {
+                        if is_keyword_valid(&nam.keyword) {
+                            main_window.editor_window.add_name(nam);
+                        } else {
+                            signal_error!("The keyword {} is invalid, please use only letters and numbers", nam.keyword);
+                        }
+                    }
+                }
                 Event::EditorSelectInSubEditor(_) => todo!(),
                 Event::EditorSave => todo!(),
             }

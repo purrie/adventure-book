@@ -7,12 +7,13 @@ use fltk::{
     draw::Rect,
     frame::Frame,
     group::{Group, Scroll, Tabs},
+    image::SvgImage,
     prelude::*,
-    text::{TextBuffer, TextEditor}, image::SvgImage,
+    text::{TextBuffer, TextEditor},
 };
 
 use crate::{
-    adventure::{Adventure, Page},
+    adventure::{Adventure, Name, Page, Record},
     file::capture_pages,
     game::Event,
 };
@@ -75,6 +76,16 @@ impl EditorWindow {
         self.group.show();
         self.page_editor.hide();
         self.adventure_editor.show();
+    }
+    pub fn add_record(&mut self, record: Record) {
+        self.adventure_editor.add_record(&record.name, false);
+        self.adventure.records.insert(record.name.clone(), record);
+        self.group.redraw();
+    }
+    pub fn add_name(&mut self, name: Name) {
+        self.adventure_editor.add_record(&name.keyword, true);
+        self.adventure.names.insert(name.keyword.clone(), name);
+        self.group.redraw();
     }
 }
 /// Displays the list of files in adventure
@@ -188,6 +199,12 @@ impl AdventureEditor {
             names,
         }
     }
+    fn hide(&mut self) {
+        self.group.hide();
+    }
+    fn show(&mut self) {
+        self.group.show();
+    }
     fn update_records(&mut self, records: Vec<String>) {
         unimplemented!()
     }
@@ -204,11 +221,12 @@ impl AdventureEditor {
             .unwrap()
             .set_text(description);
     }
-    fn hide(&mut self) {
-        self.group.hide();
-    }
-    fn show(&mut self) {
-        self.group.show();
+    fn add_record(&mut self, name: &String, is_name: bool) {
+        if is_name {
+            self.names.add_record(name, false);
+        } else {
+            self.records.add_record(name, false);
+        }
     }
     fn load(&mut self, adventure: &Adventure) {
         self.set_title(&adventure.title);
