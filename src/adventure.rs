@@ -72,6 +72,19 @@ const REGEX_CONDITION_IN_CHOICE: &str = r"\{\s*condition:\s*(\w+(?:\s|\w)*)\s*\}
 const REGEX_TEST_IN_CHOICE: &str = r"\{\s*test:\s*(\w+(?:\s|\w)*)\s*\}";
 const REGEX_RESULT_IN_CHOICE: &str = r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}";
 
+/// Creates a Regex match for specified keyword
+pub fn regex_match_keyword(keyword: &str) -> Result<Regex, regex::Error> {
+    regex::Regex::new(&format!(r"\[\s*({})\s*\]", keyword))
+}
+/// Tests if the keyword can be correctly matched in text
+pub fn is_keyword_valid(keyword: &str) -> bool {
+    if let Ok(r) = regex_match_keyword(keyword) {
+        let test = format!("[{}]", keyword);
+        return r.is_match(&test);
+    }
+    false
+}
+
 impl Adventure {
     /// Creates a new empty adventure data
     pub fn new() -> Adventure {
@@ -265,6 +278,40 @@ impl Page {
         }
         true
     }
+    pub fn is_keyword_present(&self, keyword: &str) -> bool {
+        let regex = regex_match_keyword(keyword);
+        if let Err(_) = regex {
+            return false;
+        }
+        let regex = regex.unwrap();
+        if regex.is_match(&self.story) {
+            return true;
+        }
+        if regex.is_match(&self.title) {
+            return true;
+        }
+        for choice in self.choices.iter() {
+            if choice.is_keyword_present(keyword) {
+                return true;
+            }
+        }
+        for condition in self.conditions.iter() {
+            if condition.1.is_keyword_present(keyword) {
+                return true;
+            }
+        }
+        for test in self.tests.iter() {
+            if test.1.is_keyword_present(keyword) {
+                return true;
+            }
+        }
+        for result in self.results.iter() {
+            if result.1.is_keyword_present(keyword) {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 /// macro that extracts keywords from choice text
@@ -343,6 +390,14 @@ impl Choice {
     pub fn has_condition(&self) -> bool {
         self.condition.len() > 0
     }
+    pub fn is_keyword_present(&self, keyword: &str) -> bool {
+        let regex = regex_match_keyword(keyword);
+        if let Err(_) = regex {
+            return false;
+        }
+        let regex = regex.unwrap();
+        regex.is_match(&self.text)
+    }
 }
 impl From<&str> for Comparison {
     /// Less than or equal is default for anything that doesn't match expected comparisons. Not sure if I should leave it like this or error
@@ -404,6 +459,17 @@ impl Condition {
             rand,
         )
     }
+    pub fn is_keyword_present(&self, keyword: &str) -> bool {
+        let regex = regex_match_keyword(keyword);
+        if let Err(_) = regex {
+            return false;
+        }
+        let regex = regex.unwrap();
+        if regex.is_match(&self.expression_l) {
+            return true;
+        }
+        regex.is_match(&self.expression_r)
+    }
 }
 impl Test {
     pub fn parse_from_string(text: String) -> Result<Test, ()> {
@@ -448,6 +514,17 @@ impl Test {
             Err(e) => Err(e),
         }
     }
+    pub fn is_keyword_present(&self, keyword: &str) -> bool {
+        let regex = regex_match_keyword(keyword);
+        if let Err(_) = regex {
+            return false;
+        }
+        let regex = regex.unwrap();
+        if regex.is_match(&self.expression_l) {
+            return true;
+        }
+        regex.is_match(&self.expression_r)
+    }
 }
 impl StoryResult {
     pub fn parse_from_string(text: String) -> Result<StoryResult, ()> {
@@ -465,6 +542,14 @@ impl StoryResult {
             name: args[0].to_string(),
             expression: args[1].to_string(),
         })
+    }
+    pub fn is_keyword_present(&self, keyword: &str) -> bool {
+        let regex = regex_match_keyword(keyword);
+        if let Err(_) = regex {
+            return false;
+        }
+        let regex = regex.unwrap();
+        regex.is_match(&self.expression)
     }
 }
 impl Record {
@@ -547,7 +632,7 @@ mod tests {
 
     use crate::adventure::Comparison;
 
-    use super::{Adventure, Choice, Condition, Page, Record, StoryResult, Test};
+    use super::{Adventure, Choice, Condition, Page, Record, StoryResult, Test, regex_match_keyword};
 
     #[test]
     fn record_parse() {
@@ -693,6 +778,17 @@ result: coward; confidence; -1; coward_scene;".to_string();
 
         for choice in page.choices {
             assert!(choice.is_valid());
+        }
+    }
+    #[test]
+    fn capture_keyword() {
+        let data = "this is a test string with a [spaced keyword] that should be captured";
+        let regex = regex_match_keyword("spaced keyword").unwrap();
+        if let Some(cap) = regex.captures(&data) {
+            let r = cap.get(1);
+            assert_eq!(r.unwrap().as_str(), "spaced keyword");
+        } else {
+            assert!(false);
         }
     }
     #[test]
