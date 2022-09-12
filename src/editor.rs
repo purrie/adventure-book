@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, collections::HashMap};
 
 use fltk::{
     app,
@@ -13,8 +13,8 @@ use fltk::{
 };
 
 use crate::{
-    adventure::{Adventure, Name, Page, Record},
-    file::capture_pages,
+    adventure::{Adventure, Name, Page, Record, Choice},
+    file::{capture_pages, read_page, signal_error},
     game::Event,
 };
 
@@ -26,7 +26,8 @@ pub struct EditorWindow {
     page_editor: StoryEditor,
 
     adventure: Adventure,
-    page: Page,
+    /// Map of file name keys and pages on those file names
+    pages: HashMap<String, Page>,
     adventure_index: Option<usize>,
 }
 
@@ -58,7 +59,7 @@ impl EditorWindow {
             adventure_editor,
             page_editor,
             adventure: Adventure::default(),
-            page: Page::default(),
+            pages: HashMap::new(),
             adventure_index: None,
         }
     }
@@ -66,8 +67,14 @@ impl EditorWindow {
         self.adventure = adventure.clone();
         self.adventure_index = Some(index);
         let pages = capture_pages(&self.adventure.path);
-        self.file_list.populate_pages(pages);
+        self.file_list.populate_pages(&pages);
         self.adventure_editor.load(&self.adventure);
+        for page in pages {
+            match read_page(&adventure.path, &page) {
+                Ok(p) => drop(self.pages.insert(page, p)),
+                Err(e) => signal_error!(&e),
+            };
+        };
     }
     pub fn hide(&mut self) {
         self.group.hide();
@@ -86,6 +93,12 @@ impl EditorWindow {
         self.adventure_editor.add_record(&name.keyword, true);
         self.adventure.names.insert(name.keyword.clone(), name);
         self.group.redraw();
+    }
+    pub fn open_page(&mut self, name: String) {
+
+    }
+    pub fn open_adventure(&mut self) {
+
     }
 }
 /// Displays the list of files in adventure
@@ -138,7 +151,7 @@ impl FileList {
         Self { page_list }
     }
     /// Fills the selection widget with page names
-    fn populate_pages(&mut self, pages: Vec<String>) {
+    fn populate_pages(&mut self, pages: &Vec<String>) {
         self.page_list.clear();
         for text in pages {
             self.page_list.add(&text);
@@ -426,6 +439,19 @@ impl StoryEditor {
     fn show(&mut self) {
         self.group.show();
     }
+    fn load_page(&mut self, page: &Page, adventure: &Adventure) {
+        self.title.buffer().as_mut().unwrap().set_text(&page.title);
+        self.story.buffer().as_mut().unwrap().set_text(&page.story);
+
+        self.records.clear();
+        for rec in adventure.records.iter() {
+            self.records.add_record(rec.0, true);
+        }
+        self.names.clear();
+        for nam in adventure.names.iter() {
+            self.names.add_record(nam.0, true);
+        }
+    }
 }
 
 /// Editor for customizing choices for a page
@@ -438,6 +464,7 @@ struct ChoiceEditor {
     condition: fltk::menu::Choice,
     test: Rc<RefCell<fltk::menu::Choice>>,
     result: Rc<RefCell<fltk::menu::Choice>>,
+    last_selected: Rc<RefCell<i32>>,
 }
 
 impl ChoiceEditor {
@@ -477,15 +504,22 @@ impl ChoiceEditor {
         group.end();
 
         text.set_buffer(TextBuffer::default());
+        let last_selected = Rc::new(RefCell::new(0));
 
         let (sender, _r) = app::channel();
 
         selector.set_callback({
+            let last_selected = Rc::clone(&last_selected);
             let sender = sender.clone();
             move |x| {
-                if x.value() > 0 {
-                    sender.send(x.value() - 1);
+                let mut index = last_selected.borrow_mut();
+                let new_index = x.value();
+                if *index == new_index {
+                    return;
                 }
+                sender.send(Event::EditorSaveChoice(*index as usize));
+                sender.send(Event::EditorLoadChoice(new_index as usize));
+                *index = new_index;
             }
         });
 
@@ -520,8 +554,49 @@ impl ChoiceEditor {
             test,
             condition,
             result,
+            last_selected,
         }
     }
+    fn save_choice(&self, choice: &mut Choice) {
+        choice.text = self.text.buffer().as_ref().unwrap().text();
+        choice.condition = match self.condition.choice() {
+            Some(text) => text,
+            None => String::new(),
+        };
+        choice.test = match self.test.borrow().choice() {
+            Some(text) => text,
+            None => String::new(),
+        };
+        choice.result = match self.result.borrow().choice() {
+            Some(text) => text,
+            None => String::new(),
+        };
+    }
+    fn load_choice(&mut self, choice: &Choice) {
+        self.text.buffer().as_mut().unwrap().set_text(&choice.text);
+        if choice.condition.len() != 0 {
+            let index = self.condition.find_index(&choice.condition);
+            self.condition.set_value(index);
+        } else {
+            self.condition.set_value(-1);
+        }
+        if choice.test.len() != 0 {
+            let index = self.test.borrow().find_index(&choice.test);
+            self.test.borrow_mut().set_value(index);
+        } else {
+            self.test.borrow_mut().set_value(-1);
+        }
+        if choice.result.len() != 0 {
+            let index = self.result.borrow().find_index(&choice.result);
+            self.result.borrow_mut().set_value(index);
+        } else {
+            self.result.borrow_mut().set_value(-1);
+        }
+    }
+    fn load_choices(&mut self, choices: Vec<Choice>) {
+
+    }
+
 }
 /// Condition editor
 ///

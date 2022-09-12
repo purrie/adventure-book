@@ -183,7 +183,10 @@ fn main() {
                 Event::EditorAddPage => todo!(),
                 Event::EditorRemovePage => todo!(),
                 Event::EditorOpenMeta => todo!(),
-                Event::EditorOpenPage(_) => todo!(),
+                Event::EditorOpenPage(name) => {
+                    // TODO save the previous page first
+
+                },
                 Event::EditorInsertRecord(_) => todo!(),
                 Event::EditorInsertName(_) => todo!(),
                 Event::EditorEditRecord(_) => todo!(),
@@ -210,6 +213,8 @@ fn main() {
                 }
                 Event::EditorSelectInSubEditor(_) => todo!(),
                 Event::EditorSave => todo!(),
+                Event::EditorSaveChoice(_) => todo!(),
+                Event::EditorLoadChoice(_) => todo!(),
             }
         }
     }
