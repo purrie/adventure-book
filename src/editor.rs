@@ -20,14 +20,20 @@ use crate::{
 
 /// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
 pub struct EditorWindow {
+    /// Root UI group
     group: Group,
+    /// Collection of global editor controls
     file_list: FileList,
+    /// Collection of UI controls for editing adventure metadata
     adventure_editor: AdventureEditor,
+    /// Collection of UI controls for editing individual page contents
     page_editor: StoryEditor,
 
+    /// Adventure that is loaded for editing
     adventure: Adventure,
     /// Map of file name keys and pages on those file names
     pages: HashMap<String, Page>,
+    /// Index of the edited adventure within the main adventure list, None for a new unsaved adventure
     adventure_index: Option<usize>,
 }
 
@@ -84,21 +90,36 @@ impl EditorWindow {
         self.page_editor.hide();
         self.adventure_editor.show();
     }
+    /// Adds a new record to the adventure data
     pub fn add_record(&mut self, record: Record) {
         self.adventure_editor.add_record(&record.name, false);
         self.adventure.records.insert(record.name.clone(), record);
         self.group.redraw();
     }
+    /// Adds a new name to the adventure data
     pub fn add_name(&mut self, name: Name) {
         self.adventure_editor.add_record(&name.keyword, true);
         self.adventure.names.insert(name.keyword.clone(), name);
         self.group.redraw();
     }
+    /// Opens page editor and loads page by filename into it
     pub fn open_page(&mut self, name: String) {
-
+        if let Some(page) = self.pages.get(&name) {
+            // TODO save off the data from respective editors
+            self.adventure_editor.hide();
+            self.page_editor.load_page(page, &self.adventure);
+            self.page_editor.show();
+        }
     }
+    /// Opens adventure metadata editor UI
     pub fn open_adventure(&mut self) {
-
+        // no need to do anything if metadata already is shown
+        if self.adventure_editor.group.visible() {
+            return;
+        }
+        // TODO save off the data from respective editors
+        self.page_editor.hide();
+        self.adventure_editor.show();
     }
 }
 /// Displays the list of files in adventure
@@ -203,6 +224,7 @@ impl AdventureEditor {
 
         title.set_buffer(TextBuffer::default());
         description.set_buffer(TextBuffer::default());
+        description.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
 
         Self {
             group,
@@ -375,13 +397,15 @@ impl StoryEditor {
     fn new(area: Rect) -> Self {
         let group = Group::new(area.x, area.y, area.w, area.h, None);
 
-        let x_editor = area.x;
-        let y_title = area.y;
-        let w_editor = area.w / 2 * 2;
-        let h_title = 20;
+        let font_size = app::font_size();
 
-        let y_story = y_title + h_title;
-        let h_story = area.h / 2 - h_title;
+        let x_editor = area.x;
+        let y_title = area.y + font_size;
+        let w_editor = area.w / 2 * 2;
+        let h_title = font_size + 4;
+
+        let y_story = y_title + h_title + font_size;
+        let h_story = area.h / 2;
 
         let x_sidepanel = x_editor + w_editor;
         let y_records = area.y;
@@ -420,6 +444,7 @@ impl StoryEditor {
 
         title.set_buffer(TextBuffer::default());
         story.set_buffer(TextBuffer::default());
+        story.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
 
         Self {
             group,
@@ -470,25 +495,28 @@ struct ChoiceEditor {
 impl ChoiceEditor {
     fn new(area: Rect) -> Self {
         use fltk::menu::Choice;
+        let font_size = app::font_size();
 
-        let group = Group::new(area.x, area.y, area.w, area.h, None);
+        let group = Group::new(area.x, area.y, area.w, area.h, "Choices");
 
         let x_selector = area.x;
         let y_selector = area.y;
         let w_selector = area.w / 3;
         let h_selector = area.h - 50;
 
-        let x_text = area.x;
-        let y_text = area.y + area.h - 30;
-        let w_text = area.w;
-        let h_text = 25;
 
-        let x_menu = area.x + w_selector + 10;
-        let w_menu = area.w - w_selector - 20;
-        let h_menu = 20;
-        let y_menu_condition = area.y;
+        let margin_menu = 20;
+        let x_menu = area.x + w_selector + margin_menu;
+        let w_menu = area.w - w_selector - margin_menu * 2;
+        let h_menu = font_size + 2;
+        let y_menu_condition = area.y + font_size;
         let y_menu_test = y_menu_condition + h_menu * 2;
         let y_menu_result = y_menu_test + h_menu * 2;
+
+        let x_text = x_menu;
+        let y_text = y_menu_result + h_menu * 2;
+        let w_text = w_menu;
+        let h_text = h_menu;
 
         let mut selector = SelectBrowser::new(
             x_selector,
@@ -498,9 +526,12 @@ impl ChoiceEditor {
             "Choices in this page",
         );
         let mut text = TextEditor::new(x_text, y_text, w_text, h_text, "Choice Text");
-        let condition = Choice::new(x_menu, y_menu_condition, w_menu, h_menu, "Condition");
-        let test = Choice::new(x_menu, y_menu_test, w_menu, h_menu, "Test");
-        let result = Choice::new(x_menu, y_menu_result, w_menu, h_menu, "Result");
+        Frame::new(x_menu, y_menu_condition - font_size, w_menu, h_menu, "Condition");
+        let condition = Choice::new(x_menu, y_menu_condition, w_menu, h_menu, None);
+        Frame::new(x_menu, y_menu_test - font_size, w_menu, h_menu, "Test");
+        let test = Choice::new(x_menu, y_menu_test, w_menu, h_menu, None);
+        Frame::new(x_menu, y_menu_result - font_size, w_menu, h_menu, "Result");
+        let result = Choice::new(x_menu, y_menu_result, w_menu, h_menu, None);
         group.end();
 
         text.set_buffer(TextBuffer::default());
@@ -613,32 +644,32 @@ struct ConditionEditor {
 
 impl ConditionEditor {
     fn new(area: Rect) -> Self {
-        let group = Group::new(area.x, area.y, area.w, area.h, None);
+        let group = Group::new(area.x, area.y, area.w, area.h, "Conditions");
+
+        let font_size = app::font_size();
 
         let x_selector = area.x;
         let y_selector = area.y;
-        let w_selector = area.w / 10 * 4;
+        let w_selector = area.w / 3;
         let h_selector = area.h - 50;
 
-        let x_name = area.x + area.w / 10 * 6;
-        let y_name = y_selector + 20;
-        let w_name = w_selector;
-        let h_name = 20;
+        let marging_column = 20;
+        let x_second_column = area.x + w_selector + marging_column;
+        let w_second_column = area.w - w_selector - marging_column * 2;
 
-        let y_exp = y_selector + h_selector + 20;
-        let w_exp = area.w / 10 * 4;
-        let h_exp = 20;
-        let x_exp_first = x_selector;
-        let x_exp_second = area.w - w_exp;
-        let x_comp = x_exp_first + w_exp;
-        let w_comp = area.w - w_exp * 2;
+        let h_line = font_size + 2;
+
+        let y_name = y_selector + font_size;
+        let y_exp = y_name + h_line * 2;
+        let y_comp = y_exp + h_line * 2;
+        let y_exp2 = y_comp + h_line * 2;
 
         let mut selector =
             SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Conditions");
-        let mut name = TextEditor::new(x_name, y_name, w_name, h_name, "Name");
-        let mut expression_left = TextEditor::new(x_exp_first, y_exp, w_exp, h_exp, None);
-        let mut expression_right = TextEditor::new(x_exp_second, y_exp, w_exp, h_exp, None);
-        let mut comparison = fltk::menu::Choice::new(x_comp, y_exp, w_comp, h_exp, None);
+        let mut name = TextEditor::new(x_second_column, y_name, w_second_column, h_line, "Name");
+        let mut expression_left = TextEditor::new(x_second_column, y_exp, w_second_column, h_line, "Left side expression");
+        let mut expression_right = TextEditor::new(x_second_column, y_exp2, w_second_column, h_line, "Right side expression");
+        let mut comparison = fltk::menu::Choice::new(x_second_column + w_second_column / 4, y_comp, w_second_column / 2, h_line, None);
         group.end();
 
         let (sender, _r) = app::channel();
@@ -652,6 +683,9 @@ impl ConditionEditor {
             }
         });
 
+        name.set_buffer(TextBuffer::default());
+        expression_left.set_buffer(TextBuffer::default());
+        expression_right.set_buffer(TextBuffer::default());
         comparison.add_choice(">|>=|<|<=|=|!=");
         comparison.set_value(0);
 
@@ -681,51 +715,51 @@ struct TestEditor {
 
 impl TestEditor {
     fn new(area: Rect) -> Self {
-        let group = Group::new(area.x, area.y, area.w, area.h, None);
+        let group = Group::new(area.x, area.y, area.w, area.h, "Tests");
+
+        let font_size = app::font_size();
 
         let x_selector = area.x;
         let y_selector = area.y;
-        let w_selector = area.w / 10 * 4;
+        let w_selector = area.w / 3;
         let h_selector = area.h - 50;
 
-        let x_name = area.x + area.w / 10 * 6;
-        let y_name = y_selector + 20;
-        let w_name = w_selector;
-        let h_name = 20;
+        let column_margin = 20;
+        let x_second_column = x_selector + w_selector + column_margin;
+        let w_second_column = area.w - w_selector - column_margin * 2;
+        let line_height = font_size + 2;
 
-        let x_results = x_name;
-        let w_result = w_name;
-        let h_result = 20;
-        let y_result_success = y_name + h_name + 10;
-        let y_result_failure = y_result_success + h_result + 5;
+        let y_name = y_selector + font_size;
+        let y_exp = y_name + line_height * 2;
+        let y_comp = y_exp + line_height * 2;
+        let y_exp2 = y_comp + line_height * 2;
+        let y_result_success = y_exp2 + line_height * 3;
+        let y_result_failure = y_result_success + line_height * 2;
 
-        let y_exp = y_selector + h_selector + 20;
-        let w_exp = area.w / 10 * 4;
-        let h_exp = 20;
-        let x_exp_first = x_selector;
-        let x_exp_second = area.w - w_exp;
-        let x_comp = x_exp_first + w_exp;
-        let w_comp = area.w - w_exp * 2;
+        let x_comp = x_second_column + w_second_column / 4;
+        let w_comp = w_second_column / 2;
 
         let mut selector =
-            SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Conditions");
-        let mut name = TextEditor::new(x_name, y_name, w_name, h_name, "Name");
-        let mut expression_left = TextEditor::new(x_exp_first, y_exp, w_exp, h_exp, None);
-        let mut expression_right = TextEditor::new(x_exp_second, y_exp, w_exp, h_exp, None);
-        let mut comparison = fltk::menu::Choice::new(x_comp, y_exp, w_comp, h_exp, None);
+            SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Tests");
+        let mut name = TextEditor::new(x_second_column, y_name, w_second_column, line_height, "Name");
+        let mut expression_left = TextEditor::new(x_second_column, y_exp, w_second_column, line_height, "Left side expression");
+        let mut expression_right = TextEditor::new(x_second_column, y_exp2, w_second_column, line_height, "Right side expression");
+        let mut comparison = fltk::menu::Choice::new(x_comp, y_comp, w_comp, line_height, None);
+        Frame::new(x_second_column, y_result_success - font_size, w_second_column, line_height, "On Success");
         let success = fltk::menu::Choice::new(
-            x_results,
+            x_second_column,
             y_result_success,
-            w_result,
-            h_result,
-            "On Success",
+            w_second_column,
+            line_height,
+            None,
         );
+        Frame::new(x_second_column, y_result_failure - font_size, w_second_column, line_height, "On Failure");
         let failure = fltk::menu::Choice::new(
-            x_results,
+            x_second_column,
             y_result_failure,
-            w_result,
-            h_result,
-            "On Failure",
+            w_second_column,
+            line_height,
+            None,
         );
         group.end();
 
@@ -740,6 +774,9 @@ impl TestEditor {
             }
         });
 
+        name.set_buffer(TextBuffer::default());
+        expression_left.set_buffer(TextBuffer::default());
+        expression_right.set_buffer(TextBuffer::default());
         comparison.add_choice(">|>=|<|<=|=|!=");
         comparison.set_value(0);
 
@@ -769,7 +806,7 @@ struct ResultEditor {
 
 impl ResultEditor {
     fn new(area: Rect) -> Self {
-        let group = Group::new(area.x, area.y, area.w, area.h, None);
+        let group = Group::new(area.x, area.y, area.w, area.h, "Results");
 
         let x_selector = area.x;
         let y_selector = area.y;

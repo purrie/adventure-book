@@ -182,10 +182,11 @@ fn main() {
                 }
                 Event::EditorAddPage => todo!(),
                 Event::EditorRemovePage => todo!(),
-                Event::EditorOpenMeta => todo!(),
+                Event::EditorOpenMeta => {
+                    main_window.editor_window.open_adventure();
+                },
                 Event::EditorOpenPage(name) => {
-                    // TODO save the previous page first
-
+                    main_window.editor_window.open_page(name);
                 },
                 Event::EditorInsertRecord(_) => todo!(),
                 Event::EditorInsertName(_) => todo!(),
