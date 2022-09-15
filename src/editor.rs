@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, collections::HashMap};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use fltk::{
     app,
@@ -9,11 +9,11 @@ use fltk::{
     group::{Group, Scroll, Tabs},
     image::SvgImage,
     prelude::*,
-    text::{TextBuffer, TextEditor}, enums::Align,
+    text::{TextBuffer, TextEditor},
 };
 
 use crate::{
-    adventure::{Adventure, Name, Page, Record, Choice},
+    adventure::{Adventure, Choice, Name, Page, Record},
     file::{capture_pages, read_page, signal_error},
     game::Event,
 };
@@ -29,12 +29,14 @@ pub struct EditorWindow {
     /// Collection of UI controls for editing individual page contents
     page_editor: StoryEditor,
 
-    /// Adventure that is loaded for editing
-    adventure: Adventure,
-    /// Map of file name keys and pages on those file names
-    pages: HashMap<String, Page>,
     /// Index of the edited adventure within the main adventure list, None for a new unsaved adventure
     adventure_index: Option<usize>,
+    /// Adventure that is loaded for editing
+    adventure: Adventure,
+
+    current_page: String,
+    /// Map of file name keys and pages on those file names
+    pages: HashMap<String, Page>,
 }
 
 impl EditorWindow {
@@ -67,6 +69,7 @@ impl EditorWindow {
             adventure: Adventure::default(),
             pages: HashMap::new(),
             adventure_index: None,
+            current_page: String::new(),
         }
     }
     pub fn load_adventure(&mut self, adventure: &Adventure, index: usize) {
@@ -80,7 +83,7 @@ impl EditorWindow {
                 Ok(p) => drop(self.pages.insert(page, p)),
                 Err(e) => signal_error!(&e),
             };
-        };
+        }
     }
     pub fn hide(&mut self) {
         self.group.hide();
@@ -104,11 +107,19 @@ impl EditorWindow {
     }
     /// Opens page editor and loads page by filename into it
     pub fn open_page(&mut self, name: String) {
+        // skipping loading the same page twice
+        if name == self.current_page {
+            return;
+        }
+        if let Some(mut cur_page) = self.pages.get_mut(&self.current_page) {
+            self.page_editor.save_page(&mut cur_page);
+        }
         if let Some(page) = self.pages.get(&name) {
-            // TODO save off the data from respective editors
+            self.adventure_editor.save(&mut self.adventure);
             self.adventure_editor.hide();
             self.page_editor.load_page(page, &self.adventure);
             self.page_editor.show();
+            self.current_page = name;
         }
     }
     /// Opens adventure metadata editor UI
@@ -117,9 +128,14 @@ impl EditorWindow {
         if self.adventure_editor.group.visible() {
             return;
         }
-        // TODO save off the data from respective editors
+        // saving open page
+        if let Some(mut cur_page) = self.pages.get_mut(&self.current_page) {
+            self.page_editor.save_page(&mut cur_page);
+        }
+        self.adventure_editor.load(&self.adventure);
         self.page_editor.hide();
         self.adventure_editor.show();
+        self.current_page = String::new();
     }
 }
 /// Displays the list of files in adventure
@@ -276,7 +292,9 @@ impl AdventureEditor {
         }
     }
     fn save(&self, adventure: &mut Adventure) {
-        unimplemented!()
+        adventure.title = self.title.buffer().as_ref().unwrap().text();
+        adventure.description = self.description.buffer().as_ref().unwrap().text();
+        // saving only those because records and names are saved through their own controls
     }
 }
 
@@ -320,6 +338,9 @@ impl VariableEditor {
         let y = self.scroll.y() + 20 * child_count as i32;
         let mut w = self.scroll.w();
         let h = 20;
+
+        let mut frame = Frame::new(x, y, w, h, None);
+        frame.set_frame(fltk::enums::FrameType::EngravedFrame);
 
         let (sender, _) = app::channel();
 
@@ -370,6 +391,7 @@ impl VariableEditor {
         let mut label = Frame::new(x, y, w, h, None);
         label.set_label(variable);
 
+        self.scroll.add(&frame);
         self.scroll.add(&butt_edit);
         self.scroll.add(&butt_delete);
         self.scroll.add(&label);
@@ -477,6 +499,10 @@ impl StoryEditor {
             self.names.add_record(nam.0, true);
         }
     }
+    fn save_page(&self, page: &mut Page) {
+        page.title = self.title.buffer().as_ref().unwrap().text();
+        page.story = self.story.buffer().as_ref().unwrap().text();
+    }
 }
 
 /// Editor for customizing choices for a page
@@ -504,7 +530,6 @@ impl ChoiceEditor {
         let w_selector = area.w / 3;
         let h_selector = area.h - font_size;
 
-
         let margin_menu = 20;
         let x_menu = area.x + w_selector + margin_menu;
         let w_menu = area.w - w_selector - margin_menu * 2;
@@ -526,7 +551,13 @@ impl ChoiceEditor {
             "Choices in this page",
         );
         let mut text = TextEditor::new(x_text, y_text, w_text, h_text, "Choice Text");
-        Frame::new(x_menu, y_menu_condition - font_size, w_menu, h_menu, "Condition");
+        Frame::new(
+            x_menu,
+            y_menu_condition - font_size,
+            w_menu,
+            h_menu,
+            "Condition",
+        );
         let condition = Choice::new(x_menu, y_menu_condition, w_menu, h_menu, None);
         Frame::new(x_menu, y_menu_test - font_size, w_menu, h_menu, "Test");
         let test = Choice::new(x_menu, y_menu_test, w_menu, h_menu, None);
@@ -624,10 +655,7 @@ impl ChoiceEditor {
             self.result.borrow_mut().set_value(-1);
         }
     }
-    fn load_choices(&mut self, choices: Vec<Choice>) {
-
-    }
-
+    fn load_choices(&mut self, choices: Vec<Choice>) {}
 }
 /// Condition editor
 ///
@@ -667,9 +695,27 @@ impl ConditionEditor {
         let mut selector =
             SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Conditions");
         let mut name = TextEditor::new(x_second_column, y_name, w_second_column, h_line, "Name");
-        let mut expression_left = TextEditor::new(x_second_column, y_exp, w_second_column, h_line, "Left side expression");
-        let mut expression_right = TextEditor::new(x_second_column, y_exp2, w_second_column, h_line, "Right side expression");
-        let mut comparison = fltk::menu::Choice::new(x_second_column + w_second_column / 4, y_comp, w_second_column / 2, h_line, None);
+        let mut expression_left = TextEditor::new(
+            x_second_column,
+            y_exp,
+            w_second_column,
+            h_line,
+            "Left side expression",
+        );
+        let mut expression_right = TextEditor::new(
+            x_second_column,
+            y_exp2,
+            w_second_column,
+            h_line,
+            "Right side expression",
+        );
+        let mut comparison = fltk::menu::Choice::new(
+            x_second_column + w_second_column / 4,
+            y_comp,
+            w_second_column / 2,
+            h_line,
+            None,
+        );
         group.end();
 
         let (sender, _r) = app::channel();
@@ -741,11 +787,35 @@ impl TestEditor {
 
         let mut selector =
             SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Tests");
-        let mut name = TextEditor::new(x_second_column, y_name, w_second_column, line_height, "Name");
-        let mut expression_left = TextEditor::new(x_second_column, y_exp, w_second_column, line_height, "Left side expression");
-        let mut expression_right = TextEditor::new(x_second_column, y_exp2, w_second_column, line_height, "Right side expression");
+        let mut name = TextEditor::new(
+            x_second_column,
+            y_name,
+            w_second_column,
+            line_height,
+            "Name",
+        );
+        let mut expression_left = TextEditor::new(
+            x_second_column,
+            y_exp,
+            w_second_column,
+            line_height,
+            "Left side expression",
+        );
+        let mut expression_right = TextEditor::new(
+            x_second_column,
+            y_exp2,
+            w_second_column,
+            line_height,
+            "Right side expression",
+        );
         let mut comparison = fltk::menu::Choice::new(x_comp, y_comp, w_comp, line_height, None);
-        Frame::new(x_second_column, y_result_success - font_size, w_second_column, line_height, "On Success");
+        Frame::new(
+            x_second_column,
+            y_result_success - font_size,
+            w_second_column,
+            line_height,
+            "On Success",
+        );
         let success = fltk::menu::Choice::new(
             x_second_column,
             y_result_success,
@@ -753,7 +823,13 @@ impl TestEditor {
             line_height,
             None,
         );
-        Frame::new(x_second_column, y_result_failure - font_size, w_second_column, line_height, "On Failure");
+        Frame::new(
+            x_second_column,
+            y_result_failure - font_size,
+            w_second_column,
+            line_height,
+            "On Failure",
+        );
         let failure = fltk::menu::Choice::new(
             x_second_column,
             y_result_failure,
@@ -832,8 +908,7 @@ impl ResultEditor {
         let x_column_4 = x_column_3 + w_column_3 + margin2 * 2;
 
         let y_butt = y_mods + h_line;
-        let y_exp  = y_butt + h_line * 2;
-
+        let y_exp = y_butt + h_line * 2;
 
         let mut select_result =
             SelectBrowser::new(x_column_1, y_results, w_column_1, h_result, "Results");
@@ -841,7 +916,13 @@ impl ResultEditor {
             SelectBrowser::new(x_column_1, y_mods, w_column_1, h_mods, "Modifications");
 
         let mut name = TextEditor::new(x_column_2, y_name, w_column_2, h_line, "Name");
-        Frame::new(x_column_2, y_page - font_size, w_column_2, h_line, "Next Page");
+        Frame::new(
+            x_column_2,
+            y_page - font_size,
+            w_column_2,
+            h_line,
+            "Next Page",
+        );
         let next_page = fltk::menu::Choice::new(x_column_2, y_page, w_column_2, h_line, None);
 
         let butt_rec = Button::new(x_column_3, y_butt, w_column_3, h_line, "Add Record");
