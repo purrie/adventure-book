@@ -9,7 +9,7 @@ use fltk::{
     group::{Group, Scroll, Tabs},
     image::SvgImage,
     prelude::*,
-    text::{TextBuffer, TextEditor},
+    text::{TextBuffer, TextEditor}, enums::Align,
 };
 
 use crate::{
@@ -41,7 +41,7 @@ impl EditorWindow {
     pub fn new(area: Rect) -> Self {
         let x_file = area.x;
         let y_file = area.y;
-        let w_file = area.w / 3;
+        let w_file = area.w / 4;
         let h_file = area.h;
 
         let x_editor = x_file + w_file + 5;
@@ -400,10 +400,10 @@ impl StoryEditor {
         let font_size = app::font_size();
 
         let x_editor = area.x;
-        let y_title = area.y + font_size;
-        let w_editor = area.w / 2 * 2;
-        let h_title = font_size + 4;
+        let w_editor = area.w;
 
+        let y_title = area.y + font_size;
+        let h_title = font_size + 4;
         let y_story = y_title + h_title + font_size;
         let h_story = area.h / 2;
 
@@ -416,7 +416,7 @@ impl StoryEditor {
         let x_valuators = area.x;
         let y_valuators = y_story + h_story;
         let w_valuators = area.w;
-        let h_valuators = area.h - h_story + h_title;
+        let h_valuators = area.h - h_story - h_title - font_size * 2;
 
         let mut title = TextEditor::new(x_editor, y_title, w_editor, h_title, "Title");
         let mut story = TextEditor::new(x_editor, y_story, w_editor, h_story, "Story Text");
@@ -502,7 +502,7 @@ impl ChoiceEditor {
         let x_selector = area.x;
         let y_selector = area.y;
         let w_selector = area.w / 3;
-        let h_selector = area.h - 50;
+        let h_selector = area.h - font_size;
 
 
         let margin_menu = 20;
@@ -651,7 +651,7 @@ impl ConditionEditor {
         let x_selector = area.x;
         let y_selector = area.y;
         let w_selector = area.w / 3;
-        let h_selector = area.h - 50;
+        let h_selector = area.h - font_size;
 
         let marging_column = 20;
         let x_second_column = area.x + w_selector + marging_column;
@@ -722,7 +722,7 @@ impl TestEditor {
         let x_selector = area.x;
         let y_selector = area.y;
         let w_selector = area.w / 3;
-        let h_selector = area.h - 50;
+        let h_selector = area.h - font_size;
 
         let column_margin = 20;
         let x_second_column = x_selector + w_selector + column_margin;
@@ -800,7 +800,6 @@ struct ResultEditor {
     selector: SelectBrowser,
     name: TextEditor,
     next_page: fltk::menu::Choice,
-    scroll: Scroll,
     effects: Vec<(fltk::menu::Choice, TextEditor)>,
 }
 
@@ -808,37 +807,52 @@ impl ResultEditor {
     fn new(area: Rect) -> Self {
         let group = Group::new(area.x, area.y, area.w, area.h, "Results");
 
-        let x_selector = area.x;
-        let y_selector = area.y;
-        let w_selector = area.w / 2 - 10;
-        let h_selector = area.h / 2 - 5;
+        let font_size = app::font_size();
 
-        let x_name = x_selector + w_selector + 20;
-        let y_name = y_selector;
-        let w_name = w_selector;
-        let h_name = 20;
+        let x_column_1 = area.x;
+        let w_column_1 = area.w / 3;
 
-        let x_page = x_name;
-        let y_page = y_name + h_name + 5;
-        let w_page = w_name;
-        let h_page = 20;
+        let y_results = area.y;
+        let h_result = area.h / 2 - font_size;
 
-        let x_scroll = area.x;
-        let y_scroll = y_selector + h_selector + 10;
-        let w_scroll = area.w;
-        let h_scroll = area.h - h_selector;
+        let margin = 20;
+        let x_column_2 = x_column_1 + w_column_1 + margin;
+        let w_column_2 = area.w - w_column_1 - margin * 2;
+        let h_line = font_size + 2;
 
-        let mut selector =
-            SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Results");
-        let mut name = TextEditor::new(x_name, y_name, w_name, h_name, "Name");
-        let next_page = fltk::menu::Choice::new(x_page, y_page, w_page, h_page, "Next Page");
-        let scroll = Scroll::new(x_scroll, y_scroll, w_scroll, h_scroll, None);
-        scroll.end();
+        let y_mods = y_results + h_result + font_size;
+        let h_mods = area.h - h_result - font_size * 2;
+
+        let y_name = y_results + font_size;
+        let y_page = y_name + h_line * 2;
+
+        let margin2 = 5;
+        let x_column_3 = x_column_2 + margin2;
+        let w_column_3 = w_column_2 / 2 - margin2 * 2;
+        let x_column_4 = x_column_3 + w_column_3 + margin2 * 2;
+
+        let y_butt = y_mods + h_line;
+        let y_exp  = y_butt + h_line * 2;
+
+
+        let mut select_result =
+            SelectBrowser::new(x_column_1, y_results, w_column_1, h_result, "Results");
+        let mut select_mod =
+            SelectBrowser::new(x_column_1, y_mods, w_column_1, h_mods, "Modifications");
+
+        let mut name = TextEditor::new(x_column_2, y_name, w_column_2, h_line, "Name");
+        Frame::new(x_column_2, y_page - font_size, w_column_2, h_line, "Next Page");
+        let next_page = fltk::menu::Choice::new(x_column_2, y_page, w_column_2, h_line, None);
+
+        let butt_rec = Button::new(x_column_3, y_butt, w_column_3, h_line, "Add Record");
+        let butt_nam = Button::new(x_column_4, y_butt, w_column_3, h_line, "Add Name");
+        let expression = TextEditor::new(x_column_2, y_exp, w_column_2, h_line, "Value expression");
+
         group.end();
 
         let (sender, _r) = app::channel();
 
-        selector.set_callback({
+        select_result.set_callback({
             let sender = sender.clone();
             move |x| {
                 if x.value() > 0 {
@@ -850,10 +864,9 @@ impl ResultEditor {
         name.set_buffer(TextBuffer::default());
 
         Self {
-            selector,
+            selector: select_result,
             name,
             next_page,
-            scroll,
             effects: Vec::new(),
         }
     }
