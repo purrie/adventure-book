@@ -26,27 +26,6 @@ macro_rules! emit {
     };
 }
 
-/// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
-pub struct EditorWindow {
-    /// Root UI group
-    group: Group,
-    /// Collection of global editor controls
-    file_list: FileList,
-    /// Collection of UI controls for editing adventure metadata
-    adventure_editor: AdventureEditor,
-    /// Collection of UI controls for editing individual page contents
-    page_editor: StoryEditor,
-
-    /// Index of the edited adventure within the main adventure list, None for a new unsaved adventure
-    adventure_index: Option<usize>,
-    /// Adventure that is loaded for editing
-    adventure: Adventure,
-
-    current_page: String,
-    /// Map of file name keys and pages on those file names
-    pages: HashMap<String, Page>,
-}
-
 #[derive(Clone)]
 pub enum Event {
     Save,
@@ -77,6 +56,27 @@ pub enum Event {
 
     /// This event is used to select data block for sub editors in pages
     SelectInSubEditor(i32),
+}
+
+/// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
+pub struct EditorWindow {
+    /// Root UI group
+    group: Group,
+    /// Collection of global editor controls
+    file_list: FileList,
+    /// Collection of UI controls for editing adventure metadata
+    adventure_editor: AdventureEditor,
+    /// Collection of UI controls for editing individual page contents
+    page_editor: StoryEditor,
+
+    /// Index of the edited adventure within the main adventure list, None for a new unsaved adventure
+    adventure_index: Option<usize>,
+    /// Adventure that is loaded for editing
+    adventure: Adventure,
+
+    current_page: String,
+    /// Map of file name keys and pages on those file names
+    pages: HashMap<String, Page>,
 }
 
 impl EditorWindow {
