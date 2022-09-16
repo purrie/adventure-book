@@ -104,28 +104,7 @@ pub enum Event {
     SelectAdventure(String),
     StoryChoice(usize),
     EditAdventure,
-
-    EditorSave,
-
-    EditorAddPage,
-    EditorRemovePage,
-    EditorOpenMeta,
-    EditorOpenPage(String),
-    EditorAddRecord,
-    EditorAddName,
-    EditorInsertRecord(String),
-    EditorInsertName(String),
-    EditorEditRecord(usize),
-    EditorEditName(usize),
-    EditorRemoveRecord(usize),
-    EditorRemoveName(usize),
-    /// Saves the currently displayed choice in editor into memory, event carries the index of the choice to be used for saving
-    EditorSaveChoice(usize),
-    /// Requests a choice to be loaded into choice editor
-    EditorLoadChoice(usize),
-
-    /// This event is used to select data block for sub editors in pages
-    EditorSelectInSubEditor(i32),
+    Editor(crate::editor::Event),
 }
 
 #[cfg(test)]

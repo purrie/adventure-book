@@ -13,10 +13,18 @@ use fltk::{
 };
 
 use crate::{
-    adventure::{Adventure, Choice, Name, Page, Record},
+    adventure::{is_keyword_valid, Adventure, Choice, Comparison, Condition, Name, Page, Record},
+    dialog::{ask_for_name, ask_for_record, ask_for_text, ask_to_confirm},
     file::{capture_pages, read_page, signal_error},
-    game::Event,
 };
+
+/// Creates a Game Event from Editor Event
+/// Used for readibility mostly
+macro_rules! emit {
+    ($event:expr) => {
+        crate::game::Event::Editor($event)
+    };
+}
 
 /// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
 pub struct EditorWindow {
@@ -37,6 +45,38 @@ pub struct EditorWindow {
     current_page: String,
     /// Map of file name keys and pages on those file names
     pages: HashMap<String, Page>,
+}
+
+#[derive(Clone)]
+pub enum Event {
+    Save,
+
+    AddPage,
+    RemovePage,
+    OpenMeta,
+    OpenPage(String),
+    AddRecord,
+    AddName,
+    InsertRecord(String),
+    InsertName(String),
+    EditRecord(usize),
+    EditName(usize),
+    RemoveRecord(usize),
+    RemoveName(usize),
+    /// Saves the currently displayed choice in editor into memory, event carries the index of the choice to be used for saving
+    SaveChoice(usize),
+    /// Requests a choice to be loaded into choice editor
+    LoadChoice(usize),
+    /// Saves the currently displayed condition into editor memory
+    SaveCondition(Option<String>),
+    /// Loads condition into editor
+    LoadCondition(String),
+    RenameCondition,
+    AddCondition,
+    RemoveCondition,
+
+    /// This event is used to select data block for sub editors in pages
+    SelectInSubEditor(i32),
 }
 
 impl EditorWindow {
@@ -85,6 +125,145 @@ impl EditorWindow {
             };
         }
     }
+    pub fn process(&mut self, ev: Event) {
+        match ev {
+            Event::Save => todo!(),
+            Event::AddPage => todo!(),
+            Event::RemovePage => todo!(),
+            Event::OpenMeta => self.open_adventure(),
+            Event::OpenPage(name) => self.open_page(name),
+            Event::AddRecord => {
+                if let Some(rec) = ask_for_record() {
+                    if is_keyword_valid(&rec.name) {
+                        self.adventure_editor.add_record(&rec.name, false);
+                        self.adventure.records.insert(rec.name.clone(), rec);
+                        self.group.redraw();
+                    } else {
+                        signal_error!(
+                            "The keyword {} is invalid, please use only letters and numbers",
+                            rec.name
+                        );
+                    }
+                }
+            }
+            Event::AddName => {
+                if let Some(nam) = ask_for_name() {
+                    if is_keyword_valid(&nam.keyword) {
+                        self.adventure_editor.add_record(&nam.keyword, true);
+                        self.adventure.names.insert(nam.keyword.clone(), nam);
+                        self.group.redraw();
+                    } else {
+                        signal_error!(
+                            "The keyword {} is invalid, please use only letters and numbers",
+                            nam.keyword
+                        );
+                    }
+                }
+            }
+            Event::InsertRecord(_) => todo!(),
+            Event::InsertName(_) => todo!(),
+            Event::EditRecord(_) => todo!(),
+            Event::EditName(_) => todo!(),
+            Event::RemoveRecord(_) => todo!(),
+            Event::RemoveName(_) => todo!(),
+            Event::SaveChoice(_) => todo!(),
+            Event::LoadChoice(_) => todo!(),
+            Event::SaveCondition(cond) => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    let cond = match cond {
+                        Some(s) => s,
+                        None => self.page_editor.conditions.selected(),
+                    };
+                    if let Some(con) = page.conditions.get_mut(&cond) {
+                        self.page_editor.conditions.save(con);
+                    }
+                }
+            }
+            Event::LoadCondition(cond) => {
+                if let Some(page) = self.pages.get(&self.current_page) {
+                    if let Some(con) = page.conditions.get(&cond) {
+                        self.page_editor.conditions.load(&con);
+                    }
+                }
+            }
+            Event::RenameCondition => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    let selected = self.page_editor.conditions.selected();
+                    let name;
+                    if let Some(n) =
+                        ask_for_text(&format!("Insert new name for {} Condition", &selected))
+                    {
+                        if n.len() == 0 {
+                            return;
+                        }
+                        name = n;
+                    } else {
+                        return;
+                    }
+
+                    if let Some(cond) = page.conditions.get_mut(&selected) {
+                        // renaming the condition in choices
+                        for choice in page.choices.iter_mut() {
+                            if choice.condition == cond.name {
+                                choice.condition = name.clone();
+                            }
+                        }
+                        self.page_editor.conditions.rename(&selected, &name);
+                        cond.name = name;
+                    }
+                }
+            }
+            Event::AddCondition => {
+                let name;
+                if let Some(n) = ask_for_text("Insert name for the new Condition") {
+                    name = n;
+                } else {
+                    return;
+                }
+                if name.len() == 0 {
+                    return;
+                }
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    if let Some(_cond) = page.conditions.get(&name) {
+                        signal_error!("Cannot add {} because it already exists!", name);
+                        return;
+                    }
+                    let cond = Condition {
+                        name: name.clone(),
+                        expression_l: "0".to_string(),
+                        expression_r: "0".to_string(),
+                        ..Default::default()
+                    };
+                    self.page_editor.conditions.add(&name);
+                    self.page_editor.conditions.load(&cond);
+                    page.conditions.insert(name, cond);
+                }
+            }
+            Event::RemoveCondition => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    let selected = self.page_editor.conditions.selected();
+                    if page.conditions.contains_key(&selected) {
+                        for choice in page.choices.iter() {
+                            if choice.condition == selected {
+                                signal_error!("Cannot remove Condition {} because it's used in one or more of the Page's Choices", selected);
+                                return;
+                            }
+                        }
+                        if ask_to_confirm(&format!(
+                            "Are you sure you want to remove {} Condition?",
+                            &selected
+                        )) {
+                            page.conditions.remove(&selected);
+                            self.page_editor
+                                .conditions
+                                .populate_conditions(&page.conditions);
+                        }
+                    }
+                }
+            }
+            Event::SelectInSubEditor(_) => todo!(),
+        }
+    }
     pub fn hide(&mut self) {
         self.group.hide();
     }
@@ -93,20 +272,8 @@ impl EditorWindow {
         self.page_editor.hide();
         self.adventure_editor.show();
     }
-    /// Adds a new record to the adventure data
-    pub fn add_record(&mut self, record: Record) {
-        self.adventure_editor.add_record(&record.name, false);
-        self.adventure.records.insert(record.name.clone(), record);
-        self.group.redraw();
-    }
-    /// Adds a new name to the adventure data
-    pub fn add_name(&mut self, name: Name) {
-        self.adventure_editor.add_record(&name.keyword, true);
-        self.adventure.names.insert(name.keyword.clone(), name);
-        self.group.redraw();
-    }
     /// Opens page editor and loads page by filename into it
-    pub fn open_page(&mut self, name: String) {
+    fn open_page(&mut self, name: String) {
         // skipping loading the same page twice
         if name == self.current_page {
             return;
@@ -120,10 +287,15 @@ impl EditorWindow {
             self.page_editor.load_page(page, &self.adventure);
             self.page_editor.show();
             self.current_page = name;
+
+            // loading page elements
+            self.page_editor
+                .conditions
+                .populate_conditions(&page.conditions);
         }
     }
     /// Opens adventure metadata editor UI
-    pub fn open_adventure(&mut self) {
+    fn open_adventure(&mut self) {
         // no need to do anything if metadata already is shown
         if self.adventure_editor.group.visible() {
             return;
@@ -174,14 +346,14 @@ impl FileList {
 
         let (s, _r) = app::channel();
 
-        butt_bac.emit(s.clone(), Event::DisplayMainMenu);
-        butt_sav.emit(s.clone(), Event::EditorSave);
-        butt_add.emit(s.clone(), Event::EditorAddPage);
-        butt_rem.emit(s.clone(), Event::EditorRemovePage);
-        adventure_meta.emit(s.clone(), Event::EditorOpenMeta);
+        butt_bac.emit(s.clone(), crate::game::Event::DisplayMainMenu);
+        butt_sav.emit(s.clone(), emit!(Event::Save));
+        butt_add.emit(s.clone(), emit!(Event::AddPage));
+        butt_rem.emit(s.clone(), emit!(Event::RemovePage));
+        adventure_meta.emit(s.clone(), emit!(Event::OpenMeta));
         page_list.set_callback(move |x| {
             if let Some(text) = x.selected_text() {
-                s.send(Event::EditorOpenPage(text));
+                s.send(emit!(Event::OpenPage(text)));
             }
         });
 
@@ -315,10 +487,10 @@ impl VariableEditor {
 
         if is_record {
             butt_add.set_label("Add Record");
-            butt_add.emit(s, Event::EditorAddRecord);
+            butt_add.emit(s, emit!(Event::AddRecord));
         } else {
             butt_add.set_label("Add Name");
-            butt_add.emit(s, Event::EditorAddName);
+            butt_add.emit(s, emit!(Event::AddName));
         }
 
         Self {
@@ -348,9 +520,9 @@ impl VariableEditor {
             let mut butt_insert = Button::new(x, y, 20, h, "@<-");
             let ev;
             if self.record {
-                ev = Event::EditorInsertRecord(variable.clone());
+                ev = emit!(Event::InsertRecord(variable.clone()));
             } else {
-                ev = Event::EditorInsertName(variable.clone());
+                ev = emit!(Event::InsertName(variable.clone()));
             }
 
             butt_insert.emit(sender.clone(), ev);
@@ -363,11 +535,11 @@ impl VariableEditor {
         let edit;
         let delete;
         if self.record {
-            edit = Event::EditorEditRecord(child_count);
-            delete = Event::EditorRemoveRecord(child_count);
+            edit = emit!(Event::EditRecord(child_count));
+            delete = emit!(Event::RemoveRecord(child_count));
         } else {
-            edit = Event::EditorEditName(child_count);
-            delete = Event::EditorRemoveName(child_count);
+            edit = emit!(Event::EditName(child_count));
+            delete = emit!(Event::RemoveName(child_count));
         }
 
         let bin_icon = SvgImage::from_data(crate::icons::BIN_ICON).unwrap();
@@ -452,7 +624,7 @@ impl StoryEditor {
             false,
         );
 
-        let tabs = Tabs::new(x_valuators, y_valuators, w_valuators, h_valuators, None);
+        let mut tabs = Tabs::new(x_valuators, y_valuators, w_valuators, h_valuators, None);
         let children = Rect::from(tabs.client_area());
 
         let choices = ChoiceEditor::new(children);
@@ -467,6 +639,31 @@ impl StoryEditor {
         title.set_buffer(TextBuffer::default());
         story.set_buffer(TextBuffer::default());
         story.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
+
+        tabs.set_callback({
+            let mut old_select = "Choices".to_string();
+            move |x| {
+                let (s, _r) = app::channel();
+                match old_select.as_str() {
+                    "Choices" => {}
+                    "Conditions" => s.send(emit!(Event::SaveCondition(None))),
+                    "Tests" => {}
+                    "Results" => {}
+                    _ => unreachable!(),
+                }
+                if let Some(new_select) = x.value() {
+                    let new_select = new_select.label();
+                    match new_select.as_str() {
+                        "Choices" => {}
+                        "Conditions" => {}
+                        "Tests" => {}
+                        "Results" => {}
+                        _ => unreachable!(),
+                    }
+                    old_select = new_select;
+                }
+            }
+        });
 
         Self {
             group,
@@ -579,8 +776,8 @@ impl ChoiceEditor {
                 if *index == new_index {
                     return;
                 }
-                sender.send(Event::EditorSaveChoice(*index as usize));
-                sender.send(Event::EditorLoadChoice(new_index as usize));
+                sender.send(emit!(Event::SaveChoice(*index as usize)));
+                sender.send(emit!(Event::LoadChoice(new_index as usize)));
                 *index = new_index;
             }
         });
@@ -664,13 +861,15 @@ impl ChoiceEditor {
 /// The story editor record inserters interactively insert tags here if the editor has focus
 struct ConditionEditor {
     selector: SelectBrowser,
-    name: TextEditor,
+    name: Frame,
     expression_left: TextEditor,
     expression_right: TextEditor,
     comparison: fltk::menu::Choice,
+    selected: Rc<RefCell<String>>,
 }
 
 impl ConditionEditor {
+    /// Creates UI for editing Conditions
     fn new(area: Rect) -> Self {
         let group = Group::new(area.x, area.y, area.w, area.h, "Conditions");
 
@@ -680,6 +879,14 @@ impl ConditionEditor {
         let y_selector = area.y;
         let w_selector = area.w / 3;
         let h_selector = area.h - font_size;
+
+        let y_butt = y_selector + h_selector;
+        let w_butt = font_size;
+        let h_butt = font_size;
+
+        let x_add = x_selector;
+        let x_mod = x_add + w_butt;
+        let x_rem = x_selector + w_selector - w_butt;
 
         let marging_column = 20;
         let x_second_column = area.x + w_selector + marging_column;
@@ -694,7 +901,11 @@ impl ConditionEditor {
 
         let mut selector =
             SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Conditions");
-        let mut name = TextEditor::new(x_second_column, y_name, w_second_column, h_line, "Name");
+        let mut add = Button::new(x_add, y_butt, w_butt, h_butt, "@+");
+        let mut ren = Button::new(x_mod, y_butt, w_butt, h_butt, None);
+        let mut rem = Button::new(x_rem, y_butt, w_butt, h_butt, None);
+
+        let name = Frame::new(x_second_column, y_name, w_second_column, h_line, "Name");
         let mut expression_left = TextEditor::new(
             x_second_column,
             y_exp,
@@ -718,21 +929,37 @@ impl ConditionEditor {
         );
         group.end();
 
+        let mut gear = SvgImage::from_data(crate::icons::GEAR_ICON).unwrap();
+        let mut bin = SvgImage::from_data(crate::icons::BIN_ICON).unwrap();
+        gear.scale(w_butt, h_butt, false, true);
+        bin.scale(w_butt, h_butt, false, true);
+        ren.set_image(Some(gear));
+        rem.set_image(Some(bin));
+
         let (sender, _r) = app::channel();
+        let selected = Rc::new(RefCell::new(String::new()));
 
         selector.set_callback({
             let sender = sender.clone();
+            let selected = Rc::clone(&selected);
             move |x| {
-                if x.value() > 0 {
-                    sender.send(x.value() - 1);
+                let mut s = selected.borrow_mut();
+                if s.len() > 0 {
+                    sender.send(emit!(Event::SaveCondition(Some(s.clone()))));
+                }
+                if let Some(new_s) = x.selected_text() {
+                    *s = new_s;
+                    sender.send(emit!(Event::LoadCondition(s.clone())));
                 }
             }
         });
+        add.emit(sender.clone(), emit!(Event::AddCondition));
+        ren.emit(sender.clone(), emit!(Event::RenameCondition));
+        rem.emit(sender, emit!(Event::RemoveCondition));
 
-        name.set_buffer(TextBuffer::default());
         expression_left.set_buffer(TextBuffer::default());
         expression_right.set_buffer(TextBuffer::default());
-        comparison.add_choice(">|>=|<|<=|=|!=");
+        comparison.add_choice(&Comparison::as_choice());
         comparison.set_value(0);
 
         Self {
@@ -741,7 +968,92 @@ impl ConditionEditor {
             expression_left,
             expression_right,
             comparison,
+            selected,
         }
+    }
+    /// Returns name of the loaded Condition, or empty string if there's no Condition loaded
+    fn selected(&self) -> String {
+        self.selected.borrow().clone()
+    }
+    /// Loads a condition into active editor
+    fn load(&mut self, con: &Condition) {
+        self.name.set_label(&con.name);
+        self.expression_left
+            .buffer()
+            .as_mut()
+            .unwrap()
+            .set_text(&con.expression_l);
+        self.expression_right
+            .buffer()
+            .as_mut()
+            .unwrap()
+            .set_text(&con.expression_r);
+        self.comparison.set_value(con.comparison.to_index());
+        *self.selected.borrow_mut() = con.name.clone();
+    }
+    /// Clears up data from the editor
+    fn clear_selection(&mut self) {
+        self.name.set_label("Select a condition");
+        self.expression_left.buffer().as_mut().unwrap().set_text("");
+        self.expression_right
+            .buffer()
+            .as_mut()
+            .unwrap()
+            .set_text("");
+        self.comparison.set_value(0);
+        *self.selected.borrow_mut() = String::new();
+    }
+    /// Fills con with data from the editor
+    ///
+    /// It saves comparison and both expressions, name is not touched.
+    fn save(&self, con: &mut Condition) {
+        con.comparison = Comparison::from(self.comparison.choice().unwrap());
+        con.expression_l = self.expression_left.buffer().as_ref().unwrap().text();
+        con.expression_r = self.expression_right.buffer().as_ref().unwrap().text();
+    }
+    /// Fills the selector with a new set of Conditions
+    ///
+    /// The old entries will be removed from the selector.
+    /// This function also clears the selected entry, and if conds isn't empty then it loads the first entry.
+    fn populate_conditions(&mut self, conds: &HashMap<String, Condition>) {
+        self.selector.clear();
+        let mut set = true;
+        for con in conds.iter() {
+            if set {
+                set = false;
+                self.load(con.1);
+            }
+            self.selector.add(con.0);
+        }
+        if set {
+            self.clear_selection();
+        }
+    }
+    /// Renames entry in the selector to a new name
+    ///
+    /// # Errors
+    ///
+    /// When renaming an entry, make sure the new name matches the condition in the page, otherwise it will lead to errors.
+    fn rename(&mut self, old: &str, new: &str) {
+        let mut n = 1;
+        while let Some(t) = self.selector.text(n) {
+            if t == old {
+                if *self.selected.borrow() == old {
+                    self.name.set_label(new);
+                }
+                self.selector.set_text(n, new);
+                return;
+            }
+            n += 1;
+        }
+    }
+    /// Adds a new line entry to the selector
+    ///
+    /// # Errors
+    ///
+    /// When using this function, ensure the condition with the name actually exists in the page, otherwise it will lead to errors
+    fn add(&mut self, line: &str) {
+        self.selector.add(line);
     }
 }
 /// Widgets for editing tests

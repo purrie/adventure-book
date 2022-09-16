@@ -1,5 +1,5 @@
-use adventure::{Adventure, Page, is_keyword_valid };
-use dialog::{ask_to_choose_adventure, ask_for_record, ask_for_name};
+use adventure::{is_keyword_valid, Adventure, Page};
+use dialog::{ask_for_name, ask_for_record, ask_to_choose_adventure};
 use evaluation::{evaluate_result, Random};
 use file::{capture_adventures, signal_error};
 use fltk::{
@@ -180,42 +180,7 @@ fn main() {
                         main_window.switch_to_editor();
                     }
                 }
-                Event::EditorAddPage => todo!(),
-                Event::EditorRemovePage => todo!(),
-                Event::EditorOpenMeta => {
-                    main_window.editor_window.open_adventure();
-                },
-                Event::EditorOpenPage(name) => {
-                    main_window.editor_window.open_page(name);
-                },
-                Event::EditorInsertRecord(_) => todo!(),
-                Event::EditorInsertName(_) => todo!(),
-                Event::EditorEditRecord(_) => todo!(),
-                Event::EditorEditName(_) => todo!(),
-                Event::EditorRemoveRecord(_) => todo!(),
-                Event::EditorRemoveName(_) => todo!(),
-                Event::EditorAddRecord => {
-                    if let Some(rec) = ask_for_record() {
-                        if is_keyword_valid(&rec.name) {
-                            main_window.editor_window.add_record(rec);
-                        } else {
-                            signal_error!("The keyword {} is invalid, please use only letters and numbers", rec.name);
-                        }
-                    }
-                }
-                Event::EditorAddName => {
-                    if let Some(nam) = ask_for_name() {
-                        if is_keyword_valid(&nam.keyword) {
-                            main_window.editor_window.add_name(nam);
-                        } else {
-                            signal_error!("The keyword {} is invalid, please use only letters and numbers", nam.keyword);
-                        }
-                    }
-                }
-                Event::EditorSelectInSubEditor(_) => todo!(),
-                Event::EditorSave => todo!(),
-                Event::EditorSaveChoice(_) => todo!(),
-                Event::EditorLoadChoice(_) => todo!(),
+                Event::Editor(e) => main_window.editor_window.process(e),
             }
         }
     }
