@@ -34,8 +34,9 @@ pub struct Page {
     pub results: HashMap<String, StoryResult>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Default)]
 pub enum Comparison {
+    #[default]
     Greater,
     GreaterEqual,
     Less,
@@ -61,6 +62,7 @@ pub struct Choice {
     pub test: String,
     pub result: String,
 }
+#[derive(Default)]
 pub struct Condition {
     pub name: String,
     pub expression_r: String,
@@ -406,10 +408,17 @@ impl From<&str> for Comparison {
             ">" => Comparison::Greater,
             ">=" => Comparison::GreaterEqual,
             "=" => Comparison::Equal,
+            "==" => Comparison::Equal,
             "!" => Comparison::NotEqual,
+            "!=" => Comparison::NotEqual,
             "<" => Comparison::Less,
             _ => Comparison::LessEqual,
         }
+    }
+}
+impl From<String> for Comparison {
+    fn from(item: String) -> Self {
+        Comparison::from(item.as_str())
     }
 }
 impl Comparison {
@@ -421,6 +430,21 @@ impl Comparison {
             Comparison::LessEqual => lhv <= rhv,
             Comparison::Equal => lhv == rhv,
             Comparison::NotEqual => lhv != rhv,
+        }
+    }
+    /// Returns a string suitable to use in FLTK Choice widget
+    pub fn as_choice() -> String {
+        ">|>=|<|<=|=|!=".to_string()
+    }
+    /// Converts the comparison to a number usable for indexing values in FLTK Choice widget
+    pub fn to_index(&self) -> i32 {
+        match self {
+            Comparison::Greater => 0,
+            Comparison::GreaterEqual => 1,
+            Comparison::Less => 2,
+            Comparison::LessEqual => 3,
+            Comparison::Equal => 4,
+            Comparison::NotEqual => 5,
         }
     }
 }
