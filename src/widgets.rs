@@ -72,6 +72,7 @@ pub struct Selector {
     selected: Rc<RefCell<usize>>,
 }
 
+#[allow(dead_code)]
 impl Selector {
     pub fn new(x: i32, y: i32, w: i32, h: i32) -> Self {
         let mut widget = Widget::new(x, y, w, h, None);
@@ -166,10 +167,10 @@ impl Selector {
             selected,
         }
     }
-    pub fn clear(&self) {
+    pub fn clear(&mut self) {
         self.options.borrow_mut().clear();
     }
-    pub fn add(&self, choice: String) {
+    pub fn add(&mut self, choice: String) {
         self.options.borrow_mut().push(choice);
     }
     pub fn selected_text(&self) -> Option<String> {
@@ -178,6 +179,9 @@ impl Selector {
             return Some(text.clone());
         }
         None
+    }
+    pub fn selected(&self) -> usize {
+        *self.selected.borrow()
     }
 }
 widget_extends!(Selector, Widget, widget);
