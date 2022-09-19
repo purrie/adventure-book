@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use regex::Regex;
 
@@ -44,10 +44,14 @@ pub enum Comparison {
     Equal,
     NotEqual,
 }
+#[derive(Default)]
 pub struct StoryResult {
     pub name: String,
-    pub expression: String,
+    pub next_page: String,
+    /// Consists of keys that are record or name keywords, and unevaluated expressions as values that represent how the records or names are changed
+    pub side_effects: HashMap<String, String>,
 }
+#[derive(Default)]
 pub struct Test {
     pub name: String,
     pub expression_r: String,
@@ -552,28 +556,41 @@ impl Test {
 }
 impl StoryResult {
     pub fn parse_from_string(text: String) -> Result<StoryResult, ()> {
-        let args: Vec<&str> = text
-            .splitn(2, ";")
-            .map(|x| x.trim())
-            .filter(|x| x.len() > 0)
-            .collect();
+    let mut args: VecDeque<&str> = text
+        .split(";")
+        .map(|x| x.trim())
+        .filter(|x| x.len() > 0)
+        .collect();
 
-        if args.len() != 2 {
+        if args.len() < 2 {
             return Err(());
+        }
+        let name = args.pop_front().unwrap().to_string();
+        let next_page = args.pop_front().unwrap().to_string();
+        let mut side_effects = HashMap::new();
+
+        while let Some(ar) = args.pop_front() {
+            // if it's not the end that means we are constructing record change
+            if let Some(val) = args.pop_front() {
+                side_effects.insert(ar.to_string(), val.to_string());
+            } else {
+                // error because we have keyword but not value
+                return Err(());
+            }
         }
 
         Ok(StoryResult {
-            name: args[0].to_string(),
-            expression: args[1].to_string(),
+            name,
+            next_page,
+            side_effects,
         })
     }
     pub fn is_keyword_present(&self, keyword: &str) -> bool {
-        let regex = regex_match_keyword(keyword);
-        if let Err(_) = regex {
-            return false;
-        }
-        let regex = regex.unwrap();
-        regex.is_match(&self.expression)
+        let regex = match regex_match_keyword(keyword) {
+            Ok(r) => r,
+            Err(_) => return false,
+        };
+        self.side_effects.iter().any(|x| regex.is_match(x.0) || regex.is_match(x.1))
     }
 }
 impl Record {
@@ -670,14 +687,15 @@ mod tests {
         let data = "proceed; next scene".to_string();
         let res = StoryResult::parse_from_string(data).unwrap();
         assert_eq!(res.name, "proceed");
-        assert_eq!(res.expression, "next scene");
+        assert_eq!(res.next_page, "next scene");
     }
     #[test]
     fn result_record_mod_parse() {
-        let data = "proceed; strength; 1; next_scene;".to_string();
+        let data = "proceed; next_scene; strength; 1;".to_string();
         let res = StoryResult::parse_from_string(data).unwrap();
         assert_eq!(res.name, "proceed");
-        assert_eq!(res.expression, "strength; 1; next_scene;");
+        assert_eq!(res.next_page, "next_scene");
+        assert_eq!(res.side_effects.get("strength").unwrap(), "1");
     }
     #[test]
     fn test_parse() {

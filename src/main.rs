@@ -1,6 +1,6 @@
 use adventure::{is_keyword_valid, Adventure, Page};
-use dialog::{ask_for_name, ask_for_record, ask_to_choose_adventure};
-use evaluation::{evaluate_result, Random};
+use dialog::{ask_for_name, ask_for_record, ask_to_choose_adventure, ask_to_confirm};
+use evaluation::{Random, evaluate_expression};
 use file::{capture_adventures, signal_error};
 use fltk::{
     app::{self, App},
@@ -142,34 +142,31 @@ fn main() {
                         }
                     }
 
-                    if let Ok(evaluated_result) =
-                        evaluate_result(&result.expression, &active_storybook.records, &mut rng)
-                    {
-                        // first we process all the record changes
-                        if let Some(delta) = evaluated_result.1 {
-                            for (kee, val) in delta {
-                                if let Some(rec) = active_storybook.records.get_mut(&kee) {
-                                    rec.value += val;
+
+                    for mods in result.side_effects.iter() {
+                        if active_storybook.records.contains_key(mods.0) {
+                            if let Ok(v) = evaluate_expression(mods.1, &active_storybook.records, &mut rng) {
+                                if let Some(r) = active_storybook.records.get_mut(mods.0) {
+                                    r.value += v;
+                                }
+                            } else {
+                                if ask_to_confirm(&format!("Misconfigured Result {} in page {}! The adventure will likely not proceed correctly, do you wish to return to main menu?", result.name, active_page.title)) {
+                                    s.send(Event::QuitToMainMenu);
                                 }
                             }
                         }
-                        // now we move on to the next scene
-                        match render_page(
-                            &mut main_window,
-                            &active_storybook,
-                            &evaluated_result.0,
-                            &mut rng,
-                        ) {
-                            Ok(v) => active_page = v,
-                            Err(e) => panic!("{e}"),
-                        }
-                    } else {
-                        // TODO handle this better
-                        panic!(
-                            "Page {}: result {} didn't evaluate properly",
-                            active_page.title, result.name
-                        )
                     }
+                    // now we move on to the next scene
+                    match render_page(
+                        &mut main_window,
+                        &active_storybook,
+                        &result.next_page,
+                        &mut rng,
+                    ) {
+                        Ok(v) => active_page = v,
+                        Err(e) => panic!("{e}"),
+                    }
+
                     window.redraw();
                 }
                 Event::EditAdventure => {

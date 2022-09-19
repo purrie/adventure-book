@@ -13,9 +13,13 @@ use fltk::{
 };
 
 use crate::{
-    adventure::{is_keyword_valid, Adventure, Choice, Comparison, Condition, Name, Page, Record},
+    adventure::{
+        is_keyword_valid, Adventure, Choice, Comparison, Condition, Name, Page, Record,
+        StoryResult, Test,
+    },
     dialog::{ask_for_name, ask_for_record, ask_for_text, ask_to_confirm},
     file::{capture_pages, read_page, signal_error},
+    icons::{BIN_ICON, GEAR_ICON},
 };
 
 /// Creates a Game Event from Editor Event
@@ -42,20 +46,26 @@ pub enum Event {
     EditName(usize),
     RemoveRecord(usize),
     RemoveName(usize),
-    /// Saves the currently displayed choice in editor into memory, event carries the index of the choice to be used for saving
-    SaveChoice(usize),
-    /// Requests a choice to be loaded into choice editor
-    LoadChoice(usize),
-    /// Saves the currently displayed condition into editor memory
     SaveCondition(Option<String>),
-    /// Loads condition into editor
     LoadCondition(String),
     RenameCondition,
     AddCondition,
     RemoveCondition,
-
-    /// This event is used to select data block for sub editors in pages
-    SelectInSubEditor(i32),
+    SaveTest(Option<String>),
+    LoadTest(String),
+    AddTest,
+    RenameTest,
+    RemoveTest,
+    AddResult,
+    RenameResult,
+    RemoveResult,
+    SaveResult(Option<String>),
+    LoadResult(String),
+    SaveSideEffect(Option<String>),
+    LoadSideEffect(String),
+    AddSideEffectRecord,
+    AddSideEffectName,
+    RemoveSideEffect,
 }
 
 /// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
@@ -166,8 +176,6 @@ impl EditorWindow {
             Event::EditName(_) => todo!(),
             Event::RemoveRecord(_) => todo!(),
             Event::RemoveName(_) => todo!(),
-            Event::SaveChoice(_) => todo!(),
-            Event::LoadChoice(_) => todo!(),
             Event::SaveCondition(cond) => {
                 if let Some(page) = self.pages.get_mut(&self.current_page) {
                     let cond = match cond {
@@ -182,7 +190,7 @@ impl EditorWindow {
             Event::LoadCondition(cond) => {
                 if let Some(page) = self.pages.get(&self.current_page) {
                     if let Some(con) = page.conditions.get(&cond) {
-                        self.page_editor.conditions.load(&con);
+                        self.page_editor.conditions.load(con);
                     }
                 }
             }
@@ -261,7 +269,150 @@ impl EditorWindow {
                     }
                 }
             }
-            Event::SelectInSubEditor(_) => todo!(),
+            Event::SaveTest(test) => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    let test = match test {
+                        Some(t) => t,
+                        None => self.page_editor.tests.selected(),
+                    };
+                    if let Some(t) = page.tests.get_mut(&test) {
+                        self.page_editor.tests.save(t);
+                    }
+                }
+            }
+            Event::LoadTest(test) => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    if let Some(test) = page.tests.get(&test) {
+                        self.page_editor.tests.load(test);
+                    }
+                }
+            }
+            Event::RenameTest => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    let selected = self.page_editor.tests.selected();
+                    let name =
+                        match ask_for_text(&format!("Insert new name for {} Test", &selected)) {
+                            Some(n) if n.len() > 0 => n,
+                            _ => return,
+                        };
+
+                    if let Some(test) = page.tests.get_mut(&selected) {
+                        for choice in page.choices.iter_mut() {
+                            if choice.test == test.name {
+                                choice.test = name.clone();
+                            }
+                        }
+                        self.page_editor.tests.rename(name.clone());
+                        test.name = name;
+                    }
+                }
+            }
+            Event::AddTest => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    if page.results.len() < 2 {
+                        signal_error!(
+                            "You need to add at least 2 results before you can add a test"
+                        );
+                        return;
+                    }
+                    let name = match ask_for_text("Insert name for new Test") {
+                        Some(n) if n.len() > 0 => n,
+                        _ => return,
+                    };
+                    if page.tests.contains_key(&name) {
+                        signal_error!("Cannot add {} because it already exists", name);
+                        return;
+                    }
+                    let test = Test {
+                        name: name.clone(),
+                        expression_l: "0".to_string(),
+                        expression_r: "0".to_string(),
+                        ..Default::default()
+                    };
+                    self.page_editor.tests.add(&name);
+                    self.page_editor.tests.load(&test);
+                    page.tests.insert(name, test);
+                }
+            }
+            Event::RemoveTest => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    let selected = self.page_editor.tests.selected();
+                    if page.tests.contains_key(&selected) == false {
+                        return;
+                    }
+                    for choice in page.choices.iter() {
+                        if choice.test == selected {
+                            signal_error!("Cannot remove Test {} because it's used in one or more of Page's Choices", selected);
+                            return;
+                        }
+                    }
+                    if ask_to_confirm(&format!(
+                        "Are you sure you want to delete {} Test?",
+                        &selected
+                    )) {
+                        page.tests.remove(&selected);
+                        self.page_editor.tests.populate(&page.tests, &page.results);
+                    }
+                }
+            }
+            Event::AddResult => {
+                if let Some(name) = ask_for_text("Enter name for a new result") {
+                    if name.len() == 0 {
+                        return;
+                    }
+                    if let Some(page) = self.pages.get_mut(&self.current_page) {
+                        if page.results.contains_key(&name) {
+                            signal_error!("Result with name '{}' already exists", name);
+                            return;
+                        }
+                        // saving previous result
+                        if let Some(pres) = page
+                            .results
+                            .get_mut(&self.page_editor.results.selected_result())
+                        {
+                            self.page_editor.results.save_result(pres);
+                        }
+                        let res = StoryResult {
+                            name: name.clone(),
+                            ..Default::default()
+                        };
+                        self.page_editor.results.load_result(&res);
+                        page.results.insert(name, res);
+                    }
+                }
+            }
+            Event::RenameResult => {
+                if let Some(page) = self.pages.get_mut(&self.current_page) {
+                    let selected = self.page_editor.results.selected_result();
+                    if let Some(res) = page.results.get_mut(&selected) {
+                        if let Some(name) = ask_for_text(&format!("Input a new name for {}", &selected)) {
+                            if name.len() == 0 {
+                                return;
+                            }
+                            // updating the name in other parts of the page
+                            page.choices.iter_mut().filter(|x| x.result == selected).for_each(|x| x.result = name.clone());
+                            for el in page.tests.iter_mut() {
+                                if el.1.success_result == selected {
+                                    el.1.success_result = name.clone();
+                                }
+                                if el.1.failure_result == selected {
+                                    el.1.failure_result = name.clone();
+                                }
+                            }
+                            self.page_editor.results.rename_result(&name);
+                            res.name = name;
+                        }
+                    }
+                }
+            },
+            Event::RemoveResult => todo!(),
+            Event::SaveResult(_) => todo!(),
+            Event::LoadResult(_) => todo!(),
+            Event::SaveSideEffect(_) => todo!(),
+            Event::LoadSideEffect(_) => todo!(),
+            Event::AddSideEffectRecord => todo!(),
+            Event::AddSideEffectName => todo!(),
+            Event::RemoveSideEffect => todo!(),
         }
     }
     pub fn hide(&mut self) {
@@ -292,6 +443,7 @@ impl EditorWindow {
             self.page_editor
                 .conditions
                 .populate_conditions(&page.conditions);
+            self.page_editor.tests.populate(&page.tests, &page.results);
         }
     }
     /// Opens adventure metadata editor UI
@@ -647,7 +799,7 @@ impl StoryEditor {
                 match old_select.as_str() {
                     "Choices" => {}
                     "Conditions" => s.send(emit!(Event::SaveCondition(None))),
-                    "Tests" => {}
+                    "Tests" => s.send(emit!(Event::SaveTest(None))),
                     "Results" => {}
                     _ => unreachable!(),
                 }
@@ -765,23 +917,6 @@ impl ChoiceEditor {
         text.set_buffer(TextBuffer::default());
         let last_selected = Rc::new(RefCell::new(0));
 
-        let (sender, _r) = app::channel();
-
-        selector.set_callback({
-            let last_selected = Rc::clone(&last_selected);
-            let sender = sender.clone();
-            move |x| {
-                let mut index = last_selected.borrow_mut();
-                let new_index = x.value();
-                if *index == new_index {
-                    return;
-                }
-                sender.send(emit!(Event::SaveChoice(*index as usize)));
-                sender.send(emit!(Event::LoadChoice(new_index as usize)));
-                *index = new_index;
-            }
-        });
-
         let test = Rc::new(RefCell::new(test));
         let result = Rc::new(RefCell::new(result));
 
@@ -892,7 +1027,7 @@ impl ConditionEditor {
         let x_second_column = area.x + w_selector + marging_column;
         let w_second_column = area.w - w_selector - marging_column * 2;
 
-        let h_line = font_size + 2;
+        let h_line = font_size + font_size / 2;
 
         let y_name = y_selector + font_size;
         let y_exp = y_name + h_line * 2;
@@ -1063,12 +1198,13 @@ impl ConditionEditor {
 /// It provides drop downs to fill success and failure results of the test
 struct TestEditor {
     selector: SelectBrowser,
-    name: TextEditor,
+    name: Frame,
     expression_left: TextEditor,
     expression_right: TextEditor,
     comparison: fltk::menu::Choice,
     success: fltk::menu::Choice,
     failure: fltk::menu::Choice,
+    selected: Rc<RefCell<String>>,
 }
 
 impl TestEditor {
@@ -1082,90 +1218,115 @@ impl TestEditor {
         let w_selector = area.w / 3;
         let h_selector = area.h - font_size;
 
+        let y_butt = y_selector + h_selector;
+        let w_butt = font_size;
+        let h_butt = w_butt;
+
+        let x_add = x_selector;
+        let x_ren = x_add + w_butt;
+        let x_rem = x_selector + w_selector - w_butt;
+
         let column_margin = 20;
         let x_second_column = x_selector + w_selector + column_margin;
         let w_second_column = area.w - w_selector - column_margin * 2;
-        let line_height = font_size + 2;
+        let h_line = font_size + font_size / 2;
 
         let y_name = y_selector + font_size;
-        let y_exp = y_name + line_height * 2;
-        let y_comp = y_exp + line_height * 2;
-        let y_exp2 = y_comp + line_height * 2;
-        let y_result_success = y_exp2 + line_height * 3;
-        let y_result_failure = y_result_success + line_height * 2;
+        let y_exp = y_name + h_line * 2;
+        let y_comp = y_exp + h_line * 2;
+        let y_exp2 = y_comp + h_line * 2;
+        let y_result_success = y_exp2 + h_line * 3;
+        let y_result_failure = y_result_success + h_line * 2;
 
         let x_comp = x_second_column + w_second_column / 4;
         let w_comp = w_second_column / 2;
 
         let mut selector =
             SelectBrowser::new(x_selector, y_selector, w_selector, h_selector, "Tests");
-        let mut name = TextEditor::new(
-            x_second_column,
-            y_name,
-            w_second_column,
-            line_height,
-            "Name",
-        );
+
+        let mut add = Button::new(x_add, y_butt, w_butt, h_butt, "@+");
+        let mut ren = Button::new(x_ren, y_butt, w_butt, h_butt, None);
+        let mut rem = Button::new(x_rem, y_butt, w_butt, h_butt, None);
+
+        let name = Frame::new(x_second_column, y_name, w_second_column, h_line, "Name");
         let mut expression_left = TextEditor::new(
             x_second_column,
             y_exp,
             w_second_column,
-            line_height,
+            h_line,
             "Left side expression",
         );
         let mut expression_right = TextEditor::new(
             x_second_column,
             y_exp2,
             w_second_column,
-            line_height,
+            h_line,
             "Right side expression",
         );
-        let mut comparison = fltk::menu::Choice::new(x_comp, y_comp, w_comp, line_height, None);
+        let mut comparison = fltk::menu::Choice::new(x_comp, y_comp, w_comp, h_line, None);
         Frame::new(
             x_second_column,
             y_result_success - font_size,
             w_second_column,
-            line_height,
+            h_line,
             "On Success",
         );
         let success = fltk::menu::Choice::new(
             x_second_column,
             y_result_success,
             w_second_column,
-            line_height,
+            h_line,
             None,
         );
         Frame::new(
             x_second_column,
             y_result_failure - font_size,
             w_second_column,
-            line_height,
+            h_line,
             "On Failure",
         );
         let failure = fltk::menu::Choice::new(
             x_second_column,
             y_result_failure,
             w_second_column,
-            line_height,
+            h_line,
             None,
         );
         group.end();
 
         let (sender, _r) = app::channel();
+        let selected = Rc::new(RefCell::new(String::new()));
 
+        add.emit(sender.clone(), emit!(Event::AddTest));
+        ren.emit(sender.clone(), emit!(Event::RenameTest));
+        rem.emit(sender.clone(), emit!(Event::RemoveTest));
         selector.set_callback({
-            let sender = sender.clone();
+            let selected = Rc::clone(&selected);
             move |x| {
-                if x.value() > 0 {
-                    sender.send(x.value() - 1);
+                let mut s = selected.borrow_mut();
+                if s.len() > 0 {
+                    sender.send(emit!(Event::SaveTest(Some(s.clone()))));
+                }
+                if let Some(new) = x.selected_text() {
+                    if *s == new {
+                        return;
+                    }
+                    *s = new;
+                    sender.send(emit!(Event::LoadTest(s.clone())));
                 }
             }
         });
 
-        name.set_buffer(TextBuffer::default());
+        let mut gear = SvgImage::from_data(GEAR_ICON).unwrap();
+        let mut bin = SvgImage::from_data(BIN_ICON).unwrap();
+        gear.scale(font_size, font_size, false, true);
+        bin.scale(font_size, font_size, false, true);
+        ren.set_image(Some(gear));
+        rem.set_image(Some(bin));
+
         expression_left.set_buffer(TextBuffer::default());
         expression_right.set_buffer(TextBuffer::default());
-        comparison.add_choice(">|>=|<|<=|=|!=");
+        comparison.add_choice(&Comparison::as_choice());
         comparison.set_value(0);
 
         Self {
@@ -1176,7 +1337,105 @@ impl TestEditor {
             comparison,
             success,
             failure,
+            selected,
         }
+    }
+    fn load(&mut self, test: &Test) {
+        self.name.set_label(&test.name);
+        let mut s = self.selected.borrow_mut();
+        *s = test.name.clone();
+        self.expression_left
+            .buffer()
+            .as_mut()
+            .unwrap()
+            .set_text(&test.expression_l);
+        self.expression_right
+            .buffer()
+            .as_mut()
+            .unwrap()
+            .set_text(&test.expression_r);
+        self.comparison.set_value(test.comparison.to_index());
+        let mut i = 0;
+        while let Some(choice) = self.success.text(i) {
+            if choice == test.success_result {
+                self.success.set_value(i);
+                break;
+            }
+            i += 1;
+        }
+        i = 0;
+        while let Some(choice) = self.failure.text(i) {
+            if choice == test.failure_result {
+                self.failure.set_value(i);
+            }
+            i += 1;
+        }
+    }
+    fn save(&self, test: &mut Test) {
+        if let Some(succ) = self.success.choice() {
+            if let Some(fail) = self.failure.choice() {
+                test.comparison = Comparison::from(self.comparison.choice().unwrap());
+                test.expression_l = self.expression_left.buffer().unwrap().text();
+                test.expression_r = self.expression_right.buffer().unwrap().text();
+                test.success_result = succ;
+                test.failure_result = fail;
+                return;
+            }
+        }
+        signal_error!("A Test needs to have all of its components before it can be saved");
+    }
+    fn add(&mut self, entry: &str) {
+        self.selector.add(entry);
+    }
+    fn rename(&mut self, new: String) {
+        let mut i = 1;
+        let mut old = self.selected.borrow_mut();
+        while let Some(entry) = self.selector.text(i) {
+            if entry == *old {
+                self.selector.set_text(i, &new);
+                self.name.set_label(&new);
+                *old = new;
+                return;
+            }
+            i += 1;
+        }
+    }
+    fn populate(&mut self, tests: &HashMap<String, Test>, results: &HashMap<String, StoryResult>) {
+        let mut set = true;
+        self.success.set_value(-1);
+        self.failure.set_value(-1);
+        self.success.clear();
+        self.failure.clear();
+        self.selector.clear();
+        for result in results.iter() {
+            self.success.add_choice(result.0);
+            self.failure.add_choice(result.0);
+        }
+        for test in tests.iter() {
+            self.selector.add(test.0);
+            if set {
+                self.load(test.1);
+                set = false;
+            }
+        }
+        if set {
+            self.clear_selection();
+        }
+    }
+    fn clear_selection(&mut self) {
+        self.expression_left.buffer().unwrap().set_text("");
+        self.expression_right.buffer().unwrap().set_text("");
+        self.name.set_label("");
+        self.comparison.set_value(0);
+        self.success.set_value(-1);
+        self.success.clear();
+        self.failure.set_value(-1);
+        self.failure.clear();
+        *self.selected.borrow_mut() = String::new();
+    }
+    fn selected(&self) -> String {
+        let s = self.selected.borrow();
+        s.clone()
     }
 }
 /// Widgets for customizing results of the page
@@ -1186,9 +1445,11 @@ impl TestEditor {
 /// It will give a growing field for adding changes to records or names
 struct ResultEditor {
     selector: SelectBrowser,
-    name: TextEditor,
+    name: Frame,
     next_page: fltk::menu::Choice,
     effects: Vec<(fltk::menu::Choice, TextEditor)>,
+    selected_result: Rc<RefCell<String>>,
+    selected_effect: Rc<RefCell<String>>,
 }
 
 impl ResultEditor {
@@ -1200,26 +1461,43 @@ impl ResultEditor {
         let x_column_1 = area.x;
         let w_column_1 = area.w / 3;
 
-        let y_results = area.y;
-        let h_result = area.h / 2 - font_size;
-
         let margin = 20;
         let x_column_2 = x_column_1 + w_column_1 + margin;
         let w_column_2 = area.w - w_column_1 - margin * 2;
-        let h_line = font_size + 2;
 
-        let y_mods = y_results + h_result + font_size;
-        let h_mods = area.h - h_result - font_size * 2;
-
-        let y_name = y_results + font_size;
-        let y_page = y_name + h_line * 2;
-
+        // subcolumns in second column
         let margin2 = 5;
         let x_column_3 = x_column_2 + margin2;
         let w_column_3 = w_column_2 / 2 - margin2 * 2;
         let x_column_4 = x_column_3 + w_column_3 + margin2 * 2;
 
-        let y_butt = y_mods + h_line;
+        let h_line = font_size + 2;
+
+        // vertical result selector coords
+        let y_results = area.y;
+        let h_result = area.h / 2 - font_size;
+
+        // vertical side effect selector coords
+        let y_mods = y_results + h_result + font_size;
+        let h_mods = area.h - h_result - font_size * 2;
+
+        // result manipulation widgets
+        let y_name = y_results + font_size;
+        let y_page = y_name + h_line * 2;
+
+        // controls for selector buttons
+        let y_butt_result = y_results + h_result;
+        let y_butt_mod = y_mods + h_mods;
+        let w_butt = font_size;
+        let h_butt = w_butt;
+
+        let x_add = x_column_1;
+        let x_ren = x_add + w_butt;
+        let x_rem = x_column_1 + w_column_1 - w_butt;
+
+        // controls for side effect second column
+        let y_effect = y_results + h_result + h_line;
+        let y_butt = y_effect + h_line;
         let y_exp = y_butt + h_line * 2;
 
         let mut select_result =
@@ -1227,7 +1505,12 @@ impl ResultEditor {
         let mut select_mod =
             SelectBrowser::new(x_column_1, y_mods, w_column_1, h_mods, "Modifications");
 
-        let mut name = TextEditor::new(x_column_2, y_name, w_column_2, h_line, "Name");
+        let mut butt_add_result = Button::new(x_add, y_butt_result, w_butt, h_butt, "@+");
+        let mut butt_ren_result = Button::new(x_ren, y_butt_result, w_butt, h_butt, None);
+        let mut butt_rem_result = Button::new(x_rem, y_butt_result, w_butt, h_butt, None);
+        let mut butt_rem_effect = Button::new(x_rem, y_butt_mod, w_butt, h_butt, None); // no add or rename because the names are constant and you add in other controls
+
+        let mut name = Frame::new(x_column_2, y_name, w_column_2, h_line, "Name");
         Frame::new(
             x_column_2,
             y_page - font_size,
@@ -1243,24 +1526,43 @@ impl ResultEditor {
 
         group.end();
 
-        let (sender, _r) = app::channel();
-
-        select_result.set_callback({
-            let sender = sender.clone();
-            move |x| {
-                if x.value() > 0 {
-                    sender.send(x.value() - 1);
-                }
-            }
-        });
-
-        name.set_buffer(TextBuffer::default());
+        let selected_result = Rc::new(RefCell::new(String::new()));
+        let selected_effect = Rc::new(RefCell::new(String::new()));
 
         Self {
             selector: select_result,
             name,
             next_page,
             effects: Vec::new(),
+            selected_effect,
+            selected_result,
         }
+    }
+    fn selected_result(&self) -> String {
+        unimplemented!()
+    }
+    fn selected_side_effect(&self) -> String {
+        unimplemented!()
+    }
+    fn add_result(&mut self, name: &str) {
+        unimplemented!()
+    }
+    fn add_side_effect(&mut self, name: &str) {
+        unimplemented!()
+    }
+    fn rename_result(&mut self, new_name: &str) {
+        unimplemented!()
+    }
+    fn rename_side_effect(&mut self, new_name: &str) {
+        unimplemented!()
+    }
+    fn save_result(&self, res: &mut StoryResult) {
+        unimplemented!()
+    }
+    fn load_result(&mut self, res: &StoryResult) {
+        unimplemented!()
+    }
+    fn load_side_effect(&mut self, res: &StoryResult, key: &str) {
+        unimplemented!()
     }
 }

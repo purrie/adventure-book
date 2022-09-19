@@ -264,56 +264,6 @@ pub fn evaluate_and_compare(
     return Ok(comp.compare(l, r));
 }
 
-/// First value is the next page name, second is a list of record changes
-type EvaluatedResult = Result<(String, Option<HashMap<String, i32>>), ()>;
-/// This evaluates commands of a StoryResult.
-///
-/// Returned tuple contains name of the next story page to move to
-/// and an optional list of name-value pairs for story records to modify by
-pub fn evaluate_result(
-    res: &String,
-    records: &HashMap<String, Record>,
-    rand: &mut Random,
-) -> EvaluatedResult {
-    let mut args: VecDeque<&str> = res
-        .split(";")
-        .map(|x| x.trim())
-        .filter(|x| x.len() > 0)
-        .collect();
-
-    // TODO error if the adventure result is misconfigured
-    // Although, this kind of story result can't be constructed, so probably safe to ignore
-
-    let next: String;
-    let mut changes = None;
-
-    loop {
-        if let Some(ar) = args.pop_front() {
-            if args.len() == 0 {
-                // this is the last argument, which means it's name of the next scene
-                next = ar.to_string();
-                break;
-            }
-            // if it's not the end that means we are constructing record change
-            if let Some(val) = args.pop_front() {
-                if changes == None {
-                    changes = Some(HashMap::new());
-                }
-                let h = changes.as_mut().unwrap();
-                if let Ok(r) = evaluate_expression(val, records, rand) {
-                    h.insert(ar.to_string(), r);
-                } else {
-                    return Err(());
-                }
-            } else {
-                unreachable!();
-            }
-        } else {
-            unreachable!();
-        }
-    }
-    Ok((next, changes))
-}
 pub struct Random {
     generator: StdRng,
 }
@@ -380,7 +330,7 @@ mod tests {
 
     use crate::adventure::{Comparison, Record};
 
-    use super::{evaluate_and_compare, evaluate_expression, evaluate_result, Random};
+    use super::{evaluate_and_compare, evaluate_expression, Random};
 
     #[test]
     fn evex_dice_regular() {
@@ -568,56 +518,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn evaluate_result_bare() {
-        let mut rand = Random::new(69420);
-        let records = HashMap::<String, Record>::new();
-        let s = "next scene;".to_string();
-        let r = evaluate_result(&s, &records, &mut rand).unwrap();
-        assert!(r.0 == "next scene");
-        assert!(r.1 == None);
-    }
-    #[test]
-    fn evaluate_result_one() {
-        let mut rand = Random::new(69420);
-        let records = HashMap::<String, Record>::new();
-        let s = "strength; 1; next scene;".to_string();
-        let r = evaluate_result(&s, &records, &mut rand).unwrap();
-        assert!(r.0 == "next scene");
-        assert!(r.1 != None);
-        assert!(r.1.as_ref().unwrap().contains_key("strength"));
-        assert_eq!(*r.1.unwrap().get("strength").unwrap(), 1);
-    }
-    #[test]
-    fn evaluate_result_more() {
-        let mut rand = Random::new(69420);
-        let records = HashMap::<String, Record>::new();
-        let s = "strength; 1; dexterity; -1; next scene;".to_string();
-        let r = evaluate_result(&s, &records, &mut rand).unwrap();
-        assert!(r.0 == "next scene");
-        assert!(r.1 != None);
-        assert!(r.1.as_ref().unwrap().contains_key("strength"));
-        assert_eq!(*r.1.as_ref().unwrap().get("strength").unwrap(), 1);
-
-        assert!(r.1.as_ref().unwrap().contains_key("dexterity"));
-        assert_eq!(*r.1.unwrap().get("dexterity").unwrap(), -1);
-    }
-    #[test]
-    fn evaluate_result_die() {
-        let mut rand = Random::new(69420);
-        let mut test = Random::new(69420);
-        let records = HashMap::<String, Record>::new();
-
-        let s = "strength; 1d6; next scene;".to_string();
-        let r = evaluate_result(&s, &records, &mut rand).unwrap();
-        assert!(r.0 == "next scene");
-        assert!(r.1 != None);
-        assert!(r.1.as_ref().unwrap().contains_key("strength"));
-        assert_eq!(
-            *r.1.as_ref().unwrap().get("strength").unwrap(),
-            test.die(1, 6)
-        );
-    }
 
     #[test]
     fn evaluate_compare() {
