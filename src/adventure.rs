@@ -2,7 +2,7 @@ use std::collections::{HashMap, VecDeque};
 
 use regex::Regex;
 
-use crate::evaluation::{evaluate_and_compare, Random};
+use crate::evaluation::{evaluate_and_compare, Random, EvaluationError};
 
 #[derive(Default, Clone)]
 pub struct Adventure {
@@ -478,7 +478,7 @@ impl Condition {
         &self,
         records: &HashMap<String, Record>,
         rand: &mut Random,
-    ) -> Result<bool, String> {
+    ) -> Result<bool, EvaluationError> {
         evaluate_and_compare(
             &self.expression_l,
             &self.expression_r,
@@ -524,7 +524,7 @@ impl Test {
         &self,
         records: &HashMap<String, Record>,
         rand: &mut Random,
-    ) -> Result<&String, String> {
+    ) -> Result<&String, EvaluationError> {
         match evaluate_and_compare(
             &self.expression_l,
             &self.expression_r,

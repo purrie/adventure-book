@@ -1,8 +1,26 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::collections::{HashMap, VecDeque};
+use std::{collections::{HashMap, VecDeque}, fmt::Display};
 
 use crate::adventure::{Comparison, Record};
 
+#[derive(PartialEq, Debug)]
+pub enum EvaluationError {
+    DivisionByZero,
+    NotANumber(String),
+    InvalidDieExpression(String),
+    MissingDicePoolEvaluator(String),
+}
+
+impl Display for EvaluationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EvaluationError::DivisionByZero => write!(f, "Division by 0 error"),
+            EvaluationError::NotANumber(n) => write!(f, "{} is not a number", n),
+            EvaluationError::InvalidDieExpression(n) => write!(f, "{} is not a valid dice expression, use something like 1d6", n),
+            EvaluationError::MissingDicePoolEvaluator(n) => write!(f, "{} is not a valid dice pool expression, use something like 4d6p4", n),
+        }
+    }
+}
 /// Evaluates expression into a number, taking care of randomness and record evaluation
 ///
 /// # Errors
@@ -11,7 +29,7 @@ pub fn evaluate_expression(
     exp: &str,
     records: &HashMap<String, Record>,
     rand: &mut Random,
-) -> Result<i32, String> {
+) -> Result<i32, EvaluationError> {
     let tokens: Vec<&str> = exp.split_inclusive(&['+', '-', '*', '/'][..]).collect();
     // this function evaluates name of a record into its value, it defaults to 0 on records not found
     // Although, record not found should probably result in an error instead of 0
@@ -29,37 +47,29 @@ pub fn evaluate_expression(
         if let Some(p) = pool {
             cut.push(p);
         }
-        let mut err = String::new();
-        let r: Vec<i32> = x
+        let r : Vec<i32> = match x
             .split(&cut[..])
             .map(|x| {
                 if let Ok(ok) = x.parse() {
-                    ok
+                    Ok(ok)
                 } else {
-                    err = format!("Couldn't process {}", x);
-                    0
+                    Err(EvaluationError::NotANumber(x.to_string()))
                 }
             })
-            .collect();
+            .collect() {
+                Ok(x) => x,
+                Err(x) => return Err(x),
+            };
 
-        if err.len() > 0 {
-            return Err(err);
-        }
 
         // need the result to be 2 or 3 parts, any other is an error
         if pool == None {
             if r.len() != 2 {
-                return Err(format!(
-                    "Die roll evaluation needs a die expression, like '1d6', got '{}' instead.",
-                    x
-                ));
+                return Err(EvaluationError::InvalidDieExpression(x.to_string()));
             }
         } else {
             if r.len() != 3 {
-                return Err(format!(
-                    "Dice pool evaluation needs a die expression, like '4d6p4', got '{}' instead.",
-                    x
-                ));
+                return Err(EvaluationError::MissingDicePoolEvaluator(x.to_string()));
             }
         }
 
@@ -89,7 +99,7 @@ pub fn evaluate_expression(
             if let Ok(v) = x.parse() {
                 return Ok(v);
             } else {
-                return Err(format!("{} doesn't appear to be a valid number", x));
+                return Err(EvaluationError::NotANumber(x.to_string()));
             }
         }
         if x.contains('p') {
@@ -229,7 +239,12 @@ pub fn evaluate_expression(
                 '+' => (l.0 + r.0, r.1, r.2),
                 '-' => (l.0 - r.0, r.1, r.2),
                 '*' => (l.0 * r.0, r.1, r.2),
-                '/' => (l.0 / r.0, r.1, r.2),
+                '/' => {
+                    if r.0 == 0 {
+                        return Err(EvaluationError::DivisionByZero);
+                    }
+                  (l.0 / r.0, r.1, r.2)
+                },
                 _ => unreachable!(),
             };
             ops.remove(i + 1);
@@ -250,7 +265,7 @@ pub fn evaluate_and_compare(
     comp: &Comparison,
     records: &HashMap<String, Record>,
     rand: &mut Random,
-) -> Result<bool, String> {
+) -> Result<bool, EvaluationError> {
     let l;
     let r;
     match evaluate_expression(lhe, records, rand) {
@@ -263,7 +278,6 @@ pub fn evaluate_and_compare(
     }
     return Ok(comp.compare(l, r));
 }
-
 pub struct Random {
     generator: StdRng,
 }

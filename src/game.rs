@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     adventure::{Adventure, Choice, Condition, Name, Page, Record},
-    evaluation::Random,
+    evaluation::{Random, EvaluationError},
     file::read_page,
     window::MainWindow,
 };
@@ -16,7 +16,7 @@ pub fn render_page(
     adventure: &Adventure,
     page_name: &String,
     rand: &mut Random,
-) -> Result<Page, String> {
+) -> Result<Page, EvaluationError> {
     let page;
     match read_page(&adventure.path, page_name) {
         Ok(p) => page = p,
@@ -71,7 +71,7 @@ fn parse_choices(
     conditions: &HashMap<String, Condition>,
     records: &HashMap<String, Record>,
     rand: &mut Random,
-) -> Result<Vec<(bool, String)>, String> {
+) -> Result<Vec<(bool, String)>, EvaluationError> {
     let mut res = Vec::new();
     for choice in choices.iter() {
         let enabled;
