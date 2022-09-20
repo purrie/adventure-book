@@ -14,7 +14,7 @@ use crate::adventure::{Adventure, Name, Record};
 
 macro_rules! signal_error {
     ($text:expr, $( $x:expr ), *) => {
-        fltk::dialog::alert(0, 0, &format!($text, $($x)*))
+        fltk::dialog::alert(0, 0, &format!($text, $($x),*))
     };
     ($text:expr) => {
          fltk::dialog::alert(0, 0, $text)
@@ -235,4 +235,61 @@ pub fn ask_to_confirm(label: &str) -> bool {
         app::wait();
     }
     conf.take()
+}
+pub fn ask_for_choice<'a, T: Iterator>(label: &str, choices: T) -> Option<(i32, String)> where T::Item: Into<&'a String>  {
+
+    let choices: Vec<&String> = choices.map(|x| x.into()).collect();
+    if choices.len() == 0 {
+        signal_error!("Nothing to choose from");
+        return None;
+    }
+
+    let len = i32::max(fltk::draw::width(label) as i32 + 20, 300);
+
+    let mut win = Window::default().with_size(len, 120).with_label(label);
+
+    Frame::new(20, 10, len - 40, 20, None).with_label(label);
+
+    let mut choice = Choice::new(20, 40, len - 40, 30, None);
+
+    let mut butt_accept = Button::new(len - 100, 80, 80, 30, "Accept");
+    let mut butt_cancel = Button::new(20, 80, 80, 30, "Cancel");
+
+    win.end();
+    win.make_modal(true);
+    win.show();
+
+    let conf = Rc::new(RefCell::new(false));
+
+    butt_accept.set_callback({
+        let conf = Rc::clone(&conf);
+        move |x| {
+            *conf.borrow_mut() = true;
+            x.window().unwrap().hide();
+        }
+    });
+    butt_cancel.set_callback({
+        |x| {
+            x.window().unwrap().hide();
+        }
+    });
+
+    for c in choices.iter() {
+        choice.add_choice(c);
+    }
+
+    while win.shown() {
+        app::wait();
+    }
+    match conf.take() {
+        true => {
+            let index = choice.value();
+            if index < 0 {
+                return None;
+            }
+            let value = choice.choice().unwrap();
+            Some((index, value))
+        },
+        false => None,
+    }
 }
