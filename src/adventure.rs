@@ -44,7 +44,7 @@ pub enum Comparison {
     Equal,
     NotEqual,
 }
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct StoryResult {
     pub name: String,
     pub next_page: String,

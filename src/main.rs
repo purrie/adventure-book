@@ -1,7 +1,7 @@
-use adventure::{is_keyword_valid, Adventure, Page};
-use dialog::{ask_for_name, ask_for_record, ask_to_choose_adventure, ask_to_confirm};
+use adventure::{Adventure, Page};
+use dialog::{ask_to_confirm, ask_to_choose_adventure};
 use evaluation::{Random, evaluate_expression};
-use file::{capture_adventures, signal_error};
+use file::capture_adventures;
 use fltk::{
     app::{self, App},
     draw::Rect,
