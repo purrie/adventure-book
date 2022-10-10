@@ -1,9 +1,17 @@
-use std::{rc::Rc, cell::RefCell};
+use fltk::{
+    app,
+    browser::SelectBrowser,
+    draw::Rect,
+    frame::Frame,
+    group::Group,
+    prelude::*,
+    text::{TextBuffer, TextEditor},
+};
 
-use fltk::{prelude::*, app, browser::SelectBrowser, text::{TextEditor, TextBuffer}, draw::Rect, group::Group, frame::Frame};
-
-use crate::adventure::Choice;
-
+use crate::{
+    adventure::{Choice, Page, GAME_OVER_KEYWORD},
+    editor::{emit, Event},
+};
 
 /// Editor for customizing choices for a page
 ///
@@ -12,10 +20,10 @@ use crate::adventure::Choice;
 pub struct ChoiceEditor {
     selector: SelectBrowser,
     text: TextEditor,
+    controls: Group,
     condition: fltk::menu::Choice,
-    test: Rc<RefCell<fltk::menu::Choice>>,
-    result: Rc<RefCell<fltk::menu::Choice>>,
-    last_selected: Rc<RefCell<i32>>,
+    test: fltk::menu::Choice,
+    result: fltk::menu::Choice,
 }
 
 impl ChoiceEditor {
@@ -43,13 +51,16 @@ impl ChoiceEditor {
         let w_text = w_menu;
         let h_text = h_menu;
 
-        let selector = SelectBrowser::new(
+        let mut selector = SelectBrowser::new(
             x_selector,
             y_selector,
             w_selector,
             h_selector,
             "Choices in this page",
         );
+        // TODO make add and remove buttons
+
+        let controls = Group::new(x_menu, y_menu_condition, w_menu, h_selector, None);
         let mut text = TextEditor::new(x_text, y_text, w_text, h_text, "Choice Text");
         Frame::new(
             x_menu,
@@ -60,35 +71,52 @@ impl ChoiceEditor {
         );
         let condition = Choice::new(x_menu, y_menu_condition, w_menu, h_menu, None);
         Frame::new(x_menu, y_menu_test - font_size, w_menu, h_menu, "Test");
-        let test = Choice::new(x_menu, y_menu_test, w_menu, h_menu, None);
+        let mut test = Choice::new(x_menu, y_menu_test, w_menu, h_menu, None);
         Frame::new(x_menu, y_menu_result - font_size, w_menu, h_menu, "Result");
-        let result = Choice::new(x_menu, y_menu_result, w_menu, h_menu, None);
+        let mut result = Choice::new(x_menu, y_menu_result, w_menu, h_menu, None);
+        controls.end();
         group.end();
 
         text.set_buffer(TextBuffer::default());
-        let last_selected = Rc::new(RefCell::new(0));
 
-        let test = Rc::new(RefCell::new(test));
-        let result = Rc::new(RefCell::new(result));
-
-        test.borrow_mut().set_callback({
-            let result = Rc::clone(&result);
+        selector.set_callback({
+            let mut old_selection = 0;
+            move |x| {
+                // when there are no elements, it means we're clearing out the selector and resetting the selection
+                if x.size() == 0 {
+                    old_selection = 0;
+                    x.select(0);
+                    return;
+                }
+                let new_selection = x.value();
+                if old_selection != new_selection {
+                    let (s, _r) = app::channel();
+                    if old_selection != 0 {
+                        s.send(emit!(Event::SaveChoice(Some((old_selection - 1) as usize))));
+                    }
+                    if new_selection > 0 {
+                        s.send(emit!(Event::LoadChoice((new_selection - 1) as usize)));
+                    }
+                    old_selection = new_selection;
+                }
+            }
+        });
+        test.set_callback({
+            let mut result = result.clone();
             move |x| {
                 if x.value() >= 0 {
-                    let mut r = result.borrow_mut();
-                    if r.value() >= 0 {
-                        r.set_value(-1);
+                    if result.value() >= 0 {
+                        result.set_value(-1);
                     }
                 }
             }
         });
-        result.borrow_mut().set_callback({
-            let test = Rc::clone(&test);
+        result.set_callback({
+            let mut test = test.clone();
             move |x| {
                 if x.value() >= 0 {
-                    let mut r = test.borrow_mut();
-                    if r.value() >= 0 {
-                        r.set_value(-1);
+                    if test.value() >= 0 {
+                        test.set_value(-1);
                     }
                 }
             }
@@ -96,46 +124,159 @@ impl ChoiceEditor {
         Self {
             selector,
             text,
+            controls,
             test,
             condition,
             result,
-            last_selected,
         }
     }
-    fn save_choice(&self, choice: &mut Choice) {
+
+    fn hide_controls(&mut self) {
+        self.controls.hide();
+    }
+    fn show_controls(&mut self) {
+        self.controls.show();
+    }
+    pub fn populate_dropdowns(&mut self, page: &Page) {
+        self.condition.clear();
+        page.conditions
+            .iter()
+            .for_each(|x| self.condition.add_choice(x.0));
+        self.test.clear();
+        page.tests.iter().for_each(|x| self.test.add_choice(x.0));
+        self.result.clear();
+        page.results
+            .iter()
+            .for_each(|x| self.result.add_choice(x.0));
+        self.result.add_choice(GAME_OVER_KEYWORD);
+
+        // reloading the previously selected choice
+        let selected = self.selector.value();
+        if selected > 0 {
+            self.load_choice(&page.choices, (selected - 1) as usize);
+        }
+    }
+    pub fn populate_choices(&mut self, choices: &Vec<Choice>) {
+        self.selector.clear();
+        self.selector.do_callback();
+        if choices.len() == 0 {
+            return;
+        }
+        choices
+            .iter()
+            .enumerate()
+            .for_each(|x| self.selector.add(&(x.0 + 1).to_string()));
+        self.show_controls();
+        self.selector.select(1);
+        self.selector.do_callback();
+    }
+    /// Event response that adds an element to choice list
+    pub fn add_choice(&mut self, choices: &mut Vec<Choice>) {
+        // save the old selection if it exists
+        let selected = self.selector.value();
+        if selected > 0 {
+            self.save_choice(choices, Some(selected as usize));
+        }
+
+        // create a new entry
+        let new_choice = Choice::new();
+        choices.push(new_choice);
+        self.selector.add(&self.selector.size().to_string());
+        // select and load the new entry
+        self.show_controls();
+        self.selector.select(self.selector.size());
+        self.selector.do_callback();
+    }
+    /// Event response that removes currently selected choice
+    ///
+    /// It also loads next in line choice into UI if there is any
+    pub fn remove_choice(&mut self, choices: &mut Vec<Choice>) {
+        let selected = self.selector.value();
+        if selected == 0 {
+            return;
+        }
+        choices.remove(selected as usize);
+        self.selector.remove(self.selector.size());
+
+        // loading a new element
+        let new_size = self.selector.size();
+        if new_size <= selected {
+            // removed last element on the list
+            if new_size == 0 {
+                // no elements to load, hide the UI
+                self.hide_controls();
+                self.selector.select(0);
+                self.selector.do_callback();
+            } else {
+                self.selector.select(new_size);
+                self.selector.do_callback();
+            }
+        } else {
+            self.selector.select(selected);
+            self.selector.do_callback();
+        }
+    }
+    /// Event response that saves currently selected element to the list
+    pub fn save_choice(&mut self, choices: &mut Vec<Choice>, index: Option<usize>) {
+        // determining the selected element
+        let choice = match index {
+            Some(v) => match choices.get_mut(v) {
+                Some(c) => c,
+                None => return,
+            },
+            None => match self.selector.value() {
+                0 => return,
+                x => match choices.get_mut(x as usize) {
+                    Some(c) => c,
+                    None => return,
+                },
+            },
+        };
+        // saving the data
         choice.text = self.text.buffer().as_ref().unwrap().text();
         choice.condition = match self.condition.choice() {
             Some(text) => text,
             None => String::new(),
         };
-        choice.test = match self.test.borrow().choice() {
+        choice.test = match self.test.choice() {
             Some(text) => text,
             None => String::new(),
         };
-        choice.result = match self.result.borrow().choice() {
+        choice.result = match self.result.choice() {
             Some(text) => text,
             None => String::new(),
         };
     }
-    fn load_choice(&mut self, choice: &Choice) {
+    /// Event response that loads a choice on index into UI
+    pub fn load_choice(&mut self, choices: &Vec<Choice>, index: usize) {
+        let choice = match choices.get(index) {
+            Some(x) => x,
+            None => {
+                println!("Choice at index {} is unreachable", index);
+                return;
+            }
+        };
         self.text.buffer().as_mut().unwrap().set_text(&choice.text);
         if choice.condition.len() != 0 {
             let index = self.condition.find_index(&choice.condition);
             self.condition.set_value(index);
         } else {
             self.condition.set_value(-1);
+            self.condition.redraw();
         }
         if choice.test.len() != 0 {
-            let index = self.test.borrow().find_index(&choice.test);
-            self.test.borrow_mut().set_value(index);
+            let index = self.test.find_index(&choice.test);
+            self.test.set_value(index);
         } else {
-            self.test.borrow_mut().set_value(-1);
+            self.test.set_value(-1);
+            self.test.redraw();
         }
         if choice.result.len() != 0 {
-            let index = self.result.borrow().find_index(&choice.result);
-            self.result.borrow_mut().set_value(index);
+            let index = self.result.find_index(&choice.result);
+            self.result.set_value(index);
         } else {
-            self.result.borrow_mut().set_value(-1);
+            self.result.set_value(-1);
+            self.result.redraw();
         }
     }
 }

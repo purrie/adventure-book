@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use fltk::{
-    draw::Rect,
-    group::Group,
-    prelude::*,
-};
+use fltk::{draw::Rect, group::Group, prelude::*};
 
 use crate::{
     adventure::{Adventure, Page},
@@ -14,11 +10,11 @@ use crate::{
 mod adventure;
 mod choice;
 mod condition;
-mod result;
-mod test;
 mod files;
-mod variables;
+mod result;
 mod story;
+mod test;
+mod variables;
 
 /// Creates a Game Event from Editor Event
 /// Used for readibility mostly
@@ -29,11 +25,9 @@ macro_rules! emit {
 }
 pub(crate) use emit;
 
-use self::{
-    adventure::AdventureEditor, files::FileList, story::StoryEditor,
-};
+use self::{adventure::AdventureEditor, files::FileList, story::StoryEditor};
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     Save,
 
@@ -69,6 +63,11 @@ pub enum Event {
     AddSideEffectRecord,
     AddSideEffectName,
     RemoveSideEffect,
+    AddChoice,
+    RemoveChoice,
+    SaveChoice(Option<usize>),
+    LoadChoice(usize),
+    RefreshChoices,
 }
 
 /// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
@@ -139,42 +138,58 @@ impl EditorWindow {
         }
     }
     pub fn process(&mut self, ev: Event) {
+        let page = match self.pages.get_mut(&self.current_page) {
+            Some(p) => p,
+            None => {
+                if let Event::OpenPage(x) = ev {
+                    self.open_page(x);
+                    return;
+                }
+                println!("Editor event ({:?}) called with no selected page", ev);
+                return;
+            }
+        };
         match ev {
-            Event::Save                => {
+            Event::Save => {
                 // TODO strip unused page and adventure parts, warn user about it
             }
-            Event::AddPage             => todo!(),
-            Event::RemovePage          => todo!(),
-            Event::OpenMeta            => self.open_adventure(),
-            Event::OpenPage(name)      => self.open_page(name),
-            Event::AddRecord           => adventure::add_record(self),
-            Event::AddName             => adventure::add_name(self),
-            Event::InsertRecord(_)     => todo!(),
-            Event::InsertName(_)       => todo!(),
-            Event::EditRecord(_)       => todo!(),
-            Event::EditName(_)         => todo!(),
-            Event::RemoveRecord(_)     => todo!(),
-            Event::RemoveName(_)       => todo!(),
+            Event::AddPage => todo!(),
+            Event::RemovePage => todo!(),
+            Event::OpenMeta => self.open_adventure(),
+            Event::OpenPage(name) => self.open_page(name),
+            Event::AddRecord => adventure::add_record(self),
+            Event::AddName => adventure::add_name(self),
+            Event::InsertRecord(_) => todo!(),
+            Event::InsertName(_) => todo!(),
+            Event::EditRecord(_) => todo!(),
+            Event::EditName(_) => todo!(),
+            Event::RemoveRecord(_) => todo!(),
+            Event::RemoveName(_) => todo!(),
             Event::SaveCondition(cond) => condition::save(self, cond),
             Event::LoadCondition(cond) => condition::load(self, cond),
-            Event::RenameCondition     => condition::rename(self),
-            Event::AddCondition        => condition::add(self),
-            Event::RemoveCondition     => condition::remove(self),
-            Event::SaveTest(test)      => test::save(self, test),
-            Event::LoadTest(test)      => test::load(self, test),
-            Event::RenameTest          => test::rename(self),
-            Event::AddTest             => test::add(self),
-            Event::RemoveTest          => test::remove(self),
-            Event::AddResult           => result::add(self),
-            Event::RenameResult        => result::rename(self),
-            Event::RemoveResult        => result::remove(self),
-            Event::SaveResult(res)     => result::save(self, res),
-            Event::LoadResult(res)     => result::load(self, res),
-            Event::SaveSideEffect(se)  => result::save_effect(self, se),
-            Event::LoadSideEffect(se)  => result::load_effect(self, se),
+            Event::RenameCondition => condition::rename(self),
+            Event::AddCondition => condition::add(self),
+            Event::RemoveCondition => condition::remove(self),
+            Event::SaveTest(test) => test::save(self, test),
+            Event::LoadTest(test) => test::load(self, test),
+            Event::RenameTest => test::rename(self),
+            Event::AddTest => test::add(self),
+            Event::RemoveTest => test::remove(self),
+            Event::AddResult => result::add(self),
+            Event::RenameResult => result::rename(self),
+            Event::RemoveResult => result::remove(self),
+            Event::SaveResult(res) => result::save(self, res),
+            Event::LoadResult(res) => result::load(self, res),
+            Event::SaveSideEffect(se) => result::save_effect(self, se),
+            Event::LoadSideEffect(se) => result::load_effect(self, se),
             Event::AddSideEffectRecord => result::add_record(self),
-            Event::AddSideEffectName   => result::add_name(self),
-            Event::RemoveSideEffect    => result::remove_effect(self),
+            Event::AddSideEffectName => result::add_name(self),
+            Event::RemoveSideEffect => result::remove_effect(self),
+            Event::AddChoice => self.page_editor.choices.add_choice(&mut page.choices),
+            Event::RemoveChoice => self.page_editor.choices.remove_choice(&mut page.choices),
+            Event::SaveChoice(c) => self.page_editor.choices.save_choice(&mut page.choices, c),
+            Event::LoadChoice(c) => self.page_editor.choices.load_choice(&page.choices, c),
+            Event::RefreshChoices => self.page_editor.choices.populate_dropdowns(page),
         }
     }
     pub fn hide(&mut self) {
@@ -209,6 +224,8 @@ impl EditorWindow {
             self.page_editor
                 .results
                 .populate(&page.results, &self.pages);
+            self.page_editor.choices.populate_dropdowns(&page);
+            self.page_editor.choices.populate_choices(&page.choices);
         }
     }
     /// Opens adventure metadata editor UI
@@ -227,5 +244,3 @@ impl EditorWindow {
         self.current_page = String::new();
     }
 }
-
-

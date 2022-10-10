@@ -14,7 +14,7 @@ pub struct StoryEditor {
     story: TextEditor,
     records: VariableEditor,
     names: VariableEditor,
-    choices: ChoiceEditor,
+    pub choices: ChoiceEditor,
     pub conditions: ConditionEditor,
     pub tests: TestEditor,
     pub results: ResultEditor,
@@ -79,7 +79,7 @@ impl StoryEditor {
                 let (s, _r) = app::channel();
                 // saving data from editors on tab switch
                 match old_select.as_str() {
-                    "Choices" => {} // TODO save choices on tabs
+                    "Choices" => s.send(emit!(Event::SaveChoice(None))),
                     "Conditions" => s.send(emit!(Event::SaveCondition(None))),
                     "Tests" => s.send(emit!(Event::SaveTest(None))),
                     "Results" => {
@@ -87,11 +87,10 @@ impl StoryEditor {
                     }
                     _ => unreachable!(),
                 }
-                // not sure if this is needed as far as doing things to editors when tab switches
                 if let Some(new_select) = x.value() {
                     let new_select = new_select.label();
                     match new_select.as_str() {
-                        "Choices" => {}
+                        "Choices" => s.send(emit!(Event::RefreshChoices)),
                         "Conditions" => {}
                         "Tests" => {}
                         "Results" => {}
