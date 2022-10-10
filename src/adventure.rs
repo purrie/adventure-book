@@ -4,6 +4,8 @@ use regex::Regex;
 
 use crate::evaluation::{evaluate_and_compare, Random, EvaluationError};
 
+pub const GAME_OVER_KEYWORD : &str = "game over";
+
 #[derive(Default, Clone)]
 pub struct Adventure {
     pub title: String,
@@ -391,7 +393,7 @@ impl Choice {
         self.result.len() > 0
     }
     pub fn is_game_over(&self) -> bool {
-        self.result == "game over"
+        self.result == GAME_OVER_KEYWORD
     }
     pub fn has_condition(&self) -> bool {
         self.condition.len() > 0
