@@ -29,6 +29,7 @@ pub struct AdventureEditor {
 }
 
 impl AdventureEditor {
+    /// Creates adventure editor UI, setting up callbacks and widgets in provided area
     pub fn new(area: Rect) -> Self {
         let font_size = app::font_size();
 
@@ -70,18 +71,23 @@ impl AdventureEditor {
             names,
         }
     }
+    /// Tests if the adventure UI is shown and visible
     pub fn active(&self) -> bool {
         self.group.visible()
     }
+    /// Hides adventure editor UI
     pub fn hide(&mut self) {
         self.group.hide();
     }
+    /// Shows the adventure editor UI
     pub fn show(&mut self) {
         self.group.show();
     }
+    /// Sets title into title editor
     fn set_title(&mut self, title: &str) {
         self.title.buffer().as_mut().unwrap().set_text(&title);
     }
+    /// Sets text into adventure description editor
     fn set_description(&mut self, description: &str) {
         self.description
             .buffer()
@@ -89,6 +95,7 @@ impl AdventureEditor {
             .unwrap()
             .set_text(description);
     }
+    /// Creates a variable UI for a new variable
     fn add_variable(&mut self, name: &String, is_name: bool) {
         if is_name {
             self.names.add_record(name, false);
@@ -96,6 +103,7 @@ impl AdventureEditor {
             self.records.add_record(name, false);
         }
     }
+    /// Loads adventure information into UI
     pub fn load(&mut self, adventure: &Adventure) {
         self.set_title(&adventure.title);
         self.set_description(&adventure.description);
@@ -108,11 +116,15 @@ impl AdventureEditor {
             self.names.add_record(nam.0, false);
         }
     }
+    /// Saves values into the adventure
     pub fn save(&self, adventure: &mut Adventure) {
         adventure.title = self.title.buffer().as_ref().unwrap().text();
         adventure.description = self.description.buffer().as_ref().unwrap().text();
         // saving only those because records and names are saved through their own controls
     }
+    /// Adds a name to the adventure
+    ///
+    /// It will open a window allowing user to enter values for it
     pub fn add_name(&mut self, adventure: &mut Adventure) {
         if let Some(nam) = ask_for_name() {
             if is_keyword_valid(&nam.keyword) {
@@ -131,6 +143,9 @@ impl AdventureEditor {
             }
         }
     }
+    /// Adds a record to the adventure
+    ///
+    /// It opens a window allowing user to input values
     pub fn add_record(&mut self, adventure: &mut Adventure) {
         if let Some(rec) = ask_for_record() {
             if is_keyword_valid(&rec.name) {
@@ -149,6 +164,9 @@ impl AdventureEditor {
             }
         }
     }
+    /// Removes record from adventure
+    ///
+    /// The function asks user for confirmation. It also fails with a warning when the record is in use.
     pub fn remove_record(
         &mut self,
         adventure: &mut Adventure,
@@ -178,7 +196,15 @@ impl AdventureEditor {
             self.group.redraw();
         }
     }
-    pub fn remove_name(&mut self, adventure: &mut Adventure, pages: &HashMap<String, Page>, name: String) {
+    /// Removes name from adventure
+    ///
+    /// The function asks the user for confirmation. It also fails with a warning when the name is in use.
+    pub fn remove_name(
+        &mut self,
+        adventure: &mut Adventure,
+        pages: &HashMap<String, Page>,
+        name: String,
+    ) {
         let keyword = match adventure.names.get(&name) {
             Some(k) => k,
             None => return,
@@ -201,6 +227,5 @@ impl AdventureEditor {
                 .for_each(|x| self.names.add_record(&x.0, false));
             self.group.redraw();
         }
-
     }
 }
