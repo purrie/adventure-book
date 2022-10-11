@@ -71,10 +71,10 @@ impl VariableEditor {
         let delete;
         if self.record {
             edit = emit!(Event::EditRecord(child_count));
-            delete = emit!(Event::RemoveRecord(child_count));
+            delete = emit!(Event::RemoveRecord(variable.clone()));
         } else {
             edit = emit!(Event::EditName(child_count));
-            delete = emit!(Event::RemoveName(child_count));
+            delete = emit!(Event::RemoveName(variable.clone()));
         }
 
         let bin_icon = SvgImage::from_data(BIN_ICON).unwrap();

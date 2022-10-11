@@ -24,6 +24,16 @@ macro_rules! emit {
     };
 }
 pub(crate) use emit;
+macro_rules! page {
+    ($editor:expr) => {
+        $editor.pages.get(&$editor.current_page).unwrap()
+    };
+}
+macro_rules! page_mut {
+    ($editor:expr) => {
+        $editor.pages.get_mut(&$editor.current_page).unwrap()
+    };
+}
 
 use self::{adventure::AdventureEditor, files::FileList, story::StoryEditor};
 
@@ -41,8 +51,8 @@ pub enum Event {
     InsertName(String),
     EditRecord(usize),
     EditName(usize),
-    RemoveRecord(usize),
-    RemoveName(usize),
+    RemoveRecord(String),
+    RemoveName(String),
     SaveCondition(Option<String>),
     LoadCondition(String),
     RenameCondition,
@@ -138,17 +148,6 @@ impl EditorWindow {
         }
     }
     pub fn process(&mut self, ev: Event) {
-        let page = match self.pages.get_mut(&self.current_page) {
-            Some(p) => p,
-            None => {
-                if let Event::OpenPage(x) = ev {
-                    self.open_page(x);
-                    return;
-                }
-                println!("Editor event ({:?}) called with no selected page", ev);
-                return;
-            }
-        };
         match ev {
             Event::Save => {
                 // TODO strip unused page and adventure parts, warn user about it
@@ -157,14 +156,14 @@ impl EditorWindow {
             Event::RemovePage => todo!(),
             Event::OpenMeta => self.open_adventure(),
             Event::OpenPage(name) => self.open_page(name),
-            Event::AddRecord => adventure::add_record(self),
-            Event::AddName => adventure::add_name(self),
+            Event::AddRecord => self.adventure_editor.add_record(&mut self.adventure),
+            Event::AddName => self.adventure_editor.add_name(&mut self.adventure),
             Event::InsertRecord(_) => todo!(),
             Event::InsertName(_) => todo!(),
             Event::EditRecord(_) => todo!(),
             Event::EditName(_) => todo!(),
-            Event::RemoveRecord(_) => todo!(),
-            Event::RemoveName(_) => todo!(),
+            Event::RemoveRecord(name) => self.adventure_editor.remove_record(&mut self.adventure, &self.pages, name),
+            Event::RemoveName(name) => self.adventure_editor.remove_name(&mut self.adventure, &self.pages, name),
             Event::SaveCondition(cond) => condition::save(self, cond),
             Event::LoadCondition(cond) => condition::load(self, cond),
             Event::RenameCondition => condition::rename(self),
@@ -185,11 +184,11 @@ impl EditorWindow {
             Event::AddSideEffectRecord => result::add_record(self),
             Event::AddSideEffectName => result::add_name(self),
             Event::RemoveSideEffect => result::remove_effect(self),
-            Event::AddChoice => self.page_editor.choices.add_choice(&mut page.choices),
-            Event::RemoveChoice => self.page_editor.choices.remove_choice(&mut page.choices),
-            Event::SaveChoice(c) => self.page_editor.choices.save_choice(&mut page.choices, c),
-            Event::LoadChoice(c) => self.page_editor.choices.load_choice(&page.choices, c),
-            Event::RefreshChoices => self.page_editor.choices.populate_dropdowns(page),
+            Event::AddChoice => self.page_editor.choices.add_choice(&mut page_mut!(self).choices),
+            Event::RemoveChoice => self.page_editor.choices.remove_choice(&mut page_mut!(self).choices),
+            Event::SaveChoice(c) => self.page_editor.choices.save_choice(&mut page_mut!(self).choices, c),
+            Event::LoadChoice(c) => self.page_editor.choices.load_choice(&page!(self).choices, c),
+            Event::RefreshChoices => self.page_editor.choices.populate_dropdowns(page!(self)),
         }
     }
     pub fn hide(&mut self) {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use fltk::{
     app,
     draw::Rect,
@@ -7,41 +9,12 @@ use fltk::{
 };
 
 use crate::{
-    adventure::{is_keyword_valid, Adventure},
-    dialog::{ask_for_name, ask_for_record},
+    adventure::{is_keyword_valid, Adventure, Page},
+    dialog::{ask_for_name, ask_for_record, ask_to_confirm},
     file::signal_error,
 };
 
-use super::{variables::VariableEditor, EditorWindow};
-
-pub fn add_record(editor: &mut EditorWindow) {
-    if let Some(rec) = ask_for_record() {
-        if is_keyword_valid(&rec.name) {
-            editor.adventure_editor.add_record(&rec.name, false);
-            editor.adventure.records.insert(rec.name.clone(), rec);
-            editor.group.redraw();
-        } else {
-            signal_error!(
-                "The keyword {} is invalid, please use only letters and numbers",
-                rec.name
-            );
-        }
-    }
-}
-pub fn add_name(editor: &mut EditorWindow) {
-    if let Some(nam) = ask_for_name() {
-        if is_keyword_valid(&nam.keyword) {
-            editor.adventure_editor.add_record(&nam.keyword, true);
-            editor.adventure.names.insert(nam.keyword.clone(), nam);
-            editor.group.redraw();
-        } else {
-            signal_error!(
-                "The keyword {} is invalid, please use only letters and numbers",
-                nam.keyword
-            );
-        }
-    }
-}
+use super::variables::VariableEditor;
 
 /// Editor for customizing adventure metadata
 ///
@@ -116,7 +89,7 @@ impl AdventureEditor {
             .unwrap()
             .set_text(description);
     }
-    fn add_record(&mut self, name: &String, is_name: bool) {
+    fn add_variable(&mut self, name: &String, is_name: bool) {
         if is_name {
             self.names.add_record(name, false);
         } else {
@@ -139,5 +112,95 @@ impl AdventureEditor {
         adventure.title = self.title.buffer().as_ref().unwrap().text();
         adventure.description = self.description.buffer().as_ref().unwrap().text();
         // saving only those because records and names are saved through their own controls
+    }
+    pub fn add_name(&mut self, adventure: &mut Adventure) {
+        if let Some(nam) = ask_for_name() {
+            if is_keyword_valid(&nam.keyword) {
+                if adventure.names.contains_key(&nam.keyword) {
+                    signal_error!("The keyword {} is already present", nam.keyword);
+                    return;
+                }
+                self.add_variable(&nam.keyword, true);
+                adventure.names.insert(nam.keyword.clone(), nam);
+                self.group.redraw();
+            } else {
+                signal_error!(
+                    "The keyword {} is invalid, please use only letters and numbers",
+                    nam.keyword
+                );
+            }
+        }
+    }
+    pub fn add_record(&mut self, adventure: &mut Adventure) {
+        if let Some(rec) = ask_for_record() {
+            if is_keyword_valid(&rec.name) {
+                if adventure.records.contains_key(&rec.name) {
+                    signal_error!("The keyword {} is already present", rec.name);
+                    return;
+                }
+                self.add_variable(&rec.name, false);
+                adventure.records.insert(rec.name.clone(), rec);
+                self.group.redraw();
+            } else {
+                signal_error!(
+                    "The keyword {} is invalid, please use only letters and numbers",
+                    rec.name
+                );
+            }
+        }
+    }
+    pub fn remove_record(
+        &mut self,
+        adventure: &mut Adventure,
+        pages: &HashMap<String, Page>,
+        name: String,
+    ) {
+        let keyword = match adventure.records.get(&name) {
+            Some(k) => k,
+            None => return,
+        };
+        for p in pages.iter() {
+            if p.1.is_keyword_present(&keyword.name) {
+                signal_error!(
+                    "Cannot remove the record {} as it is used in at least one of pages",
+                    name
+                );
+                return;
+            }
+        }
+        if ask_to_confirm(&format!("Are you sure you want to remove {}?", name)) {
+            adventure.records.remove(&name);
+            self.records.clear();
+            adventure
+                .records
+                .iter()
+                .for_each(|x| self.records.add_record(&x.0, false));
+            self.group.redraw();
+        }
+    }
+    pub fn remove_name(&mut self, adventure: &mut Adventure, pages: &HashMap<String, Page>, name: String) {
+        let keyword = match adventure.names.get(&name) {
+            Some(k) => k,
+            None => return,
+        };
+        for p in pages.iter() {
+            if p.1.is_keyword_present(&keyword.keyword) {
+                signal_error!(
+                    "Cannot remove the record {} as it is used in at least one of pages",
+                    name
+                );
+                return;
+            }
+        }
+        if ask_to_confirm(&format!("Are you sure you want to remove {}?", name)) {
+            adventure.names.remove(&name);
+            self.names.clear();
+            adventure
+                .names
+                .iter()
+                .for_each(|x| self.names.add_record(&x.0, false));
+            self.group.redraw();
+        }
+
     }
 }
