@@ -7,6 +7,7 @@ use fltk::{
     prelude::*,
     text::{TextBuffer, TextEditor}, button::Button, image::SvgImage,
 };
+type Dropdown = fltk::menu::Choice;
 
 use crate::{
     adventure::{Choice, Page, GAME_OVER_KEYWORD},
@@ -21,14 +22,14 @@ pub struct ChoiceEditor {
     selector: SelectBrowser,
     text: TextEditor,
     controls: Group,
-    condition: fltk::menu::Choice,
-    test: fltk::menu::Choice,
-    result: fltk::menu::Choice,
+    condition: Dropdown,
+    test: Dropdown,
+    result: Dropdown,
 }
 
 impl ChoiceEditor {
+    /// Creates UI for choice editor
     pub fn new(area: Rect) -> Self {
-        use fltk::menu::Choice;
         let font_size = app::font_size();
 
         let group = Group::new(area.x, area.y, area.w, area.h, "Choices");
@@ -76,11 +77,11 @@ impl ChoiceEditor {
             h_menu,
             "Condition",
         );
-        let condition = Choice::new(x_menu, y_menu_condition, w_menu, h_menu, None);
+        let condition = Dropdown::new(x_menu, y_menu_condition, w_menu, h_menu, None);
         Frame::new(x_menu, y_menu_test - font_size, w_menu, h_menu, "Test");
-        let mut test = Choice::new(x_menu, y_menu_test, w_menu, h_menu, None);
+        let mut test = Dropdown::new(x_menu, y_menu_test, w_menu, h_menu, None);
         Frame::new(x_menu, y_menu_result - font_size, w_menu, h_menu, "Result");
-        let mut result = Choice::new(x_menu, y_menu_result, w_menu, h_menu, None);
+        let mut result = Dropdown::new(x_menu, y_menu_result, w_menu, h_menu, None);
         controls.end();
         group.end();
 
@@ -145,13 +146,21 @@ impl ChoiceEditor {
             result,
         }
     }
-
+    /// Hides controls
+    ///
+    /// Used for hiding the UI when user isn't meant to manipulate it
     fn hide_controls(&mut self) {
         self.controls.hide();
     }
+    /// Displays controls
+    ///
+    /// Used to display the UI when user adds a new choice to the UI
     fn show_controls(&mut self) {
         self.controls.show();
     }
+    /// Clears and readds elements to dropdown menus, refreshing available choices
+    ///
+    /// The function will attempt to reload previously selected choice
     pub fn populate_dropdowns(&mut self, page: &Page) {
         self.condition.clear();
         page.conditions
@@ -171,8 +180,14 @@ impl ChoiceEditor {
             self.load_choice(&page.choices, (selected - 1) as usize);
         }
     }
+    /// Clears and repopulates the selector UI with available choices
+    ///
+    /// The function will also attempt to select first choice if it is available
     pub fn populate_choices(&mut self, choices: &Vec<Choice>) {
         self.selector.clear();
+        // Clearing the selector selection index
+        // This is needed to be able to refresh the UI when switching between two pages that have only one choice
+        // Since both will have the same index number and the selector will think it's the same item
         self.selector.do_callback();
         if choices.len() == 0 {
             return;
