@@ -5,12 +5,12 @@ use fltk::{
     frame::Frame,
     group::Group,
     prelude::*,
-    text::{TextBuffer, TextEditor},
+    text::{TextBuffer, TextEditor}, button::Button, image::SvgImage,
 };
 
 use crate::{
     adventure::{Choice, Page, GAME_OVER_KEYWORD},
-    editor::{emit, Event},
+    editor::{emit, Event}, icons::BIN_ICON,
 };
 
 /// Editor for customizing choices for a page
@@ -38,6 +38,12 @@ impl ChoiceEditor {
         let w_selector = area.w / 3;
         let h_selector = area.h - font_size;
 
+        let y_butt = y_selector + h_selector;
+        let w_butt = font_size;
+        let h_butt = w_butt;
+        let x_butt_add = x_selector;
+        let x_butt_rem = x_selector + w_selector - w_butt;
+
         let margin_menu = 20;
         let x_menu = area.x + w_selector + margin_menu;
         let w_menu = area.w - w_selector - margin_menu * 2;
@@ -58,7 +64,8 @@ impl ChoiceEditor {
             h_selector,
             "Choices in this page",
         );
-        // TODO make add and remove buttons
+        let mut butt_add = Button::new(x_butt_add, y_butt, w_butt, h_butt, "@+");
+        let mut butt_rem = Button::new(x_butt_rem, y_butt, w_butt, h_butt, None);
 
         let controls = Group::new(x_menu, y_menu_condition, w_menu, h_selector, None);
         let mut text = TextEditor::new(x_text, y_text, w_text, h_text, "Choice Text");
@@ -77,7 +84,15 @@ impl ChoiceEditor {
         controls.end();
         group.end();
 
+        let mut bin = SvgImage::from_data(BIN_ICON).unwrap();
+        bin.scale(font_size, font_size, false, true);
+        butt_rem.set_image(Some(bin));
+
         text.set_buffer(TextBuffer::default());
+
+        let (s, _r) = app::channel();
+        butt_add.emit(s.clone(), emit!(Event::AddChoice));
+        butt_rem.emit(s.clone(), emit!(Event::RemoveChoice));
 
         selector.set_callback({
             let mut old_selection = 0;
