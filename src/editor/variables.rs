@@ -13,6 +13,9 @@ pub struct VariableEditor {
 }
 
 impl VariableEditor {
+    /// Creates a scrollbar based group for displaying variables in provided area.
+    ///
+    /// is_record: Determines which callbacks will be triggered on button presses
     pub fn new(area: Rect, is_record: bool) -> Self {
         let mut butt_add = Button::new(area.x, area.y, area.w / 2, 20, None);
         let scroll = Scroll::new(area.x, area.y + 20, area.w, area.h - 20, None);
@@ -34,10 +37,15 @@ impl VariableEditor {
             record: is_record,
         }
     }
+    /// Removes all children from the editor
     pub fn clear(&mut self) {
         self.scroll.clear();
         self.children = 0;
     }
+    /// Adds a new variable to the editor, creating buttons and a label
+    ///
+    /// variable: Name to display in the editor
+    /// inserter: Whatever to create a quick insert button for text editors or not
     pub fn add_record(&mut self, variable: &String, inserter: bool) {
         let child_count = self.children;
 
