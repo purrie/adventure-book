@@ -5,7 +5,7 @@ use fltk::{prelude::*, text::{TextBuffer, TextEditor}, app, browser::SelectBrows
 use crate::{
     adventure::{Condition, Comparison},
     dialog::{ask_for_text, ask_to_confirm},
-    file::signal_error,
+    file::signal_error, editor::variables::variable_receiver,
 };
 
 use super::{EditorWindow, emit, Event};
@@ -200,6 +200,9 @@ impl ConditionEditor {
         expression_right.set_buffer(TextBuffer::default());
         comparison.add_choice(&Comparison::as_choice());
         comparison.set_value(0);
+
+        variable_receiver!(expression_left);
+        variable_receiver!(expression_right);
 
         Self {
             selector,

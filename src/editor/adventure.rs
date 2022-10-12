@@ -115,6 +115,7 @@ impl AdventureEditor {
         for nam in adventure.names.iter() {
             self.names.add_record(nam.0, false);
         }
+        self.group.redraw();
     }
     /// Saves values into the adventure
     pub fn save(&self, adventure: &mut Adventure) {

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, collections::HashMap};
 
 use fltk::{prelude::*, browser::SelectBrowser, frame::Frame, text::{TextEditor, TextBuffer}, draw::Rect, group::Group, app, button::Button, image::SvgImage};
 
-use crate::{dialog::{ask_to_confirm, ask_for_text}, file::signal_error, adventure::{Test, Comparison, StoryResult}, icons::{GEAR_ICON, BIN_ICON}};
+use crate::{dialog::{ask_to_confirm, ask_for_text}, file::signal_error, adventure::{Test, Comparison, StoryResult}, icons::{GEAR_ICON, BIN_ICON}, editor::variables::variable_receiver};
 
 use super::{EditorWindow, emit, Event};
 
@@ -231,6 +231,9 @@ impl TestEditor {
         expression_right.set_buffer(TextBuffer::default());
         comparison.add_choice(&Comparison::as_choice());
         comparison.set_value(0);
+
+        variable_receiver!(expression_left);
+        variable_receiver!(expression_right);
 
         Self {
             selector,

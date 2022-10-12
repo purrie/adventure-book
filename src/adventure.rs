@@ -84,6 +84,9 @@ const REGEX_RESULT_IN_CHOICE: &str = r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}";
 pub fn regex_match_keyword(keyword: &str) -> Result<Regex, regex::Error> {
     regex::Regex::new(&format!(r"\[\s*({})\s*\]", keyword))
 }
+pub fn create_keyword(keyword: &str) -> String {
+    format!("[{}]", keyword)
+}
 /// Tests if the keyword can be correctly matched in text
 pub fn is_keyword_valid(keyword: &str) -> bool {
     if let Ok(r) = regex_match_keyword(keyword) {
@@ -174,6 +177,29 @@ impl Adventure {
 
         true
     }
+    pub fn rename_keyword(&mut self, old: &str, new: &str) {
+        if let Some(mut v) = self.records.remove(old) {
+            v.name = new.to_string();
+            self.records.insert(new.to_string(), v);
+        }
+        if let Some(mut v) = self.names.remove(old) {
+            v.keyword = new.to_string();
+            self.names.insert(new.to_string(), v);
+        }
+    }
+}
+macro_rules! replace_with_regex {
+    ($regex:expr, $source:expr, $new:expr) => {
+        if let Some(cap) = $regex.captures(&$source) {
+            let mut i = 1;
+            let mut buff = $source.clone();
+            while let Some(c) = cap.get(i) {
+                buff.replace_range(c.range(), $new);
+                i += 1;
+            }
+            $source = buff;
+        }
+    };
 }
 impl Page {
     /// Creates an empty page
@@ -320,6 +346,19 @@ impl Page {
         }
         false
     }
+    pub fn rename_keyword(&mut self, old: &str, new: &str) {
+        let regex = regex_match_keyword(old);
+        if let Err(_) = regex {
+            return;
+        }
+        let regex = regex.unwrap();
+        replace_with_regex!(regex, self.story, new);
+        replace_with_regex!(regex, self.title, new);
+        self.choices.iter_mut().for_each(|x| x.rename_keyword(&regex, new));
+        self.conditions.iter_mut().for_each(|x| x.1.rename_keyword(&regex, new));
+        self.tests.iter_mut().for_each(|x| x.1.rename_keyword(&regex, new));
+        self.results.iter_mut().for_each(|x| x.1.rename_keyword(&regex, old, new));
+    }
 }
 
 /// macro that extracts keywords from choice text
@@ -405,6 +444,9 @@ impl Choice {
         }
         let regex = regex.unwrap();
         regex.is_match(&self.text)
+    }
+    fn rename_keyword(&mut self, regex: &Regex, new:&str) {
+        replace_with_regex!(regex, self.text, new);
     }
 }
 impl From<&str> for Comparison {
@@ -500,6 +542,10 @@ impl Condition {
         }
         regex.is_match(&self.expression_r)
     }
+    fn rename_keyword(&mut self, regex: &Regex, new: &str) {
+        replace_with_regex!(regex, self.expression_l, new);
+        replace_with_regex!(regex, self.expression_r, new);
+    }
 }
 impl Test {
     pub fn parse_from_string(text: String) -> Result<Test, ()> {
@@ -555,6 +601,10 @@ impl Test {
         }
         regex.is_match(&self.expression_r)
     }
+    fn rename_keyword(&mut self, regex: &Regex, new: &str) {
+        replace_with_regex!(regex, self.expression_l, new);
+        replace_with_regex!(regex, self.expression_r, new);
+    }
 }
 impl StoryResult {
     pub fn parse_from_string(text: String) -> Result<StoryResult, ()> {
@@ -593,6 +643,12 @@ impl StoryResult {
             Err(_) => return false,
         };
         self.side_effects.iter().any(|x| regex.is_match(x.0) || regex.is_match(x.1))
+    }
+    fn rename_keyword(&mut self, regex: &Regex, old: &str, new: &str) {
+        if let Some(v) = self.side_effects.remove(old) {
+            self.side_effects.insert(new.to_string(), v);
+        }
+        self.side_effects.iter_mut().for_each(|x| replace_with_regex!(regex, *x.1, new));
     }
 }
 impl Record {

@@ -11,7 +11,7 @@ type Dropdown = fltk::menu::Choice;
 
 use crate::{
     adventure::{Choice, Page, GAME_OVER_KEYWORD},
-    editor::{emit, Event}, icons::BIN_ICON,
+    editor::{emit, Event, variables::variable_receiver}, icons::BIN_ICON,
 };
 
 /// Editor for customizing choices for a page
@@ -137,6 +137,9 @@ impl ChoiceEditor {
                 }
             }
         });
+
+        variable_receiver!(text);
+
         Self {
             selector,
             text,

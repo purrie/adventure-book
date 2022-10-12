@@ -1,6 +1,6 @@
 use fltk::{prelude::*, group::{Group, Tabs}, text::{TextEditor, TextBuffer}, draw::Rect, app};
 
-use crate::adventure::{Adventure, Page};
+use crate::{adventure::{Adventure, Page}, editor::variables::variable_receiver};
 
 use super::{variables::VariableEditor, choice::ChoiceEditor, condition::ConditionEditor, test::TestEditor, result::ResultEditor, emit, Event};
 
@@ -100,6 +100,9 @@ impl StoryEditor {
                 }
             }
         });
+
+        variable_receiver!(title);
+        variable_receiver!(story);
 
         Self {
             group,

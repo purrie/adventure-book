@@ -1,9 +1,28 @@
-use fltk::{prelude::*, group::Scroll, app, draw::Rect, button::Button, frame::Frame, image::SvgImage};
+use fltk::{
+    app, button::Button, draw::Rect, frame::Frame, group::Scroll, image::SvgImage, prelude::*,
+};
+type HandleEvent = fltk::enums::Event;
 
-use crate::icons::{BIN_ICON, GEAR_ICON};
+use crate::{
+    adventure::create_keyword,
+    icons::{BIN_ICON, GEAR_ICON},
+};
 
 use super::{emit, Event};
 
+/// Sets up handle event for drag and drop receiver from variable editor
+macro_rules! variable_receiver {
+    ($widget:expr) => {
+        $widget.handle(|w, ev| {
+            if ev == fltk::enums::Event::DndRelease {
+                app::paste_text(w);
+                return true;
+            }
+            false
+        });
+    };
+}
+pub(crate) use variable_receiver;
 
 /// Editor widget for editing records and names
 pub struct VariableEditor {
@@ -59,29 +78,13 @@ impl VariableEditor {
 
         let (sender, _) = app::channel();
 
-        if inserter {
-            let mut butt_insert = Button::new(x, y, 20, h, "@<-");
-            let ev;
-            if self.record {
-                ev = emit!(Event::InsertRecord(variable.clone()));
-            } else {
-                ev = emit!(Event::InsertName(variable.clone()));
-            }
-
-            butt_insert.emit(sender.clone(), ev);
-
-            self.scroll.add(&butt_insert);
-
-            x += 20;
-            w -= 20;
-        }
         let edit;
         let delete;
         if self.record {
-            edit = emit!(Event::EditRecord(child_count));
+            edit = emit!(Event::EditRecord(variable.clone()));
             delete = emit!(Event::RemoveRecord(variable.clone()));
         } else {
-            edit = emit!(Event::EditName(child_count));
+            edit = emit!(Event::EditName(variable.clone()));
             delete = emit!(Event::RemoveName(variable.clone()));
         }
 
@@ -105,6 +108,20 @@ impl VariableEditor {
 
         let mut label = Frame::new(x, y, w, h, None);
         label.set_label(variable);
+        if inserter {
+            label.handle({
+                move |l, ev| -> bool {
+                    match ev {
+                        HandleEvent::Push => {
+                            app::copy(&create_keyword(&l.label()));
+                            app::dnd();
+                            true
+                        }
+                        _ => false,
+                    }
+                }
+            });
+        }
 
         self.scroll.add(&frame);
         self.scroll.add(&butt_edit);

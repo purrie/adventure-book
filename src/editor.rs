@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use fltk::{draw::Rect, group::Group, prelude::*};
 
 use crate::{
-    adventure::{Adventure, Page},
+    adventure::{is_keyword_valid, Adventure, Page},
+    dialog::ask_for_text,
     file::{capture_pages, read_page, signal_error},
 };
 
@@ -47,10 +48,8 @@ pub enum Event {
     OpenPage(String),
     AddRecord,
     AddName,
-    InsertRecord(String),
-    InsertName(String),
-    EditRecord(usize),
-    EditName(usize),
+    EditRecord(String),
+    EditName(String),
     RemoveRecord(String),
     RemoveName(String),
     SaveCondition(Option<String>),
@@ -158,12 +157,16 @@ impl EditorWindow {
             Event::OpenPage(name) => self.open_page(name),
             Event::AddRecord => self.adventure_editor.add_record(&mut self.adventure),
             Event::AddName => self.adventure_editor.add_name(&mut self.adventure),
-            Event::InsertRecord(_) => todo!(),
-            Event::InsertName(_) => todo!(),
-            Event::EditRecord(_) => todo!(),
-            Event::EditName(_) => todo!(),
-            Event::RemoveRecord(name) => self.adventure_editor.remove_record(&mut self.adventure, &self.pages, name),
-            Event::RemoveName(name) => self.adventure_editor.remove_name(&mut self.adventure, &self.pages, name),
+            Event::EditRecord(old) => self.rename_keyword(old),
+            Event::EditName(old) => self.rename_keyword(old),
+            Event::RemoveRecord(name) => {
+                self.adventure_editor
+                    .remove_record(&mut self.adventure, &self.pages, name)
+            }
+            Event::RemoveName(name) => {
+                self.adventure_editor
+                    .remove_name(&mut self.adventure, &self.pages, name)
+            }
             Event::SaveCondition(cond) => condition::save(self, cond),
             Event::LoadCondition(cond) => condition::load(self, cond),
             Event::RenameCondition => condition::rename(self),
@@ -184,10 +187,22 @@ impl EditorWindow {
             Event::AddSideEffectRecord => result::add_record(self),
             Event::AddSideEffectName => result::add_name(self),
             Event::RemoveSideEffect => result::remove_effect(self),
-            Event::AddChoice => self.page_editor.choices.add_choice(&mut page_mut!(self).choices),
-            Event::RemoveChoice => self.page_editor.choices.remove_choice(&mut page_mut!(self).choices),
-            Event::SaveChoice(c) => self.page_editor.choices.save_choice(&mut page_mut!(self).choices, c),
-            Event::LoadChoice(c) => self.page_editor.choices.load_choice(&page!(self).choices, c),
+            Event::AddChoice => self
+                .page_editor
+                .choices
+                .add_choice(&mut page_mut!(self).choices),
+            Event::RemoveChoice => self
+                .page_editor
+                .choices
+                .remove_choice(&mut page_mut!(self).choices),
+            Event::SaveChoice(c) => self
+                .page_editor
+                .choices
+                .save_choice(&mut page_mut!(self).choices, c),
+            Event::LoadChoice(c) => self
+                .page_editor
+                .choices
+                .load_choice(&page!(self).choices, c),
             Event::RefreshChoices => self.page_editor.choices.populate_dropdowns(page!(self)),
         }
     }
@@ -208,9 +223,13 @@ impl EditorWindow {
         if let Some(mut cur_page) = self.pages.get_mut(&self.current_page) {
             self.page_editor.save_page(&mut cur_page);
         }
+        self.load_page(name);
+    }
+    fn load_page(&mut self, name: String) {
         if let Some(page) = self.pages.get(&name) {
             self.adventure_editor.save(&mut self.adventure);
             self.adventure_editor.hide();
+
             self.page_editor.load_page(page, &self.adventure);
             self.page_editor.show();
             self.current_page = name;
@@ -241,5 +260,24 @@ impl EditorWindow {
         self.page_editor.hide();
         self.adventure_editor.show();
         self.current_page = String::new();
+    }
+
+    fn rename_keyword(&mut self, old: String) {
+        if let Some(new_name) = ask_for_text(&format!("Renaming {} to?", &old)) {
+            if is_keyword_valid(&new_name) == false {
+                signal_error!("Keyword {} is invalid, use only regular letters", new_name);
+                return;
+            }
+            self.pages
+                .iter_mut()
+                .for_each(|x| x.1.rename_keyword(&old, &new_name));
+            self.adventure.rename_keyword(&old, &new_name);
+
+            if self.adventure_editor.active() {
+                self.adventure_editor.load(&self.adventure);
+            } else {
+                self.load_page(self.current_page.clone());
+            }
+        }
     }
 }
