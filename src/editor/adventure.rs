@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 
 use fltk::{
     app,
@@ -8,11 +7,7 @@ use fltk::{
     text::{TextBuffer, TextEditor},
 };
 
-use crate::{
-    adventure::{is_keyword_valid, Adventure, Page},
-    dialog::{ask_for_name, ask_for_record, ask_to_confirm},
-    file::signal_error,
-};
+use crate::adventure::Adventure;
 
 use super::variables::VariableEditor;
 
@@ -96,11 +91,19 @@ impl AdventureEditor {
             .set_text(description);
     }
     /// Creates a variable UI for a new variable
-    fn add_variable(&mut self, name: &String, is_name: bool) {
+    pub fn add_variable(&mut self, name: &String, is_name: bool) {
         if is_name {
             self.names.add_record(name, false);
         } else {
             self.records.add_record(name, false);
+        }
+        self.group.redraw();
+    }
+    pub fn clear_variables(&mut self, names: bool) {
+        if names {
+            self.names.clear();
+        } else {
+            self.records.clear();
         }
     }
     /// Loads adventure information into UI
@@ -122,111 +125,5 @@ impl AdventureEditor {
         adventure.title = self.title.buffer().as_ref().unwrap().text();
         adventure.description = self.description.buffer().as_ref().unwrap().text();
         // saving only those because records and names are saved through their own controls
-    }
-    /// Adds a name to the adventure
-    ///
-    /// It will open a window allowing user to enter values for it
-    pub fn add_name(&mut self, adventure: &mut Adventure) {
-        if let Some(nam) = ask_for_name() {
-            if is_keyword_valid(&nam.keyword) {
-                if adventure.names.contains_key(&nam.keyword) {
-                    signal_error!("The keyword {} is already present", nam.keyword);
-                    return;
-                }
-                self.add_variable(&nam.keyword, true);
-                adventure.names.insert(nam.keyword.clone(), nam);
-                self.group.redraw();
-            } else {
-                signal_error!(
-                    "The keyword {} is invalid, please use only letters and numbers",
-                    nam.keyword
-                );
-            }
-        }
-    }
-    /// Adds a record to the adventure
-    ///
-    /// It opens a window allowing user to input values
-    pub fn add_record(&mut self, adventure: &mut Adventure) {
-        if let Some(rec) = ask_for_record() {
-            if is_keyword_valid(&rec.name) {
-                if adventure.records.contains_key(&rec.name) {
-                    signal_error!("The keyword {} is already present", rec.name);
-                    return;
-                }
-                self.add_variable(&rec.name, false);
-                adventure.records.insert(rec.name.clone(), rec);
-                self.group.redraw();
-            } else {
-                signal_error!(
-                    "The keyword {} is invalid, please use only letters and numbers",
-                    rec.name
-                );
-            }
-        }
-    }
-    /// Removes record from adventure
-    ///
-    /// The function asks user for confirmation. It also fails with a warning when the record is in use.
-    pub fn remove_record(
-        &mut self,
-        adventure: &mut Adventure,
-        pages: &HashMap<String, Page>,
-        name: String,
-    ) {
-        let keyword = match adventure.records.get(&name) {
-            Some(k) => k,
-            None => return,
-        };
-        for p in pages.iter() {
-            if p.1.is_keyword_present(&keyword.name) {
-                signal_error!(
-                    "Cannot remove the record {} as it is used in at least one of pages",
-                    name
-                );
-                return;
-            }
-        }
-        if ask_to_confirm(&format!("Are you sure you want to remove {}?", name)) {
-            adventure.records.remove(&name);
-            self.records.clear();
-            adventure
-                .records
-                .iter()
-                .for_each(|x| self.records.add_record(&x.0, false));
-            self.group.redraw();
-        }
-    }
-    /// Removes name from adventure
-    ///
-    /// The function asks the user for confirmation. It also fails with a warning when the name is in use.
-    pub fn remove_name(
-        &mut self,
-        adventure: &mut Adventure,
-        pages: &HashMap<String, Page>,
-        name: String,
-    ) {
-        let keyword = match adventure.names.get(&name) {
-            Some(k) => k,
-            None => return,
-        };
-        for p in pages.iter() {
-            if p.1.is_keyword_present(&keyword.keyword) {
-                signal_error!(
-                    "Cannot remove the record {} as it is used in at least one of pages",
-                    name
-                );
-                return;
-            }
-        }
-        if ask_to_confirm(&format!("Are you sure you want to remove {}?", name)) {
-            adventure.names.remove(&name);
-            self.names.clear();
-            adventure
-                .names
-                .iter()
-                .for_each(|x| self.names.add_record(&x.0, false));
-            self.group.redraw();
-        }
     }
 }

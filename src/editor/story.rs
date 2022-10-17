@@ -138,6 +138,7 @@ impl StoryEditor {
         self.group.hide();
     }
     pub fn show(&mut self) {
+        self.group.redraw();
         self.group.show();
     }
     pub fn load_page(&mut self, page: &Page, adventure: &Adventure) {
@@ -170,6 +171,21 @@ impl StoryEditor {
             self.names.show();
         } else {
             self.names.hide();
+        }
+    }
+    pub fn add_variable(&mut self, name: &String, is_name: bool) {
+        if is_name {
+            self.names.add_record(name, true);
+        } else {
+            self.records.add_record(name, true);
+        }
+        self.group.redraw();
+    }
+    pub fn clear_variables(&mut self, names: bool) {
+        if names {
+            self.names.clear();
+        } else {
+            self.records.clear();
         }
     }
 }

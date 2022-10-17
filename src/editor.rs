@@ -4,7 +4,7 @@ use fltk::{draw::Rect, group::Group, prelude::*};
 
 use crate::{
     adventure::{is_keyword_valid, Adventure, Page},
-    dialog::ask_for_text,
+    dialog::{ask_for_name, ask_for_record, ask_for_text, ask_to_confirm},
     file::{capture_pages, read_page, signal_error},
 };
 
@@ -153,22 +153,16 @@ impl EditorWindow {
             Event::Save => {
                 // TODO strip unused page and adventure parts, warn user about it
             }
-            Event::AddPage => todo!(),
-            Event::RemovePage => todo!(),
+            Event::AddPage => self.add_page(),
+            Event::RemovePage => self.remove_page(),
             Event::OpenMeta => self.open_adventure(),
             Event::OpenPage(name) => self.open_page(name),
-            Event::AddRecord => self.adventure_editor.add_record(&mut self.adventure),
-            Event::AddName => self.adventure_editor.add_name(&mut self.adventure),
+            Event::AddRecord => self.add_keyword(false),
+            Event::AddName => self.add_keyword(true),
             Event::EditRecord(old) => self.rename_keyword(old),
             Event::EditName(old) => self.rename_keyword(old),
-            Event::RemoveRecord(name) => {
-                self.adventure_editor
-                    .remove_record(&mut self.adventure, &self.pages, name)
-            }
-            Event::RemoveName(name) => {
-                self.adventure_editor
-                    .remove_name(&mut self.adventure, &self.pages, name)
-            }
+            Event::RemoveRecord(name) => self.remove_keyword(name, false),
+            Event::RemoveName(name) => self.remove_keyword(name, true),
             Event::SaveCondition(cond) => condition::save(self, cond),
             Event::LoadCondition(cond) => condition::load(self, cond),
             Event::RenameCondition => condition::rename(self),
@@ -220,35 +214,50 @@ impl EditorWindow {
     }
     /// Opens page editor and loads page by filename into it
     fn open_page(&mut self, name: String) {
-        // skipping loading the same page twice
-        if name == self.current_page {
+        if self.current_page == name {
             return;
         }
         if let Some(mut cur_page) = self.pages.get_mut(&self.current_page) {
             self.page_editor.save_page(&mut cur_page);
         }
-        self.load_page(name);
+        self.adventure_editor.save(&mut self.adventure);
+        self.adventure_editor.hide();
+
+        self.current_page = name;
+        self.load_page();
     }
-    fn load_page(&mut self, name: String) {
-        if let Some(page) = self.pages.get(&name) {
-            self.adventure_editor.save(&mut self.adventure);
-            self.adventure_editor.hide();
+    /// Loads current page into UI
+    fn load_page(&mut self) {
+        let page = page!(self);
+        self.page_editor.load_page(page, &self.adventure);
 
-            self.page_editor.load_page(page, &self.adventure);
-            self.page_editor.show();
-            self.current_page = name;
+        // loading page elements
+        self.page_editor
+            .conditions
+            .populate_conditions(&page.conditions);
+        self.page_editor.tests.populate(&page.tests, &page.results);
+        self.page_editor
+            .results
+            .populate(&page.results, &self.pages);
+        self.page_editor.choices.populate_dropdowns(&page);
+        self.page_editor.choices.populate_choices(&page.choices);
 
-            // loading page elements
-            self.page_editor
-                .conditions
-                .populate_conditions(&page.conditions);
-            self.page_editor.tests.populate(&page.tests, &page.results);
-            self.page_editor
-                .results
-                .populate(&page.results, &self.pages);
-            self.page_editor.choices.populate_dropdowns(&page);
-            self.page_editor.choices.populate_choices(&page.choices);
+        self.page_editor.show();
+    }
+    fn remove_page(&mut self) {
+        if self.adventure_editor.active() {
+            return;
         }
+        if ask_to_confirm(&format!(
+            "Are you sure you want to remove {} page?",
+            self.current_page
+        )) {
+            self.pages.remove(&self.current_page);
+            self.open_adventure();
+        }
+    }
+    fn add_page(&mut self) {
+
     }
     /// Opens adventure metadata editor UI
     fn open_adventure(&mut self) {
@@ -265,12 +274,60 @@ impl EditorWindow {
         self.adventure_editor.show();
         self.current_page = String::new();
     }
-
+    fn add_keyword(&mut self, is_name: bool) {
+        if is_name {
+            if let Some(nam) = ask_for_name() {
+                if is_keyword_valid(&nam.keyword) {
+                    if self.adventure.names.contains_key(&nam.keyword) {
+                        signal_error!("The keyword {} is already present", nam.keyword);
+                        return;
+                    }
+                    self.adventure_editor.add_variable(&nam.keyword, true);
+                    self.page_editor.add_variable(&nam.keyword, true);
+                    self.adventure.names.insert(nam.keyword.clone(), nam);
+                } else {
+                    signal_error!(
+                        "The keyword {} is invalid, please use only letters and numbers",
+                        nam.keyword
+                    );
+                }
+            }
+        } else {
+            if let Some(rec) = ask_for_record() {
+                if is_keyword_valid(&rec.name) {
+                    if self.adventure.records.contains_key(&rec.name) {
+                        signal_error!("The keyword {} is already present", rec.name);
+                        return;
+                    }
+                    self.adventure_editor.add_variable(&rec.name, false);
+                    self.page_editor.add_variable(&rec.name, false);
+                    self.adventure.records.insert(rec.name.clone(), rec);
+                    self.group.redraw();
+                } else {
+                    signal_error!(
+                        "The keyword {} is invalid, please use only letters and numbers",
+                        rec.name
+                    );
+                }
+            }
+        }
+    }
     fn rename_keyword(&mut self, old: String) {
         if let Some(new_name) = ask_for_text(&format!("Renaming {} to?", &old)) {
             if is_keyword_valid(&new_name) == false {
                 signal_error!("Keyword {} is invalid, use only regular letters", new_name);
                 return;
+            }
+            if self.adventure_editor.active() == false {
+                // saving unsaved page edits
+                let mut page = page_mut!(self);
+                self.page_editor.save_page(&mut page);
+                self.page_editor
+                    .choices
+                    .save_choice(&mut page.choices, None);
+                test::save(self, None);
+                condition::save(self, None);
+                result::save(self, None);
             }
             self.pages
                 .iter_mut()
@@ -280,7 +337,56 @@ impl EditorWindow {
             if self.adventure_editor.active() {
                 self.adventure_editor.load(&self.adventure);
             } else {
-                self.load_page(self.current_page.clone());
+                self.load_page();
+            }
+        }
+    }
+    fn remove_keyword(&mut self, name: String, is_name: bool) {
+        if is_name {
+            let keyword = match self.adventure.names.get(&name) {
+                Some(k) => k,
+                None => return,
+            };
+            for p in self.pages.iter() {
+                if p.1.is_keyword_present(&keyword.keyword) {
+                    signal_error!(
+                        "Cannot remove the record {} as it is used in at least one of pages",
+                        name
+                    );
+                    return;
+                }
+            }
+            if ask_to_confirm(&format!("Are you sure you want to remove {}?", name)) {
+                self.adventure.names.remove(&name);
+                self.adventure_editor.clear_variables(true);
+                self.page_editor.clear_variables(true);
+                self.adventure.names.iter().for_each(|x| {
+                    self.adventure_editor.add_variable(&x.1.keyword, true);
+                    self.page_editor.add_variable(&x.1.keyword, true);
+                });
+            }
+        } else {
+            let keyword = match self.adventure.records.get(&name) {
+                Some(k) => k,
+                None => return,
+            };
+            for p in self.pages.iter() {
+                if p.1.is_keyword_present(&keyword.name) {
+                    signal_error!(
+                        "Cannot remove the record {} as it is used in at least one of pages",
+                        name
+                    );
+                    return;
+                }
+            }
+            if ask_to_confirm(&format!("Are you sure you want to remove {}?", name)) {
+                self.adventure.records.remove(&name);
+                self.adventure_editor.clear_variables(false);
+                self.page_editor.clear_variables(false);
+                self.adventure.records.iter().for_each(|x| {
+                    self.adventure_editor.add_variable(&x.1.name, false);
+                    self.page_editor.add_variable(&x.1.name, false);
+                });
             }
         }
     }
