@@ -1,7 +1,8 @@
-use fltk::{prelude::*, app, browser::SelectBrowser, draw::Rect, group::Group, button::Button, frame::Frame};
+use fltk::{
+    app, browser::SelectBrowser, button::Button, draw::Rect, frame::Frame, group::Group, prelude::*,
+};
 
 use super::{emit, Event};
-
 
 /// Displays the list of files in adventure
 ///
@@ -58,5 +59,15 @@ impl FileList {
         for text in pages {
             self.page_list.add(&text);
         }
+    }
+    pub fn remove_line(&mut self) {
+        let selection = self.page_list.value();
+        if selection > 0 {
+            self.page_list.remove(selection);
+        }
+    }
+    pub fn add_line(&mut self, text: &str) {
+        self.page_list.add(text);
+        self.page_list.select(self.page_list.size());
     }
 }

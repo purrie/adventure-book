@@ -14,6 +14,7 @@ use window::MainWindow;
 extern crate fltk;
 extern crate rand;
 extern crate regex;
+extern crate dirs;
 
 mod adventure;
 mod dialog;

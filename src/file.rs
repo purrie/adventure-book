@@ -1,12 +1,13 @@
+use dirs::{cache_dir, data_dir};
 use fltk::image::PngImage;
 
 use crate::adventure::*;
 
-use std::fs::{read_dir, File};
+pub(crate) use crate::dialog::signal_error;
+use std::fs::{create_dir_all, read_dir, remove_file, File};
 use std::io::Read;
 use std::path::PathBuf;
 use std::vec::Vec;
-pub(crate) use crate::dialog::signal_error;
 
 pub enum FileError {
     LoadingFailure(PathBuf),
@@ -15,15 +16,20 @@ pub enum FileError {
     CannotStringifyPathBuff(PathBuf),
     NoAdventureOnPath(PathBuf),
 }
+pub const PROJECT_PATH_NAME: &str = "adventure-book";
 // Expected paths where adventure data is stored
 macro_rules! paths {
     ($path:expr) => {
         [
-            ["$Home", ".local", "share", "adventure-book", $path]
-                .iter()
-                .collect::<PathBuf>(),
+            [
+                data_dir().unwrap().to_str().unwrap(),
+                PROJECT_PATH_NAME,
+                $path,
+            ]
+            .iter()
+            .collect::<PathBuf>(),
             [".", "data", $path].iter().collect::<PathBuf>(),
-            ["usr", "share", "adventure-book", $path]
+            ["usr", "share", PROJECT_PATH_NAME, $path]
                 .iter()
                 .collect::<PathBuf>(),
         ]
@@ -47,12 +53,23 @@ pub fn capture_adventures() -> Vec<Adventure> {
                     let path = dir.path();
                     match load_adventure(path) {
                         Err(e) => match e {
-                            FileError::LoadingFailure(p) => signal_error!("Could not load file {}", p.to_str().unwrap()),
-                            FileError::ParsingFailure(p) => signal_error!("Could not parse file {}", p.to_str().unwrap()),
-                            FileError::FileUnopenable(p) => signal_error!("Could not open file {}", p.to_str().unwrap()),
-                            FileError::CannotStringifyPathBuff(p) => signal_error!("Could not process path {:?}", p),
-                            FileError::NoAdventureOnPath(p) => signal_error!("Could not find adventure on path {}", p.to_str().unwrap()),
-                        }
+                            FileError::LoadingFailure(p) => {
+                                signal_error!("Could not load file {}", p.to_str().unwrap())
+                            }
+                            FileError::ParsingFailure(p) => {
+                                signal_error!("Could not parse file {}", p.to_str().unwrap())
+                            }
+                            FileError::FileUnopenable(p) => {
+                                signal_error!("Could not open file {}", p.to_str().unwrap())
+                            }
+                            FileError::CannotStringifyPathBuff(p) => {
+                                signal_error!("Could not process path {:?}", p)
+                            }
+                            FileError::NoAdventureOnPath(p) => signal_error!(
+                                "Could not find adventure on path {}",
+                                p.to_str().unwrap()
+                            ),
+                        },
                         Ok(adventure) => ret.push(adventure),
                     }
                 }
@@ -110,6 +127,21 @@ pub fn is_on_adventure_path(path: &PathBuf) -> bool {
         }
     }
     false
+}
+pub fn is_valid_file_name(name: &str) -> bool {
+    let mut test_path = cache_dir().unwrap();
+    test_path.push(PROJECT_PATH_NAME);
+    if test_path.exists() == false {
+        create_dir_all(&test_path).unwrap();
+    }
+    test_path.push(name);
+    test_path.set_extension("txt");
+    if let Ok(_f) = File::create(&test_path) {
+        remove_file(test_path).unwrap();
+        return true;
+    } else {
+        return false;
+    }
 }
 /// Captures all pages from a path
 ///

@@ -1,9 +1,20 @@
-use fltk::{prelude::*, group::{Group, Tabs}, text::{TextEditor, TextBuffer}, draw::Rect, app};
+use fltk::{
+    app,
+    draw::Rect,
+    group::{Group, Tabs},
+    prelude::*,
+    text::{TextBuffer, TextEditor},
+};
 
-use crate::{adventure::{Adventure, Page}, editor::variables::variable_receiver};
+use crate::{
+    adventure::{Adventure, Page},
+    editor::variables::variable_receiver,
+};
 
-use super::{variables::VariableEditor, choice::ChoiceEditor, condition::ConditionEditor, test::TestEditor, result::ResultEditor, emit, Event};
-
+use super::{
+    choice::ChoiceEditor, condition::ConditionEditor, emit, result::ResultEditor, test::TestEditor,
+    variables::VariableEditor, Event,
+};
 
 /// Edits page's title and story text
 ///
@@ -85,7 +96,7 @@ impl StoryEditor {
                     "Results" => {
                         s.send(emit!(Event::SaveResult(None)));
                     }
-                    "Page" => {},
+                    "Page" => {}
                     _ => unreachable!(),
                 }
                 if let Some(new_select) = x.value() {
@@ -95,7 +106,7 @@ impl StoryEditor {
                             s.send(emit!(Event::RefreshChoices));
                             s.send(emit!(Event::ToggleNames(true)));
                             s.send(emit!(Event::ToggleRecords(true)));
-                        },
+                        }
                         "Conditions" => {
                             s.send(emit!(Event::ToggleNames(false)));
                             s.send(emit!(Event::ToggleRecords(true)));

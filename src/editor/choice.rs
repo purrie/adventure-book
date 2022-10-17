@@ -1,17 +1,20 @@
 use fltk::{
     app,
     browser::SelectBrowser,
+    button::Button,
     draw::Rect,
     frame::Frame,
     group::Group,
+    image::SvgImage,
     prelude::*,
-    text::{TextBuffer, TextEditor}, button::Button, image::SvgImage,
+    text::{TextBuffer, TextEditor},
 };
 type Dropdown = fltk::menu::Choice;
 
 use crate::{
     adventure::{Choice, Page, GAME_OVER_KEYWORD},
-    editor::{emit, Event, variables::variable_receiver}, icons::BIN_ICON,
+    editor::{emit, variables::variable_receiver, Event},
+    icons::BIN_ICON,
 };
 
 /// Editor for customizing choices for a page
@@ -176,7 +179,12 @@ impl ChoiceEditor {
             .iter()
             .for_each(|x| self.result.add_choice(x.0));
         self.result.add_choice(GAME_OVER_KEYWORD);
-
+    }
+    /// Refreshes dropdowns and selected choice
+    ///
+    /// This is used to load changes from other editors when going back to choice tab
+    pub fn refresh_dropdowns(&mut self, page: &Page) {
+        self.populate_dropdowns(page);
         // reloading the previously selected choice
         let selected = self.selector.value();
         if selected > 0 {

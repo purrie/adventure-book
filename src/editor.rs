@@ -5,7 +5,7 @@ use fltk::{draw::Rect, group::Group, prelude::*};
 use crate::{
     adventure::{is_keyword_valid, Adventure, Page},
     dialog::{ask_for_name, ask_for_record, ask_for_text, ask_to_confirm},
-    file::{capture_pages, read_page, signal_error},
+    file::{capture_pages, is_valid_file_name, read_page, signal_error},
 };
 
 mod adventure;
@@ -101,7 +101,8 @@ pub struct EditorWindow {
     /// Map of file name keys and pages on those file names
     pages: HashMap<String, Page>,
 }
-
+// TODO use cache folder and save pages and metadata in real time to allow crash recovery and editing continuation on accidental application closing
+/// UI governing creation and edition of adventures and individual pages
 impl EditorWindow {
     pub fn new(area: Rect) -> Self {
         let x_file = area.x;
@@ -199,7 +200,7 @@ impl EditorWindow {
                 .page_editor
                 .choices
                 .load_choice(&page!(self).choices, c),
-            Event::RefreshChoices => self.page_editor.choices.populate_dropdowns(page!(self)),
+            Event::RefreshChoices => self.page_editor.choices.refresh_dropdowns(page!(self)),
             Event::ToggleRecords(f) => self.page_editor.toggle_record_editor(f),
             Event::ToggleNames(f) => self.page_editor.toggle_name_editor(f),
         }
@@ -232,6 +233,7 @@ impl EditorWindow {
         self.page_editor.load_page(page, &self.adventure);
 
         // loading page elements
+        // TODO hide UI elements on subeditors when nothing is present/selected to avoid confusing users
         self.page_editor
             .conditions
             .populate_conditions(&page.conditions);
@@ -253,11 +255,25 @@ impl EditorWindow {
             self.current_page
         )) {
             self.pages.remove(&self.current_page);
+            self.file_list.remove_line();
             self.open_adventure();
         }
     }
     fn add_page(&mut self) {
-
+        if let Some(name) = ask_for_text("Enter name for the new page") {
+            let file_name = name.to_lowercase().replace(" ", "-");
+            if is_valid_file_name(&file_name) == false {
+                signal_error!("The file name {} is invalid", file_name);
+                return;
+            }
+            let page = Page {
+                title: name,
+                ..Default::default()
+            };
+            self.pages.insert(file_name.clone(), page);
+            self.file_list.add_line(&file_name);
+            self.open_page(file_name);
+        }
     }
     /// Opens adventure metadata editor UI
     fn open_adventure(&mut self) {
