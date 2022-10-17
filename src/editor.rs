@@ -77,6 +77,8 @@ pub enum Event {
     SaveChoice(Option<usize>),
     LoadChoice(usize),
     RefreshChoices,
+    ToggleRecords(bool),
+    ToggleNames(bool),
 }
 
 /// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
@@ -204,6 +206,8 @@ impl EditorWindow {
                 .choices
                 .load_choice(&page!(self).choices, c),
             Event::RefreshChoices => self.page_editor.choices.populate_dropdowns(page!(self)),
+            Event::ToggleRecords(f) => self.page_editor.toggle_record_editor(f),
+            Event::ToggleNames(f) => self.page_editor.toggle_name_editor(f),
         }
     }
     pub fn hide(&mut self) {

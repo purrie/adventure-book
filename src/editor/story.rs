@@ -22,43 +22,34 @@ pub struct StoryEditor {
 
 impl StoryEditor {
     pub fn new(area: Rect) -> Self {
+        // TODO split the UI into tabs to make space for inserters
         let group = Group::new(area.x, area.y, area.w, area.h, None);
 
         let font_size = app::font_size();
 
-        let x_editor = area.x;
-        let w_editor = area.w;
+        let x_tabs = area.x;
+        let y_tabs = area.y;
+        let w_tabs = area.w;
+        let h_tabs = area.h / 3 * 2;
 
-        let y_title = area.y + font_size;
+        let y_sidepanel = y_tabs + h_tabs;
+        let w_sidepanel = area.w / 2;
+        let h_sidepanel = area.h - h_tabs;
+        let x_records = area.x;
+        let x_names = x_records + w_sidepanel;
+
+        let mut tabs = Tabs::new(x_tabs, y_tabs, w_tabs, h_tabs, None);
+        let children = Rect::from(tabs.client_area());
+
+        let y_title = children.y + font_size;
         let h_title = font_size + 4;
         let y_story = y_title + h_title + font_size;
-        let h_story = area.h / 2;
+        let h_story = children.h - h_title - font_size * 2;
 
-        let x_sidepanel = x_editor + w_editor;
-        let y_records = area.y;
-        let w_sidepanel = area.w / 3;
-        let h_sidepanel = area.h / 2;
-        let y_names = y_records + h_sidepanel;
-
-        let x_valuators = area.x;
-        let y_valuators = y_story + h_story;
-        let w_valuators = area.w;
-        let h_valuators = area.h - h_story - h_title - font_size * 2;
-
-        let mut title = TextEditor::new(x_editor, y_title, w_editor, h_title, "Title");
-        let mut story = TextEditor::new(x_editor, y_story, w_editor, h_story, "Story Text");
-
-        let records = VariableEditor::new(
-            Rect::new(x_sidepanel, y_records, w_sidepanel, h_sidepanel),
-            true,
-        );
-        let names = VariableEditor::new(
-            Rect::new(x_sidepanel, y_names, w_sidepanel, h_sidepanel),
-            false,
-        );
-
-        let mut tabs = Tabs::new(x_valuators, y_valuators, w_valuators, h_valuators, None);
-        let children = Rect::from(tabs.client_area());
+        let text_page = Group::new(children.x, children.y, children.w, children.h, "Page");
+        let mut title = TextEditor::new(children.x, y_title, children.w, h_title, "Title");
+        let mut story = TextEditor::new(children.x, y_story, children.w, h_story, "Story Text");
+        text_page.end();
 
         let choices = ChoiceEditor::new(children);
         let conditions = ConditionEditor::new(children);
@@ -66,6 +57,15 @@ impl StoryEditor {
         let results = ResultEditor::new(children);
 
         tabs.end();
+
+        let records = VariableEditor::new(
+            Rect::new(x_records, y_sidepanel, w_sidepanel, h_sidepanel),
+            true,
+        );
+        let names = VariableEditor::new(
+            Rect::new(x_names, y_sidepanel, w_sidepanel, h_sidepanel),
+            false,
+        );
 
         group.end();
 
@@ -85,15 +85,33 @@ impl StoryEditor {
                     "Results" => {
                         s.send(emit!(Event::SaveResult(None)));
                     }
+                    "Page" => {},
                     _ => unreachable!(),
                 }
                 if let Some(new_select) = x.value() {
                     let new_select = new_select.label();
                     match new_select.as_str() {
-                        "Choices" => s.send(emit!(Event::RefreshChoices)),
-                        "Conditions" => {}
-                        "Tests" => {}
-                        "Results" => {}
+                        "Choices" => {
+                            s.send(emit!(Event::RefreshChoices));
+                            s.send(emit!(Event::ToggleNames(true)));
+                            s.send(emit!(Event::ToggleRecords(true)));
+                        },
+                        "Conditions" => {
+                            s.send(emit!(Event::ToggleNames(false)));
+                            s.send(emit!(Event::ToggleRecords(true)));
+                        }
+                        "Tests" => {
+                            s.send(emit!(Event::ToggleNames(false)));
+                            s.send(emit!(Event::ToggleRecords(true)));
+                        }
+                        "Results" => {
+                            s.send(emit!(Event::ToggleNames(true)));
+                            s.send(emit!(Event::ToggleRecords(true)));
+                        }
+                        "Page" => {
+                            s.send(emit!(Event::ToggleNames(true)));
+                            s.send(emit!(Event::ToggleRecords(true)));
+                        }
                         _ => unreachable!(),
                     }
                     old_select = new_select;
@@ -139,5 +157,19 @@ impl StoryEditor {
         page.title = self.title.buffer().as_ref().unwrap().text();
         page.story = self.story.buffer().as_ref().unwrap().text();
         // TODO save data from editors
+    }
+    pub fn toggle_record_editor(&mut self, on: bool) {
+        if on {
+            self.records.show();
+        } else {
+            self.records.hide();
+        }
+    }
+    pub fn toggle_name_editor(&mut self, on: bool) {
+        if on {
+            self.names.show();
+        } else {
+            self.names.hide();
+        }
     }
 }

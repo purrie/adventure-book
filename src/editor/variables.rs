@@ -15,7 +15,7 @@ macro_rules! variable_receiver {
     ($widget:expr) => {
         $widget.handle(|w, ev| {
             if ev == fltk::enums::Event::DndRelease {
-                app::paste_text(w);
+                w.paste();
                 return true;
             }
             false
@@ -27,6 +27,7 @@ pub(crate) use variable_receiver;
 /// Editor widget for editing records and names
 pub struct VariableEditor {
     scroll: Scroll,
+    button: Button,
     children: usize,
     record: bool,
 }
@@ -36,22 +37,23 @@ impl VariableEditor {
     ///
     /// is_record: Determines which callbacks will be triggered on button presses
     pub fn new(area: Rect, is_record: bool) -> Self {
-        let mut butt_add = Button::new(area.x, area.y, area.w / 2, 20, None);
+        let mut button = Button::new(area.x, area.y, area.w / 2, 20, None);
         let scroll = Scroll::new(area.x, area.y + 20, area.w, area.h - 20, None);
         scroll.end();
 
         let (s, _r) = app::channel();
 
         if is_record {
-            butt_add.set_label("Add Record");
-            butt_add.emit(s, emit!(Event::AddRecord));
+            button.set_label("Add Record");
+            button.emit(s, emit!(Event::AddRecord));
         } else {
-            butt_add.set_label("Add Name");
-            butt_add.emit(s, emit!(Event::AddName));
+            button.set_label("Add Name");
+            button.emit(s, emit!(Event::AddName));
         }
 
         Self {
             scroll,
+            button,
             children: 0,
             record: is_record,
         }
@@ -113,6 +115,11 @@ impl VariableEditor {
                 move |l, ev| -> bool {
                     match ev {
                         HandleEvent::Push => {
+                            // copy2 is called because default fltk behavior is retarded
+                            // and keeps pasting random things from all buffers when you call paste
+                            // even when you specify where it should get the text from
+                            // so other buffer needs to be cleared
+                            app::copy2("");
                             app::copy(&create_keyword(&l.label()));
                             app::dnd();
                             true
@@ -129,5 +136,14 @@ impl VariableEditor {
         self.scroll.add(&label);
 
         self.children += 1;
+    }
+
+    pub fn show(&mut self) {
+        self.button.show();
+        self.scroll.show();
+    }
+    pub fn hide(&mut self) {
+        self.button.hide();
+        self.scroll.hide();
     }
 }
