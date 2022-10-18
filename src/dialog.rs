@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 
 use fltk::{
     app,
@@ -137,25 +137,26 @@ pub fn ask_for_record() -> Option<Record> {
         app::wait();
     }
     let test = *accept.borrow();
+    let name = name.value();
+
     match test {
-        false   => None,
-        true    => {
-            let name = name.value();
+        true if name.len() > 0 => {
             let category = category.value();
-            if let Ok(value) = value.value().parse() {
-                Some(Record {
+            let record = match value.value().parse() {
+                Ok(value) => Record {
                     name,
                     category,
                     value,
-                })
-            } else {
-                Some(Record {
+                },
+                Err(_) => Record {
                     name,
                     category,
                     value: 0,
-                })
-            }
+                },
+            };
+            Some(record)
         }
+        _ => None,
     }
 }
 pub fn ask_for_name() -> Option<Name> {
@@ -193,13 +194,13 @@ pub fn ask_for_name() -> Option<Name> {
         app::wait();
     }
     let test = *accept.borrow();
+    let keyword = name.value();
     match test {
-        false => None,
-        true  => {
-            let keyword = name.value();
+        true if keyword.len() > 0 => {
             let value = value.value();
             return Some(Name { keyword, value });
         }
+        _ => None,
     }
 }
 pub fn ask_to_confirm(label: &str) -> bool {
@@ -236,8 +237,10 @@ pub fn ask_to_confirm(label: &str) -> bool {
     }
     conf.take()
 }
-pub fn ask_for_choice<'a, T: Iterator>(label: &str, choices: T) -> Option<(i32, String)> where T::Item: Into<&'a String>  {
-
+pub fn ask_for_choice<'a, T: Iterator>(label: &str, choices: T) -> Option<(i32, String)>
+where
+    T::Item: Into<&'a String>,
+{
     let choices: Vec<&String> = choices.map(|x| x.into()).collect();
     if choices.len() == 0 {
         signal_error!("Nothing to choose from");
@@ -289,7 +292,7 @@ pub fn ask_for_choice<'a, T: Iterator>(label: &str, choices: T) -> Option<(i32, 
             }
             let value = choice.choice().unwrap();
             Some((index, value))
-        },
+        }
         false => None,
     }
 }
