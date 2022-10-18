@@ -1,11 +1,20 @@
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt::{format, Display},
+};
 
 use regex::Regex;
 
-use crate::evaluation::{evaluate_and_compare, Random, EvaluationError};
+use crate::evaluation::{evaluate_and_compare, EvaluationError, Random};
 
-pub const GAME_OVER_KEYWORD : &str = "game over";
+pub const GAME_OVER_KEYWORD: &str = "game over";
 
+#[derive(Debug)]
+pub enum ParsingError {
+    ValueNaN(String),
+    IncorrectElementCount(String),
+    Invalid(String),
+}
 #[derive(Default, Clone)]
 pub struct Adventure {
     pub title: String,
@@ -15,13 +24,13 @@ pub struct Adventure {
     pub records: HashMap<String, Record>,
     pub names: HashMap<String, Name>,
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Record {
     pub category: String,
     pub name: String,
     pub value: i32,
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Name {
     pub keyword: String,
     pub value: String,
@@ -62,6 +71,7 @@ pub struct Test {
     pub success_result: String,
     pub failure_result: String,
 }
+#[derive(Default)]
 pub struct Choice {
     pub text: String,
     pub condition: String,
@@ -97,25 +107,14 @@ pub fn is_keyword_valid(keyword: &str) -> bool {
 }
 
 impl Adventure {
-    /// Creates a new empty adventure data
-    pub fn new() -> Adventure {
-        Adventure {
-            title: String::new(),
-            description: String::new(),
-            path: String::new(),
-            start: String::new(),
-            records: HashMap::<String, Record>::new(),
-            names: HashMap::<String, Name>::new(),
-        }
-    }
     /// Creates an adventure from text string
     ///
     /// The function goes through text line by line and looks for keywords at start, if it finds a keyword, it will process it.
     /// In case where line doesn't start in a keyword, the line will be added to adventure description if that's the last keyword that was read.
     ///
     /// Note that path can be relative or absolute
-    pub fn parse_from_string(text: String, path: String) -> Result<Adventure, ()> {
-        let mut adv = Adventure::new();
+    pub fn parse_from_string(text: String, path: String) -> Result<Adventure, ParsingError> {
+        let mut adv = Adventure::default();
 
         let lines = text.lines();
         let mut flag = 0;
@@ -132,21 +131,13 @@ impl Adventure {
             } else if line.starts_with("record:") {
                 flag = 0;
                 let text = line.replacen("record:", "", 1);
-                let rec = Record::parse_from_string(text);
-
-                if let Ok(r) = rec {
-                    adv.records.insert(r.name.clone(), r);
-                } else {
-                    return Err(());
-                }
+                let rec = Record::parse_from_string(text)?;
+                adv.records.insert(rec.name.clone(), rec);
             } else if line.starts_with("name:") {
                 flag = 0;
                 let text = line.replacen("name:", "", 1);
-                if let Ok(name) = Name::parse_from_string(text) {
-                    adv.names.insert(name.keyword.clone(), name);
-                } else {
-                    return Err(());
-                }
+                let name = Name::parse_from_string(text)?;
+                adv.names.insert(name.keyword.clone(), name);
             } else {
                 if flag == 1 {
                     adv.description = adv.description + line;
@@ -158,8 +149,21 @@ impl Adventure {
         if adv.is_valid() {
             return Ok(adv);
         } else {
-            return Err(());
+            return Err(ParsingError::Invalid(text));
         }
+    }
+    pub fn serialize_to_string(&self) -> String {
+        let mut ser = format!(
+            "title: {}\ndescription: {}\nstart: {}",
+            self.title, self.description, self.start
+        );
+        self.records
+            .iter()
+            .for_each(|x| ser = format!("{}\nrecord: {}", ser, x.1.serialize_to_string()));
+        self.names
+            .iter()
+            .for_each(|x| ser = format!("{}\nname: {}", ser, x.1.serialize_to_string()));
+        ser
     }
     pub fn is_valid(&self) -> bool {
         if self.title.len() < 1 {
@@ -202,22 +206,10 @@ macro_rules! replace_with_regex {
     };
 }
 impl Page {
-    /// Creates an empty page
-    pub fn new() -> Page {
-        Page {
-            title: String::new(),
-            story: String::new(),
-            choices: Vec::<Choice>::new(),
-            conditions: HashMap::<String, Condition>::new(),
-            tests: HashMap::<String, Test>::new(),
-            results: HashMap::<String, StoryResult>::new(),
-        }
-    }
-
     /// Parses string into Page. It will return error if the text isn't valid page
     pub fn parse_from_string(text: String) -> Result<Page, String> {
         // creating empty page to populate
-        let mut page = Page::new();
+        let mut page = Page::default();
 
         // next we break the text into lines and create regex lookups to match and connect parts of the page
         let lines = text.lines();
@@ -296,6 +288,22 @@ impl Page {
             Err(format!("Page didn't load correctly"))
         }
     }
+    pub fn serialize_to_string(&self) -> String {
+        let mut ser = format!("title: {}\nstory: {}", self.title, self.story);
+        self.choices
+            .iter()
+            .for_each(|x| ser = format!("{}\nchoice: {}", ser, x.serialize_to_string()));
+        self.conditions
+            .iter()
+            .for_each(|x| ser = format!("{}\ncondition: {}", ser, x.1.serialize_to_string()));
+        self.tests
+            .iter()
+            .for_each(|x| ser = format!("{}\ntest: {}", ser, x.1.serialize_to_string()));
+        self.results
+            .iter()
+            .for_each(|x| ser = format!("{}\nresult: {}", ser, x.1.serialize_to_string()));
+        ser
+    }
     pub fn is_valid(&self) -> bool {
         if self.story.len() < 1 {
             return false;
@@ -354,10 +362,18 @@ impl Page {
         let regex = regex.unwrap();
         replace_with_regex!(regex, self.story, new);
         replace_with_regex!(regex, self.title, new);
-        self.choices.iter_mut().for_each(|x| x.rename_keyword(&regex, new));
-        self.conditions.iter_mut().for_each(|x| x.1.rename_keyword(&regex, new));
-        self.tests.iter_mut().for_each(|x| x.1.rename_keyword(&regex, new));
-        self.results.iter_mut().for_each(|x| x.1.rename_keyword(&regex, old, new));
+        self.choices
+            .iter_mut()
+            .for_each(|x| x.rename_keyword(&regex, new));
+        self.conditions
+            .iter_mut()
+            .for_each(|x| x.1.rename_keyword(&regex, new));
+        self.tests
+            .iter_mut()
+            .for_each(|x| x.1.rename_keyword(&regex, new));
+        self.results
+            .iter_mut()
+            .for_each(|x| x.1.rename_keyword(&regex, old, new));
     }
 }
 
@@ -378,14 +394,6 @@ macro_rules! insert_in_choice {
 }
 
 impl Choice {
-    pub fn new() -> Choice {
-        Choice {
-            text: String::new(),
-            condition: String::new(),
-            test: String::new(),
-            result: String::new(),
-        }
-    }
     /// Parses string into Choice.
     ///
     /// It requires to be supplied with preconfigured Regex matches which capture name of the matched result
@@ -395,7 +403,7 @@ impl Choice {
         match_test: &Regex,
         match_result: &Regex,
     ) -> Result<Choice, ()> {
-        let mut choice = Choice::new();
+        let mut choice = Choice::default();
         // we use macros here to extract appropriate keywords into their places.
         insert_in_choice!(match_condition, choice.condition, text);
         insert_in_choice!(match_test, choice.test, text);
@@ -408,6 +416,21 @@ impl Choice {
         } else {
             Err(())
         }
+    }
+    fn serialize_to_string(&self) -> String {
+        let mut ser = self.text.clone();
+        if self.condition.len() > 0 {
+            ser += &format!("{{condition: {}}}", self.condition);
+        }
+        if self.test.len() > 0 {
+            ser += &format!("{{test: {}}}", self.test);
+        } else if self.result.len() > 0 {
+            ser += &format!("{{result: {}}}", self.result);
+        } else {
+            ser += &format!("{{result: {}}}", GAME_OVER_KEYWORD);
+        }
+
+        ser
     }
     /// Tests if this choice is valid
     ///
@@ -445,7 +468,7 @@ impl Choice {
         let regex = regex.unwrap();
         regex.is_match(&self.text)
     }
-    fn rename_keyword(&mut self, regex: &Regex, new:&str) {
+    fn rename_keyword(&mut self, regex: &Regex, new: &str) {
         replace_with_regex!(regex, self.text, new);
     }
 }
@@ -467,6 +490,18 @@ impl From<&str> for Comparison {
 impl From<String> for Comparison {
     fn from(item: String) -> Self {
         Comparison::from(item.as_str())
+    }
+}
+impl Display for Comparison {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Comparison::Greater => write!(f, ">"),
+            Comparison::GreaterEqual => write!(f, ">="),
+            Comparison::Less => write!(f, "<"),
+            Comparison::LessEqual => write!(f, "<="),
+            Comparison::Equal => write!(f, "=="),
+            Comparison::NotEqual => write!(f, "!="),
+        }
     }
 }
 impl Comparison {
@@ -518,6 +553,12 @@ impl Condition {
             expression_r: args[3].to_string(),
         })
     }
+    fn serialize_to_string(&self) -> String {
+        format!(
+            "{};{};{};{}",
+            self.name, self.expression_l, self.comparison, self.expression_r
+        )
+    }
     pub fn evaluate(
         &self,
         records: &HashMap<String, Record>,
@@ -568,6 +609,17 @@ impl Test {
             failure_result: args[5].to_string(),
         })
     }
+    fn serialize_to_string(&self) -> String {
+        format!(
+            "{};{};{};{};{};{}",
+            self.name,
+            self.expression_l,
+            self.comparison,
+            self.expression_r,
+            self.success_result,
+            self.failure_result
+        )
+    }
     pub fn evaluate(
         &self,
         records: &HashMap<String, Record>,
@@ -608,11 +660,11 @@ impl Test {
 }
 impl StoryResult {
     pub fn parse_from_string(text: String) -> Result<StoryResult, ()> {
-    let mut args: VecDeque<&str> = text
-        .split(";")
-        .map(|x| x.trim())
-        .filter(|x| x.len() > 0)
-        .collect();
+        let mut args: VecDeque<&str> = text
+            .split(";")
+            .map(|x| x.trim())
+            .filter(|x| x.len() > 0)
+            .collect();
 
         if args.len() < 2 {
             return Err(());
@@ -637,23 +689,34 @@ impl StoryResult {
             side_effects,
         })
     }
+    fn serialize_to_string(&self) -> String {
+        let mut ser = format!("{};{}", self.name, self.next_page);
+        self.side_effects
+            .iter()
+            .for_each(|x| ser = format!("{};{};{}", ser, x.0, x.1));
+        ser
+    }
     pub fn is_keyword_present(&self, keyword: &str) -> bool {
         let regex = match regex_match_keyword(keyword) {
             Ok(r) => r,
             Err(_) => return false,
         };
-        self.side_effects.iter().any(|x| regex.is_match(x.0) || regex.is_match(x.1))
+        self.side_effects
+            .iter()
+            .any(|x| regex.is_match(x.0) || regex.is_match(x.1))
     }
     fn rename_keyword(&mut self, regex: &Regex, old: &str, new: &str) {
         if let Some(v) = self.side_effects.remove(old) {
             self.side_effects.insert(new.to_string(), v);
         }
-        self.side_effects.iter_mut().for_each(|x| replace_with_regex!(regex, *x.1, new));
+        self.side_effects
+            .iter_mut()
+            .for_each(|x| replace_with_regex!(regex, *x.1, new));
     }
 }
 impl Record {
     /// Creates a record from a text data.
-    pub fn parse_from_string(text: String) -> Result<Record, ()> {
+    pub fn parse_from_string(text: String) -> Result<Record, ParsingError> {
         let args: Vec<&str> = text
             .split(";")
             .map(|x| x.trim())
@@ -686,10 +749,10 @@ impl Record {
                 if let Ok(n) = args[2].parse() {
                     value = n;
                 } else {
-                    return Err(());
+                    return Err(ParsingError::ValueNaN(text));
                 }
             }
-            _ => return Err(()),
+            _ => return Err(ParsingError::IncorrectElementCount(text)),
         }
         Ok(Record {
             name,
@@ -697,12 +760,15 @@ impl Record {
             value,
         })
     }
+    fn serialize_to_string(&self) -> String {
+        format!("{};{};{}", self.name, self.category, self.value)
+    }
     pub fn value_as_string(&self) -> String {
         (self.value as i32).to_string()
     }
 }
 impl Name {
-    pub fn parse_from_string(text: String) -> Result<Name, ()> {
+    pub fn parse_from_string(text: String) -> Result<Name, ParsingError> {
         let args: Vec<&str> = text
             .split(";")
             .map(|x| x.trim())
@@ -711,7 +777,7 @@ impl Name {
 
         let len = args.len();
         if len == 0 || len > 2 {
-            return Err(());
+            return Err(ParsingError::IncorrectElementCount(text));
         }
 
         Ok(Name {
@@ -722,16 +788,23 @@ impl Name {
             },
         })
     }
+    fn serialize_to_string(&self) -> String {
+        format!("{};{}", self.keyword, self.value)
+    }
 }
 
 #[cfg(test)]
 mod tests {
 
+    use std::collections::HashMap;
+
     use regex::Regex;
 
     use crate::adventure::Comparison;
 
-    use super::{Adventure, Choice, Condition, Page, Record, StoryResult, Test, regex_match_keyword};
+    use super::{
+        regex_match_keyword, Adventure, Choice, Condition, Name, Page, Record, StoryResult, Test,
+    };
 
     #[test]
     fn record_parse() {
@@ -939,5 +1012,62 @@ record: stuffed animals; resources;"
     #[test]
     fn comparison_not_equal() {
         assert!(Comparison::NotEqual.compare(10, 20));
+    }
+    #[test]
+    fn serializing_adventure_metadata() {
+        let a = Adventure {
+            title: "test".to_string(),
+            description: "this is a test adventure".to_string(),
+            start: "start-page".to_string(),
+            records: {
+                let mut r = HashMap::new();
+                r.insert(
+                    "first".to_string(),
+                    Record {
+                        name: "first".to_string(),
+                        category: "".to_string(),
+                        value: 1,
+                    },
+                );
+                r.insert(
+                    "second".to_string(),
+                    Record {
+                        name: "second".to_string(),
+                        category: "".to_string(),
+                        value: 4,
+                    },
+                );
+                r
+            },
+            names: {
+                let mut n = HashMap::new();
+                n.insert(
+                    "hero".to_string(),
+                    Name {
+                        keyword: "hero".to_string(),
+                        value: "Prince Charming".to_string(),
+                    },
+                );
+                n.insert(
+                    "vilain".to_string(),
+                    Name {
+                        keyword: "vilain".to_string(),
+                        value: "Evil Witch".to_string(),
+                    },
+                );
+                n
+            },
+            ..Default::default()
+        };
+
+        let serialized = a.serialize_to_string();
+        let b = Adventure::parse_from_string(serialized, "path".to_string()).unwrap();
+        assert_eq!(a.title, b.title);
+        assert_eq!(a.description, b.description);
+        assert_eq!(a.start, b.start);
+        assert_eq!(a.records.get("first"), b.records.get("first"));
+        assert_eq!(a.records.get("second"), b.records.get("second"));
+        assert_eq!(a.names.get("hero"), b.names.get("hero"));
+        assert_eq!(a.names.get("vilain"), b.names.get("vilain"));
     }
 }

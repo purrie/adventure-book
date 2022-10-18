@@ -46,8 +46,8 @@ fn main() {
     window.show();
 
     let mut selected_adventure = usize::MAX;
-    let mut active_storybook = Adventure::new();
-    let mut active_page = Page::new();
+    let mut active_storybook = Adventure::default();
+    let mut active_page = Page::default();
     let mut rng = Random::new(69420);
 
     while app.wait() {

@@ -220,7 +220,7 @@ impl ChoiceEditor {
         }
 
         // create a new entry
-        let new_choice = Choice::new();
+        let new_choice = Choice::default();
         choices.push(new_choice);
         self.selector.add(&self.selector.size().to_string());
         // select and load the new entry
