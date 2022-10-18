@@ -145,7 +145,7 @@ impl EditorWindow {
         for page in pages {
             match read_page(&adventure.path, &page) {
                 Ok(p) => drop(self.pages.insert(page, p)),
-                Err(e) => signal_error!(&e),
+                Err(e) => signal_error!("{}", e),
             };
         }
     }

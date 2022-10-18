@@ -4,6 +4,7 @@ use fltk::image::PngImage;
 use crate::adventure::*;
 
 pub(crate) use crate::dialog::signal_error;
+use std::fmt::Display;
 use std::fs::{create_dir_all, read_dir, remove_file, File};
 use std::io::Read;
 use std::path::PathBuf;
@@ -11,10 +12,11 @@ use std::vec::Vec;
 
 pub enum FileError {
     LoadingFailure(PathBuf),
-    ParsingFailure(PathBuf),
+    ParsingFailure(PathBuf, ParsingError),
     FileUnopenable(PathBuf),
     CannotStringifyPathBuff(PathBuf),
     NoAdventureOnPath(PathBuf),
+    FileNonExistent(PathBuf)
 }
 pub const PROJECT_PATH_NAME: &str = "adventure-book";
 // Expected paths where adventure data is stored
@@ -36,6 +38,18 @@ macro_rules! paths {
     };
 }
 
+impl Display for FileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FileError::LoadingFailure(p) => write!(f, "Could not load file {}", p.to_str().unwrap()),
+            FileError::ParsingFailure(p, e) => write!(f, "Could not parse file {} because of {}", p.to_str().unwrap(), e),
+            FileError::FileUnopenable(p) => write!(f, "Could not open file {}", p.to_str().unwrap()),
+            FileError::CannotStringifyPathBuff(p) => write!(f, "Could not process path {:?}", p.to_str().unwrap()),
+            FileError::NoAdventureOnPath(p) => write!(f, "Could not find adventure on path {}", p.to_str().unwrap()),
+            FileError::FileNonExistent(p) => write!(f, "File doesn't exist: {}", p.to_str().unwrap()),
+        }
+    }
+}
 /// Iterates over folders with adventure data and collects all possible adventures to run
 pub fn capture_adventures() -> Vec<Adventure> {
     let mut ret = Vec::<Adventure>::new();
@@ -52,24 +66,7 @@ pub fn capture_adventures() -> Vec<Adventure> {
                     // capturing the path to adventure metadata file
                     let path = dir.path();
                     match load_adventure(path) {
-                        Err(e) => match e {
-                            FileError::LoadingFailure(p) => {
-                                signal_error!("Could not load file {}", p.to_str().unwrap())
-                            }
-                            FileError::ParsingFailure(p) => {
-                                signal_error!("Could not parse file {}", p.to_str().unwrap())
-                            }
-                            FileError::FileUnopenable(p) => {
-                                signal_error!("Could not open file {}", p.to_str().unwrap())
-                            }
-                            FileError::CannotStringifyPathBuff(p) => {
-                                signal_error!("Could not process path {:?}", p)
-                            }
-                            FileError::NoAdventureOnPath(p) => signal_error!(
-                                "Could not find adventure on path {}",
-                                p.to_str().unwrap()
-                            ),
-                        },
+                        Err(e) => signal_error!("{}", e),
                         Ok(adventure) => ret.push(adventure),
                     }
                 }
@@ -107,7 +104,7 @@ pub fn load_adventure(path: PathBuf) -> Result<Adventure, FileError> {
 
     // next we parse the text into adventure. Parsing can fail if the text file isn't correctly formated or is incomplete, we skip over those.
     match Adventure::parse_from_string(text, path_text) {
-        Err(_) => Err(FileError::ParsingFailure(path)),
+        Err(e) => Err(FileError::ParsingFailure(path, e)),
         Ok(a) => Ok(a),
     }
 }
@@ -179,30 +176,30 @@ pub fn capture_pages(path: &str) -> Vec<String> {
 /// name: this is a name of the page
 ///
 /// The function automatically applies expected extension to the page name
-pub fn read_page(path: &String, name: &String) -> Result<Page, String> {
+pub fn read_page(path: &String, name: &String) -> Result<Page, FileError> {
     let mut path_to_file = PathBuf::new();
     path_to_file.push(path);
     path_to_file.push(name);
     path_to_file.set_extension("txt");
 
     if path_to_file.exists() == false {
-        return Err(format!("Page '{}' doesn't exist", name));
+        return Err(FileError::FileNonExistent(path_to_file));
     }
 
     // opening the file
     let mut p = match File::open(path_to_file.as_path()) {
-        Err(_) => return Err(format!("Failed to open page {}", name)),
+        Err(_) => return Err(FileError::FileUnopenable(path_to_file)),
         Ok(f) => f,
     };
 
     // reading file's contents, in case it fails then we return error
     let mut text = String::new();
     if let Err(_) = p.read_to_string(&mut text) {
-        return Err(format!("Failed to read page {}", name));
+        return Err(FileError::CannotStringifyPathBuff(path_to_file));
     }
 
     match Page::parse_from_string(text) {
-        Err(e) => return Err(e),
+        Err(e) => return Err(FileError::ParsingFailure(path_to_file, e)),
         Ok(p) => return Ok(p),
     }
 }

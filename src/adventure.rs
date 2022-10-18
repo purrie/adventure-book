@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, VecDeque},
-    fmt::{format, Display},
+    fmt::Display,
 };
 
 use regex::Regex;
@@ -12,7 +12,8 @@ pub const GAME_OVER_KEYWORD: &str = "game over";
 #[derive(Debug)]
 pub enum ParsingError {
     ValueNaN(String),
-    IncorrectElementCount(String),
+    IncorrectElementCount(String, usize),
+    ElementPairMissing(String),
     Invalid(String),
 }
 #[derive(Default, Clone)]
@@ -35,7 +36,7 @@ pub struct Name {
     pub keyword: String,
     pub value: String,
 }
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Page {
     pub title: String,
     pub story: String,
@@ -55,14 +56,14 @@ pub enum Comparison {
     Equal,
     NotEqual,
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct StoryResult {
     pub name: String,
     pub next_page: String,
     /// Consists of keys that are record or name keywords, and unevaluated expressions as values that represent how the records or names are changed
     pub side_effects: HashMap<String, String>,
 }
-#[derive(Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Test {
     pub name: String,
     pub expression_r: String,
@@ -71,14 +72,14 @@ pub struct Test {
     pub success_result: String,
     pub failure_result: String,
 }
-#[derive(Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Choice {
     pub text: String,
     pub condition: String,
     pub test: String,
     pub result: String,
 }
-#[derive(Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Condition {
     pub name: String,
     pub expression_r: String,
@@ -104,6 +105,23 @@ pub fn is_keyword_valid(keyword: &str) -> bool {
         return r.is_match(&test);
     }
     false
+}
+
+impl Display for ParsingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParsingError::ValueNaN(v) => write!(f, "Value is not a number in string {}", v),
+            ParsingError::IncorrectElementCount(v, c) => write!(
+                f,
+                "Incorrect amount of elements in {}, expected {} elements",
+                v, c
+            ),
+            ParsingError::Invalid(v) => write!(f, "Invalid data: {}", v),
+            ParsingError::ElementPairMissing(v) => {
+                write!(f, "Expected element pair missing in {}", v)
+            }
+        }
+    }
 }
 
 impl Adventure {
@@ -207,7 +225,7 @@ macro_rules! replace_with_regex {
 }
 impl Page {
     /// Parses string into Page. It will return error if the text isn't valid page
-    pub fn parse_from_string(text: String) -> Result<Page, String> {
+    pub fn parse_from_string(text: String) -> Result<Page, ParsingError> {
         // creating empty page to populate
         let mut page = Page::default();
 
@@ -219,7 +237,7 @@ impl Page {
         let match_result = Regex::new(REGEX_RESULT_IN_CHOICE).unwrap();
 
         let mut story_line = false;
-        for (i, line) in lines.enumerate() {
+        for line in lines {
             // the flag marks if we're at a story line, this allows story lines to be broken up into multiple lines later on
 
             if line.starts_with("title:") {
@@ -238,45 +256,25 @@ impl Page {
                     &match_condition,
                     &match_test,
                     &match_result,
-                );
-
-                // if read succeeds, we push the choice in
-                if let Ok(c) = cho {
-                    page.choices.push(c);
-                } else {
-                    return Err(format!("Failed to load choice on line {}", i));
-                }
+                )?;
+                page.choices.push(cho);
             } else if line.starts_with("condition:") {
                 story_line = false;
 
-                let con = Condition::parse_from_string(line.replacen("condition:", "", 1));
+                let con = Condition::parse_from_string(line.replacen("condition:", "", 1))?;
 
-                // reading condition data can fail, in that case we fail the page
-                if let Ok(c) = con {
-                    page.conditions.insert(c.name.clone(), c);
-                } else {
-                    return Err(format!("Failed to load choice on line {}", i));
-                }
+                page.conditions.insert(con.name.clone(), con);
             } else if line.starts_with("test:") {
                 story_line = false;
 
-                // we fail the page if the test doesn't load in correctly
-                let test = Test::parse_from_string(line.replacen("test:", "", 1));
-                if let Ok(t) = test {
-                    page.tests.insert(t.name.clone(), t);
-                } else {
-                    return Err(format!("Failed to load test on line {}", i));
-                }
+                let test = Test::parse_from_string(line.replacen("test:", "", 1))?;
+                page.tests.insert(test.name.clone(), test);
             } else if line.starts_with("result:") {
                 story_line = false;
 
                 // failing the page if result doesn't load correctly, like in other cases
-                let res = StoryResult::parse_from_string(line.replacen("result:", "", 1));
-                if let Ok(r) = res {
-                    page.results.insert(r.name.clone(), r);
-                } else {
-                    return Err(format!("Failed to load result on line {}", i));
-                }
+                let res = StoryResult::parse_from_string(line.replacen("result:", "", 1))?;
+                page.results.insert(res.name.clone(), res);
             } else if story_line {
                 // adding a line to story if it's immediately after story keyword and doesn't match any other keywords
                 page.story = format!("{}\n\n{}", page.story, line);
@@ -285,7 +283,7 @@ impl Page {
         if page.is_valid() {
             Ok(page)
         } else {
-            Err(format!("Page didn't load correctly"))
+            Err(ParsingError::Invalid(text))
         }
     }
     pub fn serialize_to_string(&self) -> String {
@@ -402,7 +400,7 @@ impl Choice {
         match_condition: &Regex,
         match_test: &Regex,
         match_result: &Regex,
-    ) -> Result<Choice, ()> {
+    ) -> Result<Choice, ParsingError> {
         let mut choice = Choice::default();
         // we use macros here to extract appropriate keywords into their places.
         insert_in_choice!(match_condition, choice.condition, text);
@@ -414,7 +412,7 @@ impl Choice {
         if choice.is_valid() {
             Ok(choice)
         } else {
-            Err(())
+            Err(ParsingError::Invalid(text))
         }
     }
     fn serialize_to_string(&self) -> String {
@@ -532,7 +530,7 @@ impl Comparison {
     }
 }
 impl Condition {
-    pub fn parse_from_string(text: String) -> Result<Condition, ()> {
+    pub fn parse_from_string(text: String) -> Result<Condition, ParsingError> {
         // splitting the text into parts. Expected order of data is name, exp right, comparison, exp left. We filter out empty strings
         let args: Vec<&str> = text
             .split(";")
@@ -542,7 +540,7 @@ impl Condition {
 
         // function will report error if incorrect amount of data was found.
         if args.len() != 4 {
-            return Err(());
+            return Err(ParsingError::IncorrectElementCount(text, 4));
         }
 
         // constructing the condition.
@@ -589,7 +587,7 @@ impl Condition {
     }
 }
 impl Test {
-    pub fn parse_from_string(text: String) -> Result<Test, ()> {
+    pub fn parse_from_string(text: String) -> Result<Test, ParsingError> {
         let args: Vec<&str> = text
             .split(";")
             .map(|x| x.trim())
@@ -597,7 +595,7 @@ impl Test {
             .collect();
 
         if args.len() != 6 {
-            return Err(());
+            return Err(ParsingError::IncorrectElementCount(text, 6));
         }
 
         Ok(Test {
@@ -659,7 +657,7 @@ impl Test {
     }
 }
 impl StoryResult {
-    pub fn parse_from_string(text: String) -> Result<StoryResult, ()> {
+    pub fn parse_from_string(text: String) -> Result<StoryResult, ParsingError> {
         let mut args: VecDeque<&str> = text
             .split(";")
             .map(|x| x.trim())
@@ -667,7 +665,7 @@ impl StoryResult {
             .collect();
 
         if args.len() < 2 {
-            return Err(());
+            return Err(ParsingError::IncorrectElementCount(text, 2));
         }
         let name = args.pop_front().unwrap().to_string();
         let next_page = args.pop_front().unwrap().to_string();
@@ -679,7 +677,7 @@ impl StoryResult {
                 side_effects.insert(ar.to_string(), val.to_string());
             } else {
                 // error because we have keyword but not value
-                return Err(());
+                return Err(ParsingError::ElementPairMissing(text));
             }
         }
 
@@ -752,7 +750,7 @@ impl Record {
                     return Err(ParsingError::ValueNaN(text));
                 }
             }
-            _ => return Err(ParsingError::IncorrectElementCount(text)),
+            _ => return Err(ParsingError::IncorrectElementCount(text, 3)),
         }
         Ok(Record {
             name,
@@ -777,7 +775,7 @@ impl Name {
 
         let len = args.len();
         if len == 0 || len > 2 {
-            return Err(ParsingError::IncorrectElementCount(text));
+            return Err(ParsingError::IncorrectElementCount(text, 2));
         }
 
         Ok(Name {
@@ -1069,5 +1067,111 @@ record: stuffed animals; resources;"
         assert_eq!(a.records.get("second"), b.records.get("second"));
         assert_eq!(a.names.get("hero"), b.names.get("hero"));
         assert_eq!(a.names.get("vilain"), b.names.get("vilain"));
+    }
+    #[test]
+    fn serializing_page() {
+        let a = Page {
+            title: "test title".to_string(),
+            story: "this is a test story".to_string(),
+            choices: {
+                vec![
+                    Choice {
+                        text: "Default choice".to_string(),
+                        result: "game over".to_string(),
+                        ..Default::default()
+                    },
+                    Choice {
+                        text: "Conditioned choice".to_string(),
+                        condition: "con".to_string(),
+                        result: "game over".to_string(),
+                        ..Default::default()
+                    },
+                    Choice {
+                        text: "Testing Choice".to_string(),
+                        test: "test".to_string(),
+                        ..Default::default()
+                    },
+                    Choice {
+                        text: "Resulting choice".to_string(),
+                        result: "result".to_string(),
+                        ..Default::default()
+                    },
+                ]
+            },
+            conditions: {
+                let mut c = HashMap::new();
+                c.insert(
+                    "con".to_string(),
+                    Condition {
+                        name: "con".to_string(),
+                        comparison: Comparison::Greater,
+                        expression_l: "1d6".to_string(),
+                        expression_r: "2".to_string(),
+                    },
+                );
+                c
+            },
+            tests: {
+                let mut t = HashMap::new();
+                t.insert(
+                    "test".to_string(),
+                    Test {
+                        name: "test".to_string(),
+                        comparison: Comparison::Greater,
+                        expression_l: "1d20".to_string(),
+                        expression_r: "10".to_string(),
+                        success_result: "result".to_string(),
+                        failure_result: "failure".to_string(),
+                    },
+                );
+                t
+            },
+            results: {
+                let mut r = HashMap::new();
+                r.insert(
+                    "result".to_string(),
+                    StoryResult {
+                        name: "result".to_string(),
+                        next_page: "next".to_string(),
+                        side_effects: {
+                            let mut se = HashMap::new();
+                            se.insert("record".to_string(), "4".to_string());
+                            se
+                        },
+                    },
+                );
+                r.insert(
+                    "failure".to_string(),
+                    StoryResult {
+                        name: "failure".to_string(),
+                        next_page: "loss".to_string(),
+                        side_effects: HashMap::new(),
+                    },
+                );
+                r
+            },
+        };
+
+        let serialized = a.serialize_to_string();
+        let b = Page::parse_from_string(serialized).unwrap();
+        assert_eq!(a.title, b.title);
+        assert_eq!(a.story, b.story);
+        assert_eq!(a.choices.len(), b.choices.len());
+        a.choices
+            .iter()
+            .enumerate()
+            .for_each(|x| assert_eq!(x.1, b.choices.get(x.0).unwrap()));
+        assert_eq!(a.conditions.len(), b.conditions.len());
+        a.conditions
+            .iter()
+            .for_each(|x| assert_eq!(x.1, b.conditions.get(x.0).unwrap()));
+        assert_eq!(a.tests.len(), b.tests.len());
+        a.tests
+            .iter()
+            .for_each(|x| assert_eq!(x.1, b.tests.get(x.0).unwrap()));
+        assert_eq!(a.results.len(), b.results.len());
+        a.results
+            .iter()
+            .for_each(|x| assert_eq!(x.1, b.results.get(x.0).unwrap()));
     }
 }
