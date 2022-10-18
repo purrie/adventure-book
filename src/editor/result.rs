@@ -23,6 +23,8 @@ use crate::{
 
 use super::{emit, EditorWindow, Event};
 
+// TODO move functions into struct impl
+
 pub fn load(editor: &mut EditorWindow, res: String) {
     if let Some(page) = editor.pages.get(&editor.current_page) {
         if let Some(r) = page.results.get(&res) {

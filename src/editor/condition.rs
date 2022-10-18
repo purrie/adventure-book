@@ -10,6 +10,8 @@ use crate::{
 
 use super::{EditorWindow, emit, Event};
 
+// TODO move functions to struct impl
+
 pub fn save(editor: &mut EditorWindow, cond: Option<String>) {
     if let Some(page) = editor.pages.get_mut(&editor.current_page) {
         let cond = match cond {

@@ -6,6 +6,7 @@ use crate::{dialog::{ask_to_confirm, ask_for_text}, file::signal_error, adventur
 
 use super::{EditorWindow, emit, Event};
 
+// TODO move functions into struct impl
 
 pub fn save(editor: &mut EditorWindow, test: Option<String>) {
     if let Some(page) = editor.pages.get_mut(&editor.current_page) {
