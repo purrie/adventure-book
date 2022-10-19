@@ -5,9 +5,9 @@ use crate::adventure::*;
 
 pub(crate) use crate::dialog::signal_error;
 use std::fmt::Display;
-use std::fs::{create_dir_all, read_dir, remove_file, File};
-use std::io::Read;
-use std::path::PathBuf;
+use std::fs::{create_dir_all, read_dir, remove_dir_all, remove_file, File};
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 use std::vec::Vec;
 
 pub enum FileError {
@@ -16,7 +16,7 @@ pub enum FileError {
     FileUnopenable(PathBuf),
     CannotStringifyPathBuff(PathBuf),
     NoAdventureOnPath(PathBuf),
-    FileNonExistent(PathBuf)
+    FileNonExistent(PathBuf),
 }
 pub const PROJECT_PATH_NAME: &str = "adventure-book";
 // Expected paths where adventure data is stored
@@ -41,12 +41,29 @@ macro_rules! paths {
 impl Display for FileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FileError::LoadingFailure(p) => write!(f, "Could not load file {}", p.to_str().unwrap()),
-            FileError::ParsingFailure(p, e) => write!(f, "Could not parse file {} because of {}", p.to_str().unwrap(), e),
-            FileError::FileUnopenable(p) => write!(f, "Could not open file {}", p.to_str().unwrap()),
-            FileError::CannotStringifyPathBuff(p) => write!(f, "Could not process path {:?}", p.to_str().unwrap()),
-            FileError::NoAdventureOnPath(p) => write!(f, "Could not find adventure on path {}", p.to_str().unwrap()),
-            FileError::FileNonExistent(p) => write!(f, "File doesn't exist: {}", p.to_str().unwrap()),
+            FileError::LoadingFailure(p) => {
+                write!(f, "Could not load file {}", p.to_str().unwrap())
+            }
+            FileError::ParsingFailure(p, e) => write!(
+                f,
+                "Could not parse file {} because of {}",
+                p.to_str().unwrap(),
+                e
+            ),
+            FileError::FileUnopenable(p) => {
+                write!(f, "Could not open file {}", p.to_str().unwrap())
+            }
+            FileError::CannotStringifyPathBuff(p) => {
+                write!(f, "Could not process path {:?}", p.to_str().unwrap())
+            }
+            FileError::NoAdventureOnPath(p) => write!(
+                f,
+                "Could not find adventure on path {}",
+                p.to_str().unwrap()
+            ),
+            FileError::FileNonExistent(p) => {
+                write!(f, "File doesn't exist: {}", p.to_str().unwrap())
+            }
         }
     }
 }
@@ -124,6 +141,59 @@ pub fn is_on_adventure_path(path: &PathBuf) -> bool {
         }
     }
     false
+}
+pub fn remove_adventure<P: AsRef<Path>>(path: P) {
+    match remove_dir_all(path) {
+        Ok(_) => {}
+        Err(_) => {}
+    }
+}
+/// Writes adventure metadata into file
+///
+/// path: adventure path, should be the same as stored in adventure struct
+/// serialized_adventure: result of calling serialize_to_string on an adventure struct
+pub fn save_adventure(path: &str, serialized_adventure: String) {
+    let mut path = PathBuf::from(path);
+    if path.exists() == false {
+        match create_dir_all(&path) {
+            Ok(_) => {}
+            Err(_) => {
+                println!("Path {:?} could not be created!", path.to_str());
+                return;
+            }
+        }
+    }
+    path.push("adventure");
+    path.set_extension("txt");
+    if let Ok(mut file) = File::create(path) {
+        if let Err(e) = file.write(serialized_adventure.as_bytes()) {
+            signal_error!("Error saving the adventure metadata: {}", e);
+        }
+    }
+}
+/// Writes a page into file
+///
+/// path: adventure path, should be the same as stored in adventure struct
+/// file_name: name of the file, needs to be correct and the same as referred to by StoryResult structs in other pages that lead to this page
+/// serialized_page: result of calling serialize_to_string on a page
+pub fn save_page(path: &str, file_name: String, serialized_page: String) {
+    let mut path = PathBuf::from(path);
+    if path.exists() == false {
+        match create_dir_all(&path) {
+            Ok(_) => {}
+            Err(_) => {
+                println!("Path {:?} could not be created!", path.to_str());
+                return;
+            }
+        }
+    }
+    path.push(&file_name);
+    path.set_extension("txt");
+    if let Ok(mut file) = File::create(path) {
+        if let Err(e) = file.write(serialized_page.as_bytes()) {
+            signal_error!("Error saving the page {}: {}", file_name, e);
+        }
+    }
 }
 pub fn is_valid_file_name(name: &str) -> bool {
     let mut test_path = cache_dir().unwrap();

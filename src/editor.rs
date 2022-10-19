@@ -5,7 +5,10 @@ use fltk::{draw::Rect, group::Group, prelude::*};
 use crate::{
     adventure::{is_keyword_valid, Adventure, Page},
     dialog::{ask_for_name, ask_for_record, ask_for_text, ask_to_confirm},
-    file::{capture_pages, is_valid_file_name, read_page, signal_error},
+    file::{
+        capture_pages, is_valid_file_name, read_page, remove_adventure, save_adventure, save_page,
+        signal_error,
+    },
 };
 
 mod adventure;
@@ -151,9 +154,7 @@ impl EditorWindow {
     }
     pub fn process(&mut self, ev: Event) {
         match ev {
-            Event::Save => {
-                // TODO strip unused page and adventure parts, warn user about it
-            }
+            Event::Save => self.save_project(),
             Event::AddPage => self.add_page(),
             Event::RemovePage => self.remove_page(),
             Event::OpenMeta => self.open_adventure(),
@@ -212,6 +213,27 @@ impl EditorWindow {
         self.group.show();
         self.page_editor.hide();
         self.adventure_editor.show();
+    }
+    fn save_project(&self) {
+        // TODO strip unused page and adventure parts, warn user about it
+        // alternative would be to not strip anything to allow resuming work, but instead implement a check-for-errors button
+
+        // serializing data
+        let adv_ser = self.adventure.serialize_to_string();
+        let pages_ser: HashMap<String, String> = self
+            .pages
+            .iter()
+            .map(|x| (x.0.clone(), x.1.serialize_to_string()))
+            .collect();
+
+        // clearing the adventure's folder
+        remove_adventure(&self.adventure.path);
+
+        // Saving the serialized adventures into the folder
+        save_adventure(&self.adventure.path, adv_ser);
+        for page in pages_ser {
+            save_page(&self.adventure.path, page.0, page.1);
+        }
     }
     /// Opens page editor and loads page by filename into it
     fn open_page(&mut self, name: String) {
