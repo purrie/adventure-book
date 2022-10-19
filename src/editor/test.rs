@@ -1,99 +1,27 @@
-use std::{cell::RefCell, rc::Rc, collections::HashMap};
+use std::collections::HashMap;
 
-use fltk::{prelude::*, browser::SelectBrowser, frame::Frame, text::{TextEditor, TextBuffer}, draw::Rect, group::Group, app, button::Button, image::SvgImage};
+use fltk::{
+    app,
+    browser::SelectBrowser,
+    button::Button,
+    draw::Rect,
+    frame::Frame,
+    group::Group,
+    image::SvgImage,
+    prelude::*,
+    text::{TextBuffer, TextEditor},
+};
 
-use crate::{dialog::{ask_to_confirm, ask_for_text}, file::signal_error, adventure::{Test, Comparison, StoryResult}, icons::{GEAR_ICON, BIN_ICON}, editor::variables::variable_receiver};
+use crate::{
+    adventure::{Comparison, Page, StoryResult, Test},
+    dialog::{ask_for_text, ask_to_confirm},
+    editor::variables::variable_receiver,
+    file::signal_error,
+    icons::{BIN_ICON, GEAR_ICON},
+    widgets::find_item,
+};
 
-use super::{EditorWindow, emit, Event};
-
-// TODO move functions into struct impl
-
-pub fn save(editor: &mut EditorWindow, test: Option<String>) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        let test = match test {
-            Some(t) => t,
-            None => editor.page_editor.tests.selected(),
-        };
-        if let Some(t) = page.tests.get_mut(&test) {
-            editor.page_editor.tests.save(t);
-        }
-    }
-}
-pub fn load(editor: &mut EditorWindow, test: String) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        if let Some(test) = page.tests.get(&test) {
-            editor.page_editor.tests.load(test);
-        }
-    }
-}
-pub fn rename(editor: &mut EditorWindow) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        let selected = editor.page_editor.tests.selected();
-        let name = match ask_for_text(&format!("Insert new name for {} Test", &selected)) {
-            Some(n) if n.len() > 0 => n,
-            _ => return,
-        };
-
-        if let Some(test) = page.tests.get_mut(&selected) {
-            for choice in page.choices.iter_mut() {
-                if choice.test == test.name {
-                    choice.test = name.clone();
-                }
-            }
-            editor.page_editor.tests.rename(name.clone());
-            test.name = name;
-        }
-    }
-}
-pub fn add(editor: &mut EditorWindow) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        if page.results.len() < 2 {
-            signal_error!("You need to add at least 2 results before you can add a test");
-            return;
-        }
-        let name = match ask_for_text("Insert name for new Test") {
-            Some(n) if n.len() > 0 => n,
-            _ => return,
-        };
-        if page.tests.contains_key(&name) {
-            signal_error!("Cannot add {} because it already exists", name);
-            return;
-        }
-        let test = Test {
-            name: name.clone(),
-            expression_l: "0".to_string(),
-            expression_r: "0".to_string(),
-            ..Default::default()
-        };
-        editor.page_editor.tests.add(&name);
-        editor.page_editor.tests.load(&test);
-        page.tests.insert(name, test);
-    }
-}
-pub fn remove(editor: &mut EditorWindow) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        let selected = editor.page_editor.tests.selected();
-        if page.tests.contains_key(&selected) == false {
-            return;
-        }
-        for choice in page.choices.iter() {
-            if choice.test == selected {
-                signal_error!(
-                    "Cannot remove Test {} because it's used in one or more of Page's Choices",
-                    selected
-                );
-                return;
-            }
-        }
-        if ask_to_confirm(&format!(
-            "Are you sure you want to delete {} Test?",
-            &selected
-        )) {
-            page.tests.remove(&selected);
-            editor.page_editor.tests.populate(&page.tests, &page.results);
-        }
-    }
-}
+use super::{emit, Event};
 
 /// Widgets for editing tests
 ///
@@ -108,10 +36,10 @@ pub struct TestEditor {
     comparison: fltk::menu::Choice,
     success: fltk::menu::Choice,
     failure: fltk::menu::Choice,
-    selected: Rc<RefCell<String>>,
 }
 
 impl TestEditor {
+    /// Creates UI for editing tests of a page
     pub fn new(area: Rect) -> Self {
         let group = Group::new(area.x, area.y, area.w, area.h, "Tests");
 
@@ -199,24 +127,24 @@ impl TestEditor {
         group.end();
 
         let (sender, _r) = app::channel();
-        let selected = Rc::new(RefCell::new(String::new()));
 
         add.emit(sender.clone(), emit!(Event::AddTest));
         ren.emit(sender.clone(), emit!(Event::RenameTest));
         rem.emit(sender.clone(), emit!(Event::RemoveTest));
         selector.set_callback({
-            let selected = Rc::clone(&selected);
+            let mut selected = 0;
             move |x| {
-                let mut s = selected.borrow_mut();
-                if s.len() > 0 {
-                    sender.send(emit!(Event::SaveTest(Some(s.clone()))));
-                }
-                if let Some(new) = x.selected_text() {
-                    if *s == new {
-                        return;
+                let new = x.value();
+                if selected != new {
+                    if selected > 0 {
+                        if let Some(test) = x.text(selected) {
+                            sender.send(emit!(Event::SaveTest(Some(test))));
+                        }
                     }
-                    *s = new;
-                    sender.send(emit!(Event::LoadTest(s.clone())));
+                    if let Some(new) = x.selected_text() {
+                        sender.send(emit!(Event::LoadTest(new)));
+                    }
+                    selected = new;
                 }
             }
         });
@@ -244,13 +172,15 @@ impl TestEditor {
             comparison,
             success,
             failure,
-            selected,
         }
     }
-    fn load(&mut self, test: &Test) {
+    /// Loads provided test into UI
+    fn load_ui(&mut self, test: &Test) {
         self.name.set_label(&test.name);
-        let mut s = self.selected.borrow_mut();
-        *s = test.name.clone();
+        if let Some(i) = find_item(&self.selector, &test.name) {
+            self.selector.select(i);
+            self.selector.do_callback();
+        }
         self.expression_left
             .buffer()
             .as_mut()
@@ -278,42 +208,19 @@ impl TestEditor {
             i += 1;
         }
     }
-    fn save(&self, test: &mut Test) {
-        if let Some(succ) = self.success.choice() {
-            if let Some(fail) = self.failure.choice() {
-                test.comparison = Comparison::from(self.comparison.choice().unwrap());
-                test.expression_l = self.expression_left.buffer().unwrap().text();
-                test.expression_r = self.expression_right.buffer().unwrap().text();
-                test.success_result = succ;
-                test.failure_result = fail;
-                return;
-            }
-        }
-        signal_error!("A Test needs to have all of its components before it can be saved");
-    }
-    fn add(&mut self, entry: &str) {
-        self.selector.add(entry);
-    }
-    fn rename(&mut self, new: String) {
-        let mut i = 1;
-        let mut old = self.selected.borrow_mut();
-        while let Some(entry) = self.selector.text(i) {
-            if entry == *old {
-                self.selector.set_text(i, &new);
-                self.name.set_label(&new);
-                *old = new;
-                return;
-            }
-            i += 1;
-        }
-    }
-    pub fn populate(&mut self, tests: &HashMap<String, Test>, results: &HashMap<String, StoryResult>) {
+    /// Fills the UI with data to edit the tests
+    pub fn populate(
+        &mut self,
+        tests: &HashMap<String, Test>,
+        results: &HashMap<String, StoryResult>,
+    ) {
         let mut set = true;
         self.success.set_value(-1);
         self.failure.set_value(-1);
         self.success.clear();
         self.failure.clear();
         self.selector.clear();
+        self.selector.do_callback();
         for result in results.iter() {
             self.success.add_choice(result.0);
             self.failure.add_choice(result.0);
@@ -321,27 +228,144 @@ impl TestEditor {
         for test in tests.iter() {
             self.selector.add(test.0);
             if set {
-                self.load(test.1);
+                self.load_ui(test.1);
                 set = false;
             }
         }
         if set {
-            self.clear_selection();
+            // TODO hide the UI if there is nothing to edit
+            self.expression_left.buffer().unwrap().set_text("");
+            self.expression_right.buffer().unwrap().set_text("");
+            self.name.set_label("");
+            self.comparison.set_value(0);
+            self.success.set_value(-1);
+            self.success.clear();
+            self.failure.set_value(-1);
+            self.failure.clear();
         }
     }
-    fn clear_selection(&mut self) {
-        self.expression_left.buffer().unwrap().set_text("");
-        self.expression_right.buffer().unwrap().set_text("");
-        self.name.set_label("");
-        self.comparison.set_value(0);
-        self.success.set_value(-1);
-        self.success.clear();
-        self.failure.set_value(-1);
-        self.failure.clear();
-        *self.selected.borrow_mut() = String::new();
+    /// Returns text of currently selected item, or None if nothing is selected
+    fn selected(&self) -> Option<String> {
+        self.selector.selected_text()
     }
-    fn selected(&self) -> String {
-        let s = self.selected.borrow();
-        s.clone()
+    /// Event response that saves the test into the page collection
+    ///
+    /// Test to save can be specified by name, or if it is None, currently selected test will be saved
+    pub fn save(&self, tests: &mut HashMap<String, Test>, test: Option<String>) {
+        let test = match test {
+            Some(t) => t,
+            None => match self.selected() {
+                Some(t) => t,
+                None => {
+                    println!("Error: Couldn't save a test, no selected test found");
+                    return;
+                }
+            },
+        };
+        if let Some(t) = tests.get_mut(&test) {
+            if let Some(succ) = self.success.choice() {
+                if let Some(fail) = self.failure.choice() {
+                    t.comparison = Comparison::from(self.comparison.choice().unwrap());
+                    t.expression_l = self.expression_left.buffer().unwrap().text();
+                    t.expression_r = self.expression_right.buffer().unwrap().text();
+                    t.success_result = succ;
+                    t.failure_result = fail;
+                    return;
+                }
+            }
+            signal_error!("A Test needs to have all of its components before it can be saved");
+        }
+    }
+    /// Event response that loads a test by name into UI
+    pub fn load(&mut self, tests: &mut HashMap<String, Test>, test: String) {
+        if let Some(test) = tests.get(&test) {
+            self.load_ui(test);
+        }
+    }
+    /// Event response renaming currently selected test
+    ///
+    /// It also updates the test in choices in the page
+    pub fn rename(&mut self, page: &mut Page) {
+        let selected = match self.selected() {
+            Some(s) => s,
+            None => {
+                println!("Error: Could not rename a test. No test selected");
+                return;
+            }
+        };
+        let name = match ask_for_text(&format!("Insert new name for {} Test", &selected)) {
+            Some(n) if n.len() > 0 => n,
+            _ => return,
+        };
+
+        if let Some(mut test) = page.tests.remove(&selected) {
+            // go through all the choices and update the test name
+            page.choices
+                .iter_mut()
+                .filter(|x| x.test == selected)
+                .for_each(|x| x.test = name.clone());
+
+            let i = self.selector.value();
+            self.selector.set_text(i, &name);
+            test.name = name.clone();
+            page.tests.insert(name, test);
+        }
+    }
+    /// Event response that adds a new test to the page
+    ///
+    /// It will fail if there isn't at least 2 results present in the page
+    pub fn add(&mut self, page: &mut Page) {
+        if page.results.len() < 2 {
+            signal_error!("You need to add at least 2 results before you can add a test");
+            return;
+        }
+        let name = match ask_for_text("Insert name for new Test") {
+            Some(n) if n.len() > 0 => n,
+            _ => return,
+        };
+        if page.tests.contains_key(&name) {
+            signal_error!("Cannot add {} because it already exists", name);
+            return;
+        }
+        let test = Test {
+            name: name.clone(),
+            expression_l: "1d20".to_string(),
+            expression_r: "10".to_string(),
+            comparison: Comparison::Greater,
+            ..Default::default()
+        };
+        self.selector.add(&name);
+        self.load_ui(&test);
+        page.tests.insert(name, test);
+    }
+    /// Event response that removes a selected test from the page
+    ///
+    /// It fails and shows error to an user if the test is used in a choice
+    pub fn remove(&mut self, page: &mut Page) {
+        let selected = match self.selected() {
+            Some(s) => s,
+            None => {
+                println!("Error: Tried to remove selected test but found no selection");
+                return;
+            }
+        };
+        if page.tests.contains_key(&selected) == false {
+            return;
+        }
+        if page.choices.iter().any(|x| x.test == selected) {
+            signal_error!(
+                "Cannot remove Test {} because it's used in one or more of Page's Choices",
+                selected
+            );
+            return;
+        }
+
+        if ask_to_confirm(&format!(
+            "Are you sure you want to delete {} Test?",
+            &selected
+        )) {
+            page.tests.remove(&selected);
+            self.populate(&page.tests, &page.results);
+        }
     }
 }

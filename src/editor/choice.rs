@@ -258,7 +258,7 @@ impl ChoiceEditor {
         }
     }
     /// Event response that saves currently selected element to the list
-    pub fn save_choice(&mut self, choices: &mut Vec<Choice>, index: Option<usize>) {
+    pub fn save_choice(&self, choices: &mut Vec<Choice>, index: Option<usize>) {
         // determining the selected element
         let choice = match index {
             Some(v) => match choices.get_mut(v) {

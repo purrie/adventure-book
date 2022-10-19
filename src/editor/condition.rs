@@ -1,99 +1,26 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::collections::HashMap;
 
-use fltk::{prelude::*, text::{TextBuffer, TextEditor}, app, browser::SelectBrowser, button::Button, frame::Frame, draw::Rect, group::Group, image::SvgImage};
-
-use crate::{
-    adventure::{Condition, Comparison},
-    dialog::{ask_for_text, ask_to_confirm},
-    file::signal_error, editor::variables::variable_receiver,
+use fltk::{
+    app,
+    browser::SelectBrowser,
+    button::Button,
+    draw::Rect,
+    frame::Frame,
+    group::Group,
+    image::SvgImage,
+    prelude::*,
+    text::{TextBuffer, TextEditor},
 };
 
-use super::{EditorWindow, emit, Event};
+use crate::{
+    adventure::{Comparison, Condition, Page},
+    dialog::{ask_for_text, ask_to_confirm},
+    editor::variables::variable_receiver,
+    file::signal_error,
+    widgets::find_item,
+};
 
-// TODO move functions to struct impl
-
-pub fn save(editor: &mut EditorWindow, cond: Option<String>) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        let cond = match cond {
-            Some(s) => s,
-            None => editor.page_editor.conditions.selected(),
-        };
-        if let Some(con) = page.conditions.get_mut(&cond) {
-            editor.page_editor.conditions.save(con);
-        }
-    }
-}
-pub fn load(editor: &mut EditorWindow, cond: String) {
-    if let Some(page) = editor.pages.get(&editor.current_page) {
-        if let Some(con) = page.conditions.get(&cond) {
-            editor.page_editor.conditions.load(con);
-        }
-    }
-}
-pub fn rename(editor: &mut EditorWindow) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        let selected = editor.page_editor.conditions.selected();
-        let name = match ask_for_text(&format!("Insert new name for {} Condition", &selected)) {
-            Some(n) if n.len() > 0 => n,
-            _ => return,
-        };
-
-        if let Some(cond) = page.conditions.get_mut(&selected) {
-            // renaming the condition in choices
-            for choice in page.choices.iter_mut() {
-                if choice.condition == cond.name {
-                    choice.condition = name.clone();
-                }
-            }
-            editor.page_editor.conditions.rename(&selected, &name);
-            cond.name = name;
-        }
-    }
-}
-pub fn add(editor: &mut EditorWindow) {
-    let name = match ask_for_text("Insert name for the new Condition") {
-        Some(n) => n,
-        _ => return,
-    };
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        if let Some(_cond) = page.conditions.get(&name) {
-            signal_error!("Cannot add {} because it already exists!", name);
-            return;
-        }
-        let cond = Condition {
-            name: name.clone(),
-            expression_l: "0".to_string(),
-            expression_r: "0".to_string(),
-            ..Default::default()
-        };
-        editor.page_editor.conditions.add(&name);
-        editor.page_editor.conditions.load(&cond);
-        page.conditions.insert(name, cond);
-    }
-}
-pub fn remove(editor: &mut EditorWindow) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        let selected = editor.page_editor.conditions.selected();
-        if page.conditions.contains_key(&selected) {
-            for choice in page.choices.iter() {
-                if choice.condition == selected {
-                    signal_error!("Cannot remove Condition {} because it's used in one or more of the Page's Choices", selected);
-                    return;
-                }
-            }
-            if ask_to_confirm(&format!(
-                "Are you sure you want to remove {} Condition?",
-                &selected
-            )) {
-                page.conditions.remove(&selected);
-                editor
-                    .page_editor
-                    .conditions
-                    .populate_conditions(&page.conditions);
-            }
-        }
-    }
-}
+use super::{emit, Event};
 
 /// Condition editor
 ///
@@ -106,7 +33,6 @@ pub struct ConditionEditor {
     expression_left: TextEditor,
     expression_right: TextEditor,
     comparison: fltk::menu::Choice,
-    selected: Rc<RefCell<String>>,
 }
 
 impl ConditionEditor {
@@ -178,19 +104,22 @@ impl ConditionEditor {
         rem.set_image(Some(bin));
 
         let (sender, _r) = app::channel();
-        let selected = Rc::new(RefCell::new(String::new()));
 
         selector.set_callback({
             let sender = sender.clone();
-            let selected = Rc::clone(&selected);
+            let mut selected = 0;
             move |x| {
-                let mut s = selected.borrow_mut();
-                if s.len() > 0 {
-                    sender.send(emit!(Event::SaveCondition(Some(s.clone()))));
-                }
-                if let Some(new_s) = x.selected_text() {
-                    *s = new_s;
-                    sender.send(emit!(Event::LoadCondition(s.clone())));
+                let new = x.value();
+                if new != selected {
+                    if selected > 0 {
+                        if let Some(last) = x.text(selected) {
+                            sender.send(emit!(Event::SaveCondition(Some(last))));
+                        }
+                    }
+                    if let Some(new_s) = x.selected_text() {
+                        sender.send(emit!(Event::LoadCondition(new_s)));
+                    }
+                    selected = new;
                 }
             }
         });
@@ -212,15 +141,17 @@ impl ConditionEditor {
             expression_left,
             expression_right,
             comparison,
-            selected,
         }
     }
     /// Returns name of the loaded Condition, or empty string if there's no Condition loaded
     fn selected(&self) -> String {
-        self.selected.borrow().clone()
+        if let Some(t) = self.selector.selected_text() {
+            return t;
+        }
+        String::new()
     }
     /// Loads a condition into active editor
-    fn load(&mut self, con: &Condition) {
+    fn load_ui(&mut self, con: &Condition) {
         self.name.set_label(&con.name);
         self.expression_left
             .buffer()
@@ -233,27 +164,18 @@ impl ConditionEditor {
             .unwrap()
             .set_text(&con.expression_r);
         self.comparison.set_value(con.comparison.to_index());
-        *self.selected.borrow_mut() = con.name.clone();
-    }
-    /// Clears up data from the editor
-    fn clear_selection(&mut self) {
-        self.name.set_label("Select a condition");
-        self.expression_left.buffer().as_mut().unwrap().set_text("");
-        self.expression_right
-            .buffer()
-            .as_mut()
-            .unwrap()
-            .set_text("");
-        self.comparison.set_value(0);
-        *self.selected.borrow_mut() = String::new();
-    }
-    /// Fills con with data from the editor
-    ///
-    /// It saves comparison and both expressions, name is not touched.
-    fn save(&self, con: &mut Condition) {
-        con.comparison = Comparison::from(self.comparison.choice().unwrap());
-        con.expression_l = self.expression_left.buffer().as_ref().unwrap().text();
-        con.expression_r = self.expression_right.buffer().as_ref().unwrap().text();
+        if let Some(n) = find_item(&self.selector, &con.name) {
+            self.selector.select(n);
+            self.selector.do_callback();
+        } else {
+            println!(
+                "Warning: Could not find {} in condition editor selector, creating a new entry",
+                con.name
+            );
+            self.selector.add(&con.name);
+            self.selector.select(self.selector.size());
+            self.selector.do_callback();
+        }
     }
     /// Fills the selector with a new set of Conditions
     ///
@@ -261,42 +183,122 @@ impl ConditionEditor {
     /// This function also clears the selected entry, and if conds isn't empty then it loads the first entry.
     pub fn populate_conditions(&mut self, conds: &HashMap<String, Condition>) {
         self.selector.clear();
+        self.selector.select(0);
+        self.selector.do_callback();
         let mut set = true;
         for con in conds.iter() {
+            self.selector.add(con.0);
             if set {
                 set = false;
-                self.load(con.1);
+                self.load_ui(con.1);
             }
-            self.selector.add(con.0);
         }
+        // clearing the condition UI if nothing was loaded
         if set {
-            self.clear_selection();
+            self.name.set_label("Select a condition");
+            self.expression_left.buffer().as_mut().unwrap().set_text("");
+            self.expression_right
+                .buffer()
+                .as_mut()
+                .unwrap()
+                .set_text("");
+            self.comparison.set_value(0);
         }
     }
-    /// Renames entry in the selector to a new name
+    /// Event response that renames entry in the selector to a new name
     ///
     /// # Errors
     ///
     /// When renaming an entry, make sure the new name matches the condition in the page, otherwise it will lead to errors.
-    fn rename(&mut self, old: &str, new: &str) {
-        let mut n = 1;
-        while let Some(t) = self.selector.text(n) {
-            if t == old {
-                if *self.selected.borrow() == old {
-                    self.name.set_label(new);
+    pub fn remove(&mut self, page: &mut Page) {
+        let selected = self.selected();
+        if page.conditions.contains_key(&selected) {
+            for choice in page.choices.iter() {
+                if choice.condition == selected {
+                    signal_error!("Cannot remove Condition {} because it's used in one or more of the Page's Choices", selected);
+                    return;
                 }
-                self.selector.set_text(n, new);
-                return;
             }
-            n += 1;
+            if ask_to_confirm(&format!(
+                "Are you sure you want to remove {} Condition?",
+                &selected
+            )) {
+                page.conditions.remove(&selected);
+                self.populate_conditions(&page.conditions);
+            }
         }
     }
-    /// Adds a new line entry to the selector
+    /// Event response that adds a new condition into UI and collection
+    pub fn add(&mut self, conditions: &mut HashMap<String, Condition>) {
+        let name = match ask_for_text("Insert name for the new Condition") {
+            Some(n) if n.len() > 0 => n,
+            _ => return,
+        };
+        if let Some(_cond) = conditions.get(&name) {
+            signal_error!("Cannot add {} because it already exists!", name);
+            return;
+        }
+        let cond = Condition {
+            name: name.clone(),
+            expression_l: "0".to_string(),
+            expression_r: "0".to_string(),
+            ..Default::default()
+        };
+        self.selector.add(&cond.name);
+        self.load_ui(&cond);
+        conditions.insert(name, cond);
+    }
+    /// Event rezponse that renames selected condition
+    ///
+    /// Conditions are page specific and this function will update any links to reflect the new condition name
+    pub fn rename(&mut self, page: &mut Page) {
+        let selected = self.selected();
+        let name = match ask_for_text(&format!("Insert new name for {} Condition", &selected)) {
+            Some(n) if n.len() > 0 => n,
+            _ => return,
+        };
+
+        if let Some(mut cond) = page.conditions.remove(&selected) {
+            // renaming the condition in choices
+            for choice in page.choices.iter_mut() {
+                if choice.condition == cond.name {
+                    choice.condition = name.clone();
+                }
+            }
+            let n = self.selector.value();
+            self.selector.set_text(n, &name);
+            self.name.set_label(&name);
+            cond.name = name.clone();
+            page.conditions.insert(name, cond);
+        }
+    }
+    /// Event response that loads specified condition into UI
     ///
     /// # Errors
+    /// If the condition isn't found, it will silently fail and spew warning into console
+    pub fn load(&mut self, conditions: &HashMap<String, Condition>, cond: String) {
+        if let Some(con) = conditions.get(&cond) {
+            self.load_ui(con);
+        } else {
+            println!(
+                "Warning! Attempted to load a condition that doesn't exist: {}",
+                cond
+            );
+        }
+    }
+    /// Event response that saves a condition into the collection
     ///
-    /// When using this function, ensure the condition with the name actually exists in the page, otherwise it will lead to errors
-    fn add(&mut self, line: &str) {
-        self.selector.add(line);
+    /// If name for the condition isn't specified, it will save currently selected condition
+    /// The option exists to allow saving any condition, mostly when switching which condition is selected
+    pub fn save(&self, conditions: &mut HashMap<String, Condition>, cond: Option<String>) {
+        let cond = match cond {
+            Some(s) => s,
+            None => self.selected(),
+        };
+        if let Some(con) = conditions.get_mut(&cond) {
+            con.comparison = Comparison::from(self.comparison.choice().unwrap());
+            con.expression_l = self.expression_left.buffer().as_ref().unwrap().text();
+            con.expression_r = self.expression_right.buffer().as_ref().unwrap().text();
+        }
     }
 }

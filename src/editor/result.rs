@@ -14,300 +14,14 @@ use fltk::{
 };
 
 use crate::{
-    adventure::{Page, Record, StoryResult},
+    adventure::{Adventure, Name, Page, Record, StoryResult},
     dialog::{ask_for_choice, ask_for_text, ask_to_confirm},
     evaluation::{evaluate_expression, Random},
     file::signal_error,
     icons::{BIN_ICON, GEAR_ICON},
 };
 
-use super::{emit, EditorWindow, Event};
-
-// TODO move functions into struct impl
-
-pub fn load(editor: &mut EditorWindow, res: String) {
-    if let Some(page) = editor.pages.get(&editor.current_page) {
-        if let Some(r) = page.results.get(&res) {
-            editor.page_editor.results.load_result(&r);
-        }
-    }
-}
-pub fn save(editor: &mut EditorWindow, res: Option<String>) {
-    let selected = match res {
-        Some(s) => s,
-        None => match editor.page_editor.results.selected_result() {
-            Some(s) => s,
-            None => return,
-        },
-    };
-    let page = match editor.pages.get_mut(&editor.current_page) {
-        Some(p) => p,
-        None => unreachable!(),
-    };
-    if let Some(result) = page.results.get_mut(&selected) {
-        editor.page_editor.results.save_result(result);
-        let se = match editor.page_editor.results.selected_side_effect() {
-            Some(s) => s,
-            None => return,
-        };
-        let is_record = editor.adventure.records.contains_key(&se);
-        let value = match editor
-            .page_editor
-            .results
-            .evaluate_correct_side_effect_value(is_record, &result.name, &editor.adventure.records)
-        {
-            Some(x) => x,
-            None => return,
-        };
-        result.side_effects.insert(se, value);
-    }
-}
-pub fn add(editor: &mut EditorWindow) {
-    let name = match ask_for_text("Enter name for a new result") {
-        Some(n) if n.len() > 0 => n,
-        _ => return,
-    };
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        if page.results.contains_key(&name) {
-            signal_error!("Result with name '{}' already exists", name);
-            return;
-        }
-        let res = StoryResult {
-            name: name.clone(),
-            ..Default::default()
-        };
-        editor.page_editor.results.add_result(&res);
-        page.results.insert(name, res);
-    }
-}
-pub fn remove(editor: &mut EditorWindow) {
-    let page = match editor.pages.get_mut(&editor.current_page) {
-        Some(p) => p,
-        None => return,
-    };
-
-    let selected = match editor.page_editor.results.selected_result() {
-        Some(s) => s,
-        None => return,
-    };
-    // check if the result is used somewhere
-    if page.choices.iter().any(|x| x.result == selected) {
-        signal_error!(
-            "Result {} is used in a player choice! Cannot remove used result",
-            selected
-        );
-        return;
-    }
-    if page
-        .tests
-        .iter()
-        .any(|x| x.1.success_result == selected || x.1.failure_result == selected)
-    {
-        signal_error!(
-            "Result {} is used in a test! Cannot remove used result",
-            selected
-        );
-        return;
-    }
-    if ask_to_confirm(&format!("Are you sure you want to remove {}?", &selected)) {
-        page.results.remove(&selected);
-        let page = editor.pages.get(&editor.current_page).unwrap();
-        // no need to call populate_side_effects as it is expected of populate_results to do it
-        editor.page_editor.results.populate_results(&page.results);
-    }
-}
-pub fn rename(editor: &mut EditorWindow) {
-    if let Some(page) = editor.pages.get_mut(&editor.current_page) {
-        let selected = match editor.page_editor.results.selected_result() {
-            Some(s) => s,
-            None => return,
-        };
-
-        if let Some(res) = page.results.get_mut(&selected) {
-            if let Some(name) = ask_for_text(&format!("Input a new name for {}", &selected)) {
-                if name.len() == 0 {
-                    return;
-                }
-                // updating the name in other parts of the page
-                page.choices
-                    .iter_mut()
-                    .filter(|x| x.result == selected)
-                    .for_each(|x| x.result = name.clone());
-                for el in page.tests.iter_mut() {
-                    if el.1.success_result == selected {
-                        el.1.success_result = name.clone();
-                    }
-                    if el.1.failure_result == selected {
-                        el.1.failure_result = name.clone();
-                    }
-                }
-                editor.page_editor.results.rename_result(&name);
-                res.name = name;
-            }
-        }
-    }
-}
-pub fn save_effect(editor: &mut EditorWindow, se: Option<String>) {
-    if editor.page_editor.results.has_side_effects() == false {
-        return;
-    }
-    let page = match editor.pages.get_mut(&editor.current_page) {
-        Some(p) => p,
-        None => unreachable!(),
-    };
-    // grabbing result
-    let res = match editor.page_editor.results.selected_result() {
-        Some(r) => match page.results.get_mut(&r) {
-            Some(r) => r,
-            None => {
-                println!("Save error: Couldn't find selected result");
-                return;
-            }
-        },
-        None => {
-            println!("Save error: Automatic match for result selection not found");
-            return;
-        }
-    };
-    // grabbing side effect
-    let se = match se {
-        Some(s) => s,
-        None => match editor.page_editor.results.selected_side_effect() {
-            Some(s) => s,
-            None => {
-                println!("Save error: Couldn't find side effect");
-                return;
-            }
-        },
-    };
-    let is_record = editor.adventure.records.contains_key(&se);
-    let value = match editor
-        .page_editor
-        .results
-        .evaluate_correct_side_effect_value(is_record, &res.name, &editor.adventure.records)
-    {
-        Some(x) => x,
-        None => {
-            println!(
-                "Save error: couldn't evaluate value of the side effect {}",
-                se
-            );
-            return;
-        }
-    };
-    res.side_effects.insert(se, value);
-}
-pub fn load_effect(editor: &mut EditorWindow, se: String) {
-    let page = match editor.pages.get(&editor.current_page) {
-        Some(p) => p,
-        None => unreachable!(),
-    };
-    let selected = match editor.page_editor.results.selected_result() {
-        Some(res) => match page.results.get(&res) {
-            Some(r) => r,
-            None => {
-                println!("SideEffect Load error: selected result isn't in the list");
-                return;
-            }
-        },
-        None => {
-            println!("SideEffect Load error: no selected result");
-            return;
-        }
-    };
-    if let Some(v) = selected.side_effects.get(&se) {
-        editor.page_editor.results.load_side_effect(&se, v);
-    } else {
-        println!("SideEffect Load error: couldn't find the effect to load");
-    }
-}
-pub fn add_record(editor: &mut EditorWindow) {
-    let page = match editor.pages.get_mut(&editor.current_page) {
-        Some(p) => p,
-        None => unreachable!(),
-    };
-    let r = match editor.page_editor.results.selected_result() {
-        Some(r) => match page.results.get_mut(&r) {
-            Some(r) => r,
-            None => {
-                println!("Add Record error: Couldn't find selected result");
-                return;
-            }
-        },
-        None => {
-            println!("Add Record error: Automatic match for result selection not found");
-            return;
-        }
-    };
-    if let Some(choice) = ask_for_choice(
-        "Select Record to add",
-        editor
-            .adventure
-            .records
-            .iter()
-            .filter(|x| !editor.page_editor.results.contains_side_effect(x.0))
-            .map(|x| x.0),
-    ) {
-        editor.page_editor.results.add_side_effect(&choice.1);
-        r.side_effects.insert(choice.1, "1".to_string());
-    }
-}
-pub fn add_name(editor: &mut EditorWindow) {
-    let page = match editor.pages.get_mut(&editor.current_page) {
-        Some(p) => p,
-        None => unreachable!(),
-    };
-    let r = match editor.page_editor.results.selected_result() {
-        Some(r) => match page.results.get_mut(&r) {
-            Some(r) => r,
-            None => {
-                println!("Add Record error: Couldn't find selected result");
-                return;
-            }
-        },
-        None => {
-            println!("Add Record error: Automatic match for result selection not found");
-            return;
-        }
-    };
-    if let Some(choice) = ask_for_choice(
-        "Select Name to add",
-        editor
-            .adventure
-            .names
-            .iter()
-            .filter(|x| !editor.page_editor.results.contains_side_effect(x.0))
-            .map(|x| x.0),
-    ) {
-        let defval = format!("[{}]", &choice.1);
-        editor.page_editor.results.add_side_effect(&choice.1);
-        r.side_effects.insert(choice.1, defval);
-    }
-}
-pub fn remove_effect(editor: &mut EditorWindow) {
-    let selected = match editor.page_editor.results.selected_side_effect() {
-        Some(s) => s,
-        None => return,
-    };
-    let page = match editor.pages.get_mut(&editor.current_page) {
-        Some(s) => s,
-        None => return,
-    };
-    let res = match editor.page_editor.results.selected_result() {
-        Some(s) => match page.results.get_mut(&s) {
-            Some(r) => r,
-            None => return,
-        },
-        None => return,
-    };
-    if ask_to_confirm(&format!(
-        "Are you sure you want to remove {} side effect from {} result?",
-        &selected, &res.name
-    )) {
-        res.side_effects.remove(&selected);
-        editor.page_editor.results.populate_side_effects(&res);
-    }
-}
+use super::{emit, Event};
 
 /// Widgets for customizing results of the page
 ///
@@ -491,6 +205,7 @@ impl ResultEditor {
     fn selected_side_effect(&self) -> Option<String> {
         self.selector_effects.selected_text()
     }
+    /// Tests validity of currently selected side effect value, showing errors to user if those happen, and returning the value if they don't
     fn evaluate_correct_side_effect_value(
         &self,
         is_record: bool,
@@ -502,7 +217,7 @@ impl ResultEditor {
             None => return None,
         };
         let value = self.effect_value.buffer().unwrap().text();
-        match value {
+        match value.trim().to_string() {
             x if is_record && x.len() == 0 => {
                 signal_error!(
                     "Warning! A record cannot be empty, expression for {} in {} will be set to 1",
@@ -512,7 +227,7 @@ impl ResultEditor {
                 Some("1".to_string())
             }
             x if is_record && x == "0" => {
-                signal_error!("Warning! A record cannot be equal to 0, expression for {} in {} will be set to 1", &se, res);
+                signal_error!("Warning! A record cannot be equal to 0 as it would introduce no change, expression for {} in {} will be set to 1", &se, res);
                 Some("1".to_string())
             }
             x if is_record => {
@@ -543,36 +258,11 @@ impl ResultEditor {
             x => Some(x),
         }
     }
-    /// Adds a new line to result selector. You need to call load_result with the data to load it into the rest of the editor
-    fn add_result(&mut self, res: &StoryResult) {
-        self.selector_results.add(&res.name);
-        self.selector_results.select(self.selector_results.size());
-        self.selector_results.do_callback();
-    }
     /// Adds a line to the side effect selector. It handles the whole process.
     fn add_side_effect(&mut self, name: &str) {
         self.selector_effects.add(name);
         self.selector_effects.select(self.selector_effects.size());
         self.selector_effects.do_callback();
-    }
-    /// Renames a result in selector and title
-    fn rename_result(&mut self, new_name: &str) {
-        let sel = self.selector_results.value();
-        if sel == 0 {
-            return;
-        }
-        self.selector_results.set_text(sel, new_name);
-        self.name.set_label(new_name);
-    }
-    /// Saves result's chosen next page
-    fn save_result(&self, res: &mut StoryResult) {
-        if let Some(sel) = self.next_page.choice() {
-            res.next_page = sel;
-        } else {
-            if let Some(res) = self.selected_result() {
-                signal_error!("Cannot save Result {} because next page is not chosen", res);
-            }
-        }
     }
     /// Loads result into the editor
     fn load_result(&mut self, res: &StoryResult) {
@@ -600,31 +290,6 @@ impl ResultEditor {
         self.name.set_label(&res.name);
         self.populate_side_effects(res);
     }
-    /// Loads side effect data into editor
-    ///
-    /// Function ensures the side effect is corretly selected if it wasn't
-    fn load_side_effect(&mut self, key: &str, value: &str) {
-        let flag;
-        // testing if the selection is correct
-        if let Some(t) = self.selector_effects.selected_text() {
-            flag = t != key;
-        } else {
-            flag = true;
-        }
-        // setting the selection to correct number if it isn't
-        if flag {
-            let mut i = 1;
-            while let Some(v) = self.selector_effects.text(i) {
-                if v == key {
-                    self.selector_effects.select(i);
-                    self.selector_effects.do_callback();
-                }
-                i += 1;
-            }
-        }
-        self.effect.set_label(key);
-        self.effect_value.buffer().unwrap().set_text(value);
-    }
     /// Fills out the editor with story result data and selects the first element if present
     fn populate_results(&mut self, res: &HashMap<String, StoryResult>) {
         self.selector_results.clear();
@@ -644,6 +309,7 @@ impl ResultEditor {
             self.effect.set_label("No Side Effects");
         }
     }
+    /// Fills the next page choice dropdown with page names
     fn populate_pages(&mut self, pages: &HashMap<String, Page>) {
         self.next_page.clear();
         pages.iter().for_each(|x| self.next_page.add_choice(x.0));
@@ -677,9 +343,14 @@ impl ResultEditor {
         }
         false
     }
+    /// Tests if there is at least one side effect in the story result
     fn has_side_effects(&self) -> bool {
         self.selector_effects.size() > 0
     }
+    /// Populates result UI with pages and results
+    ///
+    /// This function ensures the loading is performed in correct order
+    /// First pages, then results, otherwise fltk causes segfault when trying to access dropdowns
     pub fn populate(
         &mut self,
         results: &HashMap<String, StoryResult>,
@@ -687,5 +358,309 @@ impl ResultEditor {
     ) {
         self.populate_pages(pages);
         self.populate_results(results);
+    }
+    /// Event response to load a result into editor by name
+    pub fn load(&mut self, results: &HashMap<String, StoryResult>, res: String) {
+        if let Some(r) = results.get(&res) {
+            self.load_result(&r);
+        }
+    }
+    /// Event response to save specified result from the editor into the collection
+    ///
+    /// If no res is provided, then it will save currently selected result
+    pub fn save(
+        &self,
+        results: &mut HashMap<String, StoryResult>,
+        res: Option<String>,
+        adventure: &Adventure,
+    ) {
+        let selected = match res {
+            Some(s) => s,
+            None => match self.selected_result() {
+                Some(s) => s,
+                None => return,
+            },
+        };
+        if let Some(result) = results.get_mut(&selected) {
+            // saving the main part of the result
+            if let Some(sel) = self.next_page.choice() {
+                result.next_page = sel;
+            } else {
+                signal_error!(
+                    "Cannot save Result {} because next page is not chosen",
+                    selected
+                );
+            }
+
+            // this part saves currently selected side effect
+            // or if there's none, exit early
+            let se = match self.selected_side_effect() {
+                Some(s) => s,
+                None => return,
+            };
+            let is_record = adventure.records.contains_key(&se);
+            let value = match self.evaluate_correct_side_effect_value(
+                is_record,
+                &result.name,
+                &adventure.records,
+            ) {
+                Some(x) => x,
+                None => return,
+            };
+            result.side_effects.insert(se, value);
+        }
+    }
+    /// Event response that adds a new result into the page collection
+    pub fn add(&mut self, results: &mut HashMap<String, StoryResult>) {
+        let name = match ask_for_text("Enter name for a new result") {
+            Some(n) if n.len() > 0 => n,
+            _ => return,
+        };
+        if results.contains_key(&name) {
+            signal_error!("Result with name '{}' already exists", name);
+            return;
+        }
+        let res = StoryResult {
+            name: name.clone(),
+            ..Default::default()
+        };
+        self.selector_results.add(&res.name);
+        self.selector_results.select(self.selector_results.size());
+        self.selector_results.do_callback();
+        results.insert(name, res);
+    }
+    /// Event response that removes currently selected result from the page
+    pub fn remove(&mut self, page: &mut Page) {
+        let selected = match self.selected_result() {
+            Some(s) => s,
+            None => return,
+        };
+        // check if the result is used somewhere
+        if page.choices.iter().any(|x| x.result == selected) {
+            signal_error!(
+                "Result {} is used in a player choice! Cannot remove used result",
+                selected
+            );
+            return;
+        }
+        if page
+            .tests
+            .iter()
+            .any(|x| x.1.success_result == selected || x.1.failure_result == selected)
+        {
+            signal_error!(
+                "Result {} is used in a test! Cannot remove used result",
+                selected
+            );
+            return;
+        }
+        if ask_to_confirm(&format!("Are you sure you want to remove {}?", &selected)) {
+            page.results.remove(&selected);
+            // no need to call populate_side_effects as it is expected of populate_results to do it
+            self.populate_results(&page.results);
+        }
+    }
+    /// Event response that renames currently selected result
+    ///
+    /// It will also update its name when used in choices and tests
+    pub fn rename(&mut self, page: &mut Page) {
+        let selected = match self.selected_result() {
+            Some(s) => s,
+            None => return,
+        };
+        let name = match ask_for_text(&format!("Input a new name for {}", &selected)) {
+            Some(n) if n.len() > 0 => n,
+            _ => return,
+        };
+
+        if let Some(mut res) = page.results.remove(&selected) {
+            // updating the name in other parts of the page
+            page.choices
+                .iter_mut()
+                .filter(|x| x.result == selected)
+                .for_each(|x| x.result = name.clone());
+            for el in page.tests.iter_mut() {
+                if el.1.success_result == selected {
+                    el.1.success_result = name.clone();
+                }
+                if el.1.failure_result == selected {
+                    el.1.failure_result = name.clone();
+                }
+            }
+            let sel = self.selector_results.value();
+            self.selector_results.set_text(sel, &name);
+            self.name.set_label(&name);
+            res.name = name.clone();
+            page.results.insert(name, res);
+        }
+    }
+    /// Event response that saves effect data from UI into specified side effect
+    ///
+    /// If no name is provided then it will save into currently selected side effect
+    pub fn save_effect(&mut self, page: &mut Page, adventure: &Adventure, se: Option<String>) {
+        if self.has_side_effects() == false {
+            return;
+        }
+        // grabbing result
+        let res = match self.selected_result() {
+            Some(r) => match page.results.get_mut(&r) {
+                Some(r) => r,
+                None => {
+                    println!("Save error: Couldn't find selected result");
+                    return;
+                }
+            },
+            None => {
+                println!("Save error: Automatic match for result selection not found");
+                return;
+            }
+        };
+        // grabbing side effect from provided name
+        let se = match se {
+            Some(s) => s,
+            None => match self.selected_side_effect() {
+                Some(s) => s,
+                None => {
+                    println!("Save error: Couldn't find side effect");
+                    return;
+                }
+            },
+        };
+        let is_record = adventure.records.contains_key(&se);
+        let value =
+            match self.evaluate_correct_side_effect_value(is_record, &res.name, &adventure.records)
+            {
+                Some(x) => x,
+                None => {
+                    println!(
+                        "Save error: couldn't evaluate value of the side effect {}",
+                        se
+                    );
+                    return;
+                }
+            };
+        res.side_effects.insert(se, value);
+    }
+    /// Event response that loads a side effect by name into the UI
+    pub fn load_effect(&mut self, results: &HashMap<String, StoryResult>, se: String) {
+        let selected = match self.selected_result() {
+            Some(res) => match results.get(&res) {
+                Some(r) => r,
+                None => {
+                    println!("SideEffect Load error: selected result isn't in the list");
+                    return;
+                }
+            },
+            None => {
+                println!("SideEffect Load error: no selected result");
+                return;
+            }
+        };
+        if let Some(v) = selected.side_effects.get(&se) {
+            let different_se;
+            // testing if the selection is correct
+            if let Some(t) = self.selector_effects.selected_text() {
+                different_se = t != se;
+            } else {
+                different_se = true;
+            }
+            // setting the selection to correct number if it isn't
+            if different_se {
+                let mut i = 1;
+                while let Some(v) = self.selector_effects.text(i) {
+                    if v == se {
+                        self.selector_effects.select(i);
+                        self.selector_effects.do_callback();
+                    }
+                    i += 1;
+                }
+            }
+            self.effect.set_label(&se);
+            self.effect_value.buffer().unwrap().set_text(v);
+        } else {
+            println!("SideEffect Load error: couldn't find the effect to load");
+        }
+    }
+    /// Event response that adds a new record side effect to currently selected result
+    pub fn add_record(
+        &mut self,
+        results: &mut HashMap<String, StoryResult>,
+        records: &HashMap<String, Record>,
+    ) {
+        let r = match self.selected_result() {
+            Some(r) => match results.get_mut(&r) {
+                Some(r) => r,
+                None => {
+                    println!("Add Record error: Couldn't find selected result");
+                    return;
+                }
+            },
+            None => {
+                println!("Add Record error: Automatic match for result selection not found");
+                return;
+            }
+        };
+        if let Some(choice) = ask_for_choice(
+            "Select Record to add",
+            records
+                .iter()
+                .filter(|x| !self.contains_side_effect(x.0))
+                .map(|x| x.0),
+        ) {
+            self.add_side_effect(&choice.1);
+            r.side_effects.insert(choice.1, "1".to_string());
+        }
+    }
+    /// Event response that adds a new name side effect to currently selected result
+    pub fn add_name(
+        &mut self,
+        results: &mut HashMap<String, StoryResult>,
+        names: &HashMap<String, Name>,
+    ) {
+        let r = match self.selected_result() {
+            Some(r) => match results.get_mut(&r) {
+                Some(r) => r,
+                None => {
+                    println!("Add Record error: Couldn't find selected result");
+                    return;
+                }
+            },
+            None => {
+                println!("Add Record error: Automatic match for result selection not found");
+                return;
+            }
+        };
+        if let Some(choice) = ask_for_choice(
+            "Select Name to add",
+            names
+                .iter()
+                .filter(|x| !self.contains_side_effect(x.0))
+                .map(|x| x.0),
+        ) {
+            let defval = format!("[{}]", &choice.1);
+            self.add_side_effect(&choice.1);
+            r.side_effects.insert(choice.1, defval);
+        }
+    }
+    /// Event response that removes currently selected side effect from the result
+    pub fn remove_effect(&mut self, results: &mut HashMap<String, StoryResult>) {
+        let selected = match self.selected_side_effect() {
+            Some(s) => s,
+            None => return,
+        };
+        let res = match self.selected_result() {
+            Some(s) => match results.get_mut(&s) {
+                Some(r) => r,
+                None => return,
+            },
+            None => return,
+        };
+        if ask_to_confirm(&format!(
+            "Are you sure you want to remove {} side effect from {} result?",
+            &selected, &res.name
+        )) {
+            res.side_effects.remove(&selected);
+            self.populate_side_effects(&res);
+        }
     }
 }

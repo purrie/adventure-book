@@ -33,7 +33,6 @@ pub struct StoryEditor {
 
 impl StoryEditor {
     pub fn new(area: Rect) -> Self {
-        // TODO split the UI into tabs to make space for inserters
         let group = Group::new(area.x, area.y, area.w, area.h, None);
 
         let font_size = app::font_size();
@@ -165,10 +164,13 @@ impl StoryEditor {
             self.names.add_record(nam.0, true);
         }
     }
-    pub fn save_page(&self, page: &mut Page) {
+    pub fn save_page(&self, page: &mut Page, adventure: &Adventure) {
         page.title = self.title.buffer().as_ref().unwrap().text();
         page.story = self.story.buffer().as_ref().unwrap().text();
-        // TODO save data from editors
+        self.choices.save_choice(&mut page.choices, None);
+        self.conditions.save(&mut page.conditions, None);
+        self.tests.save(&mut page.tests, None);
+        self.results.save(&mut page.results, None, adventure);
     }
     pub fn toggle_record_editor(&mut self, on: bool) {
         if on {

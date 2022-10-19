@@ -4,9 +4,9 @@ use fltk::{
     app,
     draw::*,
     enums::{Color, Event, FrameType},
-    prelude::{WidgetBase, WidgetExt},
+    prelude::{WidgetBase, WidgetExt, BrowserExt},
     widget::Widget,
-    widget_extends,
+    widget_extends, browser::SelectBrowser,
 };
 
 pub struct TextRenderer {
@@ -185,3 +185,15 @@ impl Selector {
     }
 }
 widget_extends!(Selector, Widget, widget);
+
+/// Returns index of item in selector SelectBrowser, or None if it isn't found
+pub fn find_item(selector: &SelectBrowser, item: &str) -> Option<i32> {
+    let mut n = 1;
+    while let Some(t) = selector.text(n) {
+        if t == item {
+            return Some(n);
+        }
+        n += 1;
+    }
+    return None;
+}

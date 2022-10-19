@@ -44,7 +44,7 @@ use self::{adventure::AdventureEditor, files::FileList, story::StoryEditor};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     Save,
-
+    // TODO implement renaming pages
     AddPage,
     RemovePage,
     OpenMeta,
@@ -154,56 +154,91 @@ impl EditorWindow {
     }
     pub fn process(&mut self, ev: Event) {
         match ev {
-            Event::Save => self.save_project(),
-            Event::AddPage => self.add_page(),
-            Event::RemovePage => self.remove_page(),
-            Event::OpenMeta => self.open_adventure(),
-            Event::OpenPage(name) => self.open_page(name),
-            Event::AddRecord => self.add_keyword(false),
-            Event::AddName => self.add_keyword(true),
-            Event::EditRecord(old) => self.rename_keyword(old),
-            Event::EditName(old) => self.rename_keyword(old),
-            Event::RemoveRecord(name) => self.remove_keyword(name, false),
-            Event::RemoveName(name) => self.remove_keyword(name, true),
-            Event::SaveCondition(cond) => condition::save(self, cond),
-            Event::LoadCondition(cond) => condition::load(self, cond),
-            Event::RenameCondition => condition::rename(self),
-            Event::AddCondition => condition::add(self),
-            Event::RemoveCondition => condition::remove(self),
-            Event::SaveTest(test) => test::save(self, test),
-            Event::LoadTest(test) => test::load(self, test),
-            Event::RenameTest => test::rename(self),
-            Event::AddTest => test::add(self),
-            Event::RemoveTest => test::remove(self),
-            Event::AddResult => result::add(self),
-            Event::RenameResult => result::rename(self),
-            Event::RemoveResult => result::remove(self),
-            Event::SaveResult(res) => result::save(self, res),
-            Event::LoadResult(res) => result::load(self, res),
-            Event::SaveSideEffect(se) => result::save_effect(self, se),
-            Event::LoadSideEffect(se) => result::load_effect(self, se),
-            Event::AddSideEffectRecord => result::add_record(self),
-            Event::AddSideEffectName => result::add_name(self),
-            Event::RemoveSideEffect => result::remove_effect(self),
-            Event::AddChoice => self
+            Event::Save                => self.save_project(),
+            Event::AddPage             => self.add_page(),
+            Event::RemovePage          => self.remove_page(),
+            Event::OpenMeta            => self.open_adventure(),
+            Event::OpenPage(name)      => self.open_page(name),
+            Event::AddRecord           => self.add_keyword(false),
+            Event::AddName             => self.add_keyword(true),
+            Event::EditRecord(old)     => self.rename_keyword(old),
+            Event::EditName(old)       => self.rename_keyword(old),
+            Event::RemoveRecord(name)  => self.remove_keyword(name, false),
+            Event::RemoveName(name)    => self.remove_keyword(name, true),
+            Event::SaveCondition(cond) => self
+                .page_editor
+                .conditions
+                .save(&mut page_mut!(self).conditions, cond),
+            Event::LoadCondition(cond) => self
+                .page_editor
+                .conditions
+                .load(&page!(self).conditions, cond),
+            Event::RenameCondition     => self.page_editor.conditions.rename(page_mut!(self)),
+            Event::AddCondition        => self
+                .page_editor
+                .conditions
+                .add(&mut page_mut!(self).conditions),
+            Event::RemoveCondition     => self.page_editor.conditions.remove(page_mut!(self)),
+            Event::SaveTest(test)      => self
+                .page_editor
+                .tests
+                .save(&mut page_mut!(self).tests, test),
+            Event::LoadTest(test)      => self
+                .page_editor
+                .tests
+                .load(&mut page_mut!(self).tests, test),
+            Event::RenameTest          => self.page_editor.tests.rename(page_mut!(self)),
+            Event::AddTest             => self.page_editor.tests.add(&mut page_mut!(self)),
+            Event::RemoveTest          => self.page_editor.tests.remove(&mut page_mut!(self)),
+            Event::AddResult           => self.page_editor.results.add(&mut page_mut!(self).results),
+            Event::RenameResult        => self.page_editor.results.rename(page_mut!(self)),
+            Event::RemoveResult        => self.page_editor.results.remove(page_mut!(self)),
+            Event::SaveResult(res)     => {
+                self.page_editor
+                    .results
+                    .save(&mut page_mut!(self).results, res, &self.adventure)
+            }
+            Event::LoadResult(res)     => self.page_editor.results.load(&page!(self).results, res),
+            Event::SaveSideEffect(se)  => {
+                self.page_editor
+                    .results
+                    .save_effect(page_mut!(self), &self.adventure, se)
+            }
+            Event::LoadSideEffect(se)  => self
+                .page_editor
+                .results
+                .load_effect(&page!(self).results, se),
+            Event::AddSideEffectRecord => self
+                .page_editor
+                .results
+                .add_record(&mut page_mut!(self).results, &self.adventure.records),
+            Event::AddSideEffectName   => self
+                .page_editor
+                .results
+                .add_name(&mut page_mut!(self).results, &self.adventure.names),
+            Event::RemoveSideEffect    => self
+                .page_editor
+                .results
+                .remove_effect(&mut page_mut!(self).results),
+            Event::AddChoice           => self
                 .page_editor
                 .choices
                 .add_choice(&mut page_mut!(self).choices),
-            Event::RemoveChoice => self
+            Event::RemoveChoice        => self
                 .page_editor
                 .choices
                 .remove_choice(&mut page_mut!(self).choices),
-            Event::SaveChoice(c) => self
+            Event::SaveChoice(c)       => self
                 .page_editor
                 .choices
                 .save_choice(&mut page_mut!(self).choices, c),
-            Event::LoadChoice(c) => self
+            Event::LoadChoice(c)       => self
                 .page_editor
                 .choices
                 .load_choice(&page!(self).choices, c),
-            Event::RefreshChoices => self.page_editor.choices.refresh_dropdowns(page!(self)),
-            Event::ToggleRecords(f) => self.page_editor.toggle_record_editor(f),
-            Event::ToggleNames(f) => self.page_editor.toggle_name_editor(f),
+            Event::RefreshChoices      => self.page_editor.choices.refresh_dropdowns(page!(self)),
+            Event::ToggleRecords(f)    => self.page_editor.toggle_record_editor(f),
+            Event::ToggleNames(f)      => self.page_editor.toggle_name_editor(f),
         }
     }
     pub fn hide(&mut self) {
@@ -214,9 +249,16 @@ impl EditorWindow {
         self.page_editor.hide();
         self.adventure_editor.show();
     }
-    fn save_project(&self) {
+    fn save_project(&mut self) {
         // TODO strip unused page and adventure parts, warn user about it
         // alternative would be to not strip anything to allow resuming work, but instead implement a check-for-errors button
+
+        // save any unsaved data
+        if self.adventure_editor.active() {
+            self.adventure_editor.save(&mut self.adventure);
+        } else {
+            self.page_editor.save_page(page_mut!(self), &self.adventure);
+        }
 
         // serializing data
         let adv_ser = self.adventure.serialize_to_string();
@@ -241,7 +283,7 @@ impl EditorWindow {
             return;
         }
         if let Some(mut cur_page) = self.pages.get_mut(&self.current_page) {
-            self.page_editor.save_page(&mut cur_page);
+            self.page_editor.save_page(&mut cur_page, &self.adventure);
         }
         self.adventure_editor.save(&mut self.adventure);
         self.adventure_editor.hide();
@@ -305,7 +347,7 @@ impl EditorWindow {
         }
         // saving open page
         if let Some(mut cur_page) = self.pages.get_mut(&self.current_page) {
-            self.page_editor.save_page(&mut cur_page);
+            self.page_editor.save_page(&mut cur_page, &self.adventure);
         }
         self.adventure_editor.load(&self.adventure);
         self.page_editor.hide();
@@ -359,13 +401,19 @@ impl EditorWindow {
             if self.adventure_editor.active() == false {
                 // saving unsaved page edits
                 let mut page = page_mut!(self);
-                self.page_editor.save_page(&mut page);
+                self.page_editor.save_page(&mut page, &self.adventure);
                 self.page_editor
                     .choices
                     .save_choice(&mut page.choices, None);
-                test::save(self, None);
-                condition::save(self, None);
-                result::save(self, None);
+                self.page_editor
+                    .tests
+                    .save(&mut page_mut!(self).tests, None);
+                self.page_editor
+                    .conditions
+                    .save(&mut page_mut!(self).conditions, None);
+                self.page_editor
+                    .results
+                    .save(&mut page_mut!(self).results, None, &self.adventure);
             }
             self.pages
                 .iter_mut()
