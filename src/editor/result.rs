@@ -57,7 +57,7 @@ impl ResultEditor {
         let w_column_3 = w_column_2 / 2 - margin2 * 2;
         let x_column_4 = x_column_3 + w_column_3 + margin2 * 2;
 
-        let h_line = font_size + 2;
+        let h_line = font_size + font_size / 2;
 
         // vertical result selector coords
         let y_results = area.y;

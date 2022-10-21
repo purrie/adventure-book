@@ -51,7 +51,7 @@ impl ChoiceEditor {
         let margin_menu = 20;
         let x_menu = area.x + w_selector + margin_menu;
         let w_menu = area.w - w_selector - margin_menu * 2;
-        let h_menu = font_size + 2;
+        let h_menu = font_size + font_size / 2;
         let y_menu_condition = area.y + font_size;
         let y_menu_test = y_menu_condition + h_menu * 2;
         let y_menu_result = y_menu_test + h_menu * 2;
