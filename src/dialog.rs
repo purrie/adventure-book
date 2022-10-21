@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use fltk::{
     app,
     button::Button,
+    enums::{Key, Shortcut},
     frame::Frame,
     input::{Input, IntInput},
     menu::Choice,
@@ -53,6 +54,9 @@ pub fn ask_to_choose_adventure(adventures: &Vec<Adventure>) -> Option<usize> {
             chooser.set_value(-1);
         }
     });
+    butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
+    butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
+
     while win.shown() {
         app::wait();
     }
@@ -91,6 +95,8 @@ pub fn ask_for_text(label: &str) -> Option<String> {
             x.window().unwrap().hide();
         }
     });
+    butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
+    butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
 
     while win.shown() {
         app::wait();
@@ -110,7 +116,6 @@ pub fn ask_for_record() -> Option<Record> {
     let name = Input::new(80, 30, 200, 30, "Keyword");
     let category = Input::new(80, 60, 200, 30, "Category");
     let value = IntInput::new(80, 90, 200, 30, "Default");
-    // TODO see if accept button can be auto pressed on return key
     let mut butt_accept = Button::new(210, 130, 80, 30, "Accept");
     let mut butt_cancel = Button::new(10, 130, 80, 30, "Cancel");
 
@@ -132,6 +137,8 @@ pub fn ask_for_record() -> Option<Record> {
             x.window().unwrap().hide();
         }
     });
+    butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
+    butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
 
     while win.shown() {
         app::wait();
@@ -167,7 +174,6 @@ pub fn ask_for_name() -> Option<Name> {
     let name = Input::new(80, 30, 200, 30, "Keyword");
     let value = Input::new(80, 60, 200, 30, "Default");
 
-    // TODO see if accept button can be auto pressed on return key
     let mut butt_accept = Button::new(210, 110, 80, 30, "Accept");
     let mut butt_cancel = Button::new(10, 110, 80, 30, "Cancel");
 
@@ -189,6 +195,8 @@ pub fn ask_for_name() -> Option<Name> {
             x.window().unwrap().hide();
         }
     });
+    butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
+    butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
 
     while win.shown() {
         app::wait();
@@ -231,6 +239,8 @@ pub fn ask_to_confirm(label: &str) -> bool {
             x.window().unwrap().hide();
         }
     });
+    butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
+    butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
 
     while win.shown() {
         app::wait();
@@ -276,6 +286,8 @@ where
             x.window().unwrap().hide();
         }
     });
+    butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
+    butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
 
     for c in choices.iter() {
         choice.add_choice(c);
