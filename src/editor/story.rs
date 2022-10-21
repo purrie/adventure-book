@@ -102,7 +102,7 @@ impl StoryEditor {
                     let new_select = new_select.label();
                     match new_select.as_str() {
                         "Choices" => {
-                            s.send(emit!(Event::RefreshChoices));
+                            s.send(emit!(Event::RefreshResults));
                             s.send(emit!(Event::ToggleNames(true)));
                             s.send(emit!(Event::ToggleRecords(true)));
                         }
@@ -111,6 +111,7 @@ impl StoryEditor {
                             s.send(emit!(Event::ToggleRecords(true)));
                         }
                         "Tests" => {
+                            s.send(emit!(Event::RefreshResults));
                             s.send(emit!(Event::ToggleNames(false)));
                             s.send(emit!(Event::ToggleRecords(true)));
                         }

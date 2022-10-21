@@ -79,7 +79,7 @@ pub enum Event {
     RemoveChoice,
     SaveChoice(Option<usize>),
     LoadChoice(usize),
-    RefreshChoices,
+    RefreshResults,
     ToggleRecords(bool),
     ToggleNames(bool),
 }
@@ -236,7 +236,10 @@ impl EditorWindow {
                 .page_editor
                 .choices
                 .load_choice(&page!(self).choices, c),
-            Event::RefreshChoices      => self.page_editor.choices.refresh_dropdowns(page!(self)),
+            Event::RefreshResults      => {
+                self.page_editor.choices.refresh_dropdowns(page!(self));
+                self.page_editor.tests.populate(&page!(self).tests, &page!(self).results);
+            }
             Event::ToggleRecords(f)    => self.page_editor.toggle_record_editor(f),
             Event::ToggleNames(f)      => self.page_editor.toggle_name_editor(f),
         }

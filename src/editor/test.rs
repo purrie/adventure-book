@@ -257,7 +257,6 @@ impl TestEditor {
             None => match self.selected() {
                 Some(t) => t,
                 None => {
-                    println!("Error: Couldn't save a test, no selected test found");
                     return;
                 }
             },
