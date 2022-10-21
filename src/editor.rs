@@ -47,6 +47,7 @@ pub enum Event {
     RenamePage,
     AddPage,
     RemovePage,
+    SelectStartingPage(String),
     OpenMeta,
     OpenPage(String),
     AddRecord,
@@ -151,98 +152,102 @@ impl EditorWindow {
                 Err(e) => signal_error!("{}", e),
             };
         }
+        self.set_starting_page(self.adventure.start.clone());
     }
     pub fn process(&mut self, ev: Event) {
         match ev {
-            Event::Save                => self.save_project(),
-            Event::RenamePage          => self.rename_page(),
-            Event::AddPage             => self.add_page(),
-            Event::RemovePage          => self.remove_page(),
-            Event::OpenMeta            => self.open_adventure(),
-            Event::OpenPage(name)      => self.open_page(name),
-            Event::AddRecord           => self.add_keyword(false),
-            Event::AddName             => self.add_keyword(true),
-            Event::EditRecord(old)     => self.rename_keyword(old),
-            Event::EditName(old)       => self.rename_keyword(old),
-            Event::RemoveRecord(name)  => self.remove_keyword(name, false),
-            Event::RemoveName(name)    => self.remove_keyword(name, true),
-            Event::SaveCondition(cond) => self
+            Event::Save                  => self.save_project(),
+            Event::RenamePage            => self.rename_page(),
+            Event::AddPage               => self.add_page(),
+            Event::RemovePage            => self.remove_page(),
+            Event::SelectStartingPage(p) => self.set_starting_page(p),
+            Event::OpenMeta              => self.open_adventure(),
+            Event::OpenPage(name)        => self.open_page(name),
+            Event::AddRecord             => self.add_keyword(false),
+            Event::AddName               => self.add_keyword(true),
+            Event::EditRecord(old)       => self.rename_keyword(old),
+            Event::EditName(old)         => self.rename_keyword(old),
+            Event::RemoveRecord(name)    => self.remove_keyword(name, false),
+            Event::RemoveName(name)      => self.remove_keyword(name, true),
+            Event::SaveCondition(cond)   => self
                 .page_editor
                 .conditions
                 .save(&mut page_mut!(self).conditions, cond),
-            Event::LoadCondition(cond) => self
+            Event::LoadCondition(cond)   => self
                 .page_editor
                 .conditions
                 .load(&page!(self).conditions, cond),
-            Event::RenameCondition     => self.page_editor.conditions.rename(page_mut!(self)),
-            Event::AddCondition        => self
+            Event::RenameCondition       => self.page_editor.conditions.rename(page_mut!(self)),
+            Event::AddCondition          => self
                 .page_editor
                 .conditions
                 .add(&mut page_mut!(self).conditions),
-            Event::RemoveCondition     => self.page_editor.conditions.remove(page_mut!(self)),
-            Event::SaveTest(test)      => self
+            Event::RemoveCondition       => self.page_editor.conditions.remove(page_mut!(self)),
+            Event::SaveTest(test)        => self
                 .page_editor
                 .tests
                 .save(&mut page_mut!(self).tests, test),
-            Event::LoadTest(test)      => self
+            Event::LoadTest(test)        => self
                 .page_editor
                 .tests
                 .load(&mut page_mut!(self).tests, test),
-            Event::RenameTest          => self.page_editor.tests.rename(page_mut!(self)),
-            Event::AddTest             => self.page_editor.tests.add(&mut page_mut!(self)),
-            Event::RemoveTest          => self.page_editor.tests.remove(&mut page_mut!(self)),
-            Event::AddResult           => self.page_editor.results.add(&mut page_mut!(self).results),
-            Event::RenameResult        => self.page_editor.results.rename(page_mut!(self)),
-            Event::RemoveResult        => self.page_editor.results.remove(page_mut!(self)),
-            Event::SaveResult(res)     => {
+            Event::RenameTest            => self.page_editor.tests.rename(page_mut!(self)),
+            Event::AddTest               => self.page_editor.tests.add(&mut page_mut!(self)),
+            Event::RemoveTest            => self.page_editor.tests.remove(&mut page_mut!(self)),
+            Event::AddResult             => self.page_editor.results.add(&mut page_mut!(self).results),
+            Event::RenameResult          => self.page_editor.results.rename(page_mut!(self)),
+            Event::RemoveResult          => self.page_editor.results.remove(page_mut!(self)),
+            Event::SaveResult(res)       => {
                 self.page_editor
                     .results
                     .save(&mut page_mut!(self).results, res, &self.adventure)
             }
-            Event::LoadResult(res)     => self.page_editor.results.load(&page!(self).results, res),
-            Event::SaveSideEffect(se)  => {
+            Event::LoadResult(res)       => self.page_editor.results.load(&page!(self).results, res),
+            Event::SaveSideEffect(se)    => {
                 self.page_editor
                     .results
                     .save_effect(page_mut!(self), &self.adventure, se)
             }
-            Event::LoadSideEffect(se)  => self
+            Event::LoadSideEffect(se)    => self
                 .page_editor
                 .results
                 .load_effect(&page!(self).results, se),
-            Event::AddSideEffectRecord => self
+            Event::AddSideEffectRecord   => self
                 .page_editor
                 .results
                 .add_record(&mut page_mut!(self).results, &self.adventure.records),
-            Event::AddSideEffectName   => self
+            Event::AddSideEffectName     => self
                 .page_editor
                 .results
                 .add_name(&mut page_mut!(self).results, &self.adventure.names),
-            Event::RemoveSideEffect    => self
+            Event::RemoveSideEffect      => self
                 .page_editor
                 .results
                 .remove_effect(&mut page_mut!(self).results),
-            Event::AddChoice           => self
+            Event::AddChoice             => self
                 .page_editor
                 .choices
                 .add_choice(&mut page_mut!(self).choices),
-            Event::RemoveChoice        => self
+            Event::RemoveChoice          => self
                 .page_editor
                 .choices
                 .remove_choice(&mut page_mut!(self).choices),
-            Event::SaveChoice(c)       => self
+            Event::SaveChoice(c)         => self
                 .page_editor
                 .choices
                 .save_choice(&mut page_mut!(self).choices, c),
-            Event::LoadChoice(c)       => self
+            Event::LoadChoice(c)         => self
                 .page_editor
                 .choices
                 .load_choice(&page!(self).choices, c),
-            Event::RefreshResults      => {
+            Event::RefreshResults        => {
                 self.page_editor.choices.refresh_dropdowns(page!(self));
-                self.page_editor.tests.populate(&page!(self).tests, &page!(self).results);
+                self.page_editor
+                    .tests
+                    .populate(&page!(self).tests, &page!(self).results);
             }
-            Event::ToggleRecords(f)    => self.page_editor.toggle_record_editor(f),
-            Event::ToggleNames(f)      => self.page_editor.toggle_name_editor(f),
+            Event::ToggleRecords(f)      => self.page_editor.toggle_record_editor(f),
+            Event::ToggleNames(f)        => self.page_editor.toggle_name_editor(f),
         }
     }
     pub fn hide(&mut self) {
@@ -328,7 +333,9 @@ impl EditorWindow {
         }
     }
     fn rename_page(&mut self) {
-        if let Some(name) = ask_for_text(&format!("Enter a new name for page {}", self.current_page)) {
+        if let Some(name) =
+            ask_for_text(&format!("Enter a new name for page {}", self.current_page))
+        {
             let name = name.to_lowercase().replace(" ", "-");
             if is_valid_file_name(&name) == false {
                 signal_error!("The file name {} is invalid", name);
@@ -355,6 +362,12 @@ impl EditorWindow {
             self.pages.insert(file_name.clone(), page);
             self.file_list.add_line(&file_name);
             self.open_page(file_name);
+        }
+    }
+    fn set_starting_page(&mut self, p: String) {
+        if self.pages.contains_key(&p) {
+            self.file_list.mark_line(&self.adventure.start, &p);
+            self.adventure.start = p;
         }
     }
     /// Opens adventure metadata editor UI

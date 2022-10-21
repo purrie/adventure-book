@@ -1,8 +1,12 @@
 use fltk::{
-    app, browser::SelectBrowser, button::Button, draw::Rect, group::Group, prelude::*, image::SvgImage,
+    app, browser::SelectBrowser, button::Button, draw::Rect, group::Group, image::SvgImage,
+    prelude::*,
 };
 
-use crate::icons::{GEAR_ICON, BIN_ICON};
+use crate::{
+    icons::{BIN_ICON, GEAR_ICON, STAR_ICON},
+    widgets::find_item,
+};
 
 use super::{emit, Event};
 
@@ -35,12 +39,14 @@ impl FileList {
         let x_add = x_column_1;
         let x_rename = x_add + w_controls;
         let x_remove = x_column_1 + w_whole - w_controls;
+        let x_start = x_remove - w_controls;
 
         let mut butt_bac = Button::new(x_column_1, y_first_line, w_column, h_line, "Return");
         let mut butt_sav = Button::new(x_column_2, y_first_line, w_column, h_line, "Save");
         let mut butt_add = Button::new(x_add, y_controls, w_controls, h_controls, "@+");
         let mut butt_rem = Button::new(x_remove, y_controls, w_controls, h_controls, None);
         let mut butt_ren = Button::new(x_rename, y_controls, w_controls, h_controls, None);
+        let mut butt_str = Button::new(x_start, y_controls, w_controls, h_controls, None);
         let mut adventure_meta = Button::new(
             x_column_1,
             y_second_line,
@@ -48,24 +54,37 @@ impl FileList {
             h_line,
             "Adventure Metadata",
         );
-        let mut page_list = SelectBrowser::new(x_column_1, y_third_line, w_whole, h_selector, "Pages");
+        let mut page_list =
+            SelectBrowser::new(x_column_1, y_third_line, w_whole, h_selector, "Pages");
         group.end();
 
         let (s, _r) = app::channel();
 
         let mut gear = SvgImage::from_data(GEAR_ICON).unwrap();
         let mut bin = SvgImage::from_data(BIN_ICON).unwrap();
+        let mut star = SvgImage::from_data(STAR_ICON).unwrap();
         gear.scale(w_controls, h_controls, false, true);
         bin.scale(w_controls, h_controls, false, true);
+        star.scale(w_controls, h_controls, false, true);
 
         butt_rem.set_image(Some(bin));
         butt_ren.set_image(Some(gear));
+        butt_str.set_image(Some(star));
 
         butt_bac.emit(s.clone(), crate::game::Event::DisplayMainMenu);
         butt_sav.emit(s.clone(), emit!(Event::Save));
         butt_add.emit(s.clone(), emit!(Event::AddPage));
         butt_rem.emit(s.clone(), emit!(Event::RemovePage));
         butt_ren.emit(s.clone(), emit!(Event::RenamePage));
+        butt_str.set_callback({
+            let fl = page_list.clone();
+            let s = s.clone();
+            move |_| {
+                if let Some(page) = fl.selected_text() {
+                    s.send(emit!(Event::SelectStartingPage(page)));
+                }
+            }
+        });
         adventure_meta.emit(s.clone(), emit!(Event::OpenMeta));
         page_list.set_callback(move |x| {
             if let Some(text) = x.selected_text() {
@@ -86,6 +105,17 @@ impl FileList {
         let selection = self.page_list.value();
         if selection > 0 {
             self.page_list.remove(selection);
+        }
+    }
+    pub fn mark_line(&mut self, previous: &str, new: &str) {
+        if let Some(x) = find_item(&self.page_list, previous) {
+            self.page_list.set_icon::<SvgImage>(x, None);
+        }
+        if let Some(x) = find_item(&self.page_list, new) {
+            let mut star = SvgImage::from_data(STAR_ICON).unwrap();
+            let font_size = app::font_size();
+            star.scale(font_size, font_size, false, true);
+            self.page_list.set_icon(x, Some(star));
         }
     }
     pub fn rename_selected(&mut self, new_name: &str) {
