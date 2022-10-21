@@ -44,7 +44,7 @@ use self::{adventure::AdventureEditor, files::FileList, story::StoryEditor};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     Save,
-    // TODO implement renaming pages
+    RenamePage,
     AddPage,
     RemovePage,
     OpenMeta,
@@ -155,6 +155,7 @@ impl EditorWindow {
     pub fn process(&mut self, ev: Event) {
         match ev {
             Event::Save                => self.save_project(),
+            Event::RenamePage          => self.rename_page(),
             Event::AddPage             => self.add_page(),
             Event::RemovePage          => self.remove_page(),
             Event::OpenMeta            => self.open_adventure(),
@@ -324,6 +325,20 @@ impl EditorWindow {
             self.pages.remove(&self.current_page);
             self.file_list.remove_line();
             self.open_adventure();
+        }
+    }
+    fn rename_page(&mut self) {
+        if let Some(name) = ask_for_text(&format!("Enter a new name for page {}", self.current_page)) {
+            let name = name.to_lowercase().replace(" ", "-");
+            if is_valid_file_name(&name) == false {
+                signal_error!("The file name {} is invalid", name);
+                return;
+            }
+            if let Some(page) = self.pages.remove(&self.current_page) {
+                self.file_list.rename_selected(&name);
+                self.pages.insert(name.clone(), page);
+                self.current_page = name;
+            }
         }
     }
     fn add_page(&mut self) {
