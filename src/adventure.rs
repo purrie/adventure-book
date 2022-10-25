@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, VecDeque},
     fmt::Display,
+    path::PathBuf,
 };
 
 use regex::Regex;
@@ -15,6 +16,8 @@ pub enum ParsingError {
     IncorrectElementCount(String, usize),
     ElementPairMissing(String),
     Invalid(String),
+    IncomplatePage(Page),
+    MissingRecord(String),
 }
 #[derive(Default, Clone)]
 pub struct Adventure {
@@ -120,6 +123,8 @@ impl Display for ParsingError {
             ParsingError::ElementPairMissing(v) => {
                 write!(f, "Expected element pair missing in {}", v)
             }
+            ParsingError::IncomplatePage(p) => write!(f, "The page is incomplete: {:?}", p),
+            ParsingError::MissingRecord(p) => write!(f, "Record {} is missing", p),
         }
     }
 }
@@ -164,7 +169,7 @@ impl Adventure {
         }
         adv.path = path;
 
-        if adv.is_valid() {
+        if adv.is_bare_minimum() {
             return Ok(adv);
         } else {
             return Err(ParsingError::Invalid(text));
@@ -183,20 +188,24 @@ impl Adventure {
             .for_each(|x| ser = format!("{}\nname: {}", ser, x.1.serialize_to_string()));
         ser
     }
-    pub fn is_valid(&self) -> bool {
+    pub fn is_bare_minimum(&self) -> bool {
         if self.title.len() < 1 {
-            return false;
-        }
-        if self.description.len() < 1 {
             return false;
         }
         if self.path.len() < 1 {
             return false;
         }
-        if self.start.len() < 1 {
+
+        true
+    }
+    pub fn is_playable(&self) -> bool {
+        if self.start.len() == 0 {
             return false;
         }
-
+        let path = PathBuf::from(&self.path);
+        if path.exists() == false {
+            return false;
+        }
         true
     }
     pub fn rename_keyword(&mut self, old: &str, new: &str) {
@@ -280,10 +289,10 @@ impl Page {
                 page.story = format!("{}\n\n{}", page.story, line);
             }
         }
-        if page.is_valid() {
+        if page.is_playable() {
             Ok(page)
         } else {
-            Err(ParsingError::Invalid(text))
+            Err(ParsingError::IncomplatePage(page))
         }
     }
     pub fn serialize_to_string(&self) -> String {
@@ -302,7 +311,7 @@ impl Page {
             .for_each(|x| ser = format!("{}\nresult: {}", ser, x.1.serialize_to_string()));
         ser
     }
-    pub fn is_valid(&self) -> bool {
+    pub fn is_playable(&self) -> bool {
         if self.story.len() < 1 {
             return false;
         }

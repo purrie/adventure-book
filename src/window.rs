@@ -220,10 +220,12 @@ impl MainMenu {
     }
     /// Fills chooser control with adventures to choose from
     pub fn fill_adventure_choices(&mut self, adventures: &Vec<Adventure>) {
-        self.adventure_picker.borrow_mut().clear();
-        for adv in adventures {
-            self.adventure_picker.borrow_mut().add(adv.title.clone());
-        }
+        let mut picker = self.adventure_picker.borrow_mut();
+        picker.clear();
+        adventures
+            .iter()
+            .filter(|x| x.is_playable())
+            .for_each(|x| picker.add(x.title.clone()));
     }
 }
 
