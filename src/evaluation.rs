@@ -1,5 +1,8 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::{collections::{HashMap, VecDeque}, fmt::Display};
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt::Display,
+};
 
 use crate::adventure::{Comparison, Record};
 
@@ -16,8 +19,16 @@ impl Display for EvaluationError {
         match self {
             EvaluationError::DivisionByZero => write!(f, "Division by 0 error"),
             EvaluationError::NotANumber(n) => write!(f, "{} is not a number", n),
-            EvaluationError::InvalidDieExpression(n) => write!(f, "{} is not a valid dice expression, use something like 1d6", n),
-            EvaluationError::MissingDicePoolEvaluator(n) => write!(f, "{} is not a valid dice pool expression, use something like 4d6p4", n),
+            EvaluationError::InvalidDieExpression(n) => write!(
+                f,
+                "{} is not a valid dice expression, use something like 1d6",
+                n
+            ),
+            EvaluationError::MissingDicePoolEvaluator(n) => write!(
+                f,
+                "{} is not a valid dice pool expression, use something like 4d6p4",
+                n
+            ),
         }
     }
 }
@@ -47,7 +58,7 @@ pub fn evaluate_expression(
         if let Some(p) = pool {
             cut.push(p);
         }
-        let r : Vec<i32> = match x
+        let r: Vec<i32> = match x
             .split(&cut[..])
             .map(|x| {
                 if let Ok(ok) = x.parse() {
@@ -56,11 +67,11 @@ pub fn evaluate_expression(
                     Err(EvaluationError::NotANumber(x.to_string()))
                 }
             })
-            .collect() {
-                Ok(x) => x,
-                Err(x) => return Err(x),
-            };
-
+            .collect()
+        {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
 
         // need the result to be 2 or 3 parts, any other is an error
         if pool == None {
@@ -243,8 +254,8 @@ pub fn evaluate_expression(
                     if r.0 == 0 {
                         return Err(EvaluationError::DivisionByZero);
                     }
-                  (l.0 / r.0, r.1, r.2)
-                },
+                    (l.0 / r.0, r.1, r.2)
+                }
                 _ => unreachable!(),
             };
             ops.remove(i + 1);
@@ -531,7 +542,6 @@ mod tests {
             assert!(v >= 0 && v <= 6);
         }
     }
-
 
     #[test]
     fn evaluate_compare() {
