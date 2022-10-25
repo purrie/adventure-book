@@ -1,17 +1,24 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, fs::create_dir, path::PathBuf, rc::Rc};
 
+use dirs::data_dir;
 use fltk::{
     app,
+    browser::SelectBrowser,
     button::Button,
+    dialog::NativeFileChooser,
     enums::{Key, Shortcut},
     frame::Frame,
     input::{Input, IntInput},
     menu::Choice,
     prelude::*,
+    text::{TextBuffer, TextEditor},
     window::Window,
 };
 
-use crate::adventure::{Adventure, Name, Record};
+use crate::{
+    adventure::{Adventure, Name, Record},
+    file::{is_on_adventure_path, paths, save_adventure, PROJECT_PATH_NAME},
+};
 
 macro_rules! signal_error {
     ($text:expr, $( $x:expr ), *) => {
@@ -37,21 +44,22 @@ pub fn ask_to_choose_adventure(adventures: &Vec<Adventure>) -> Option<usize> {
     win.make_modal(true);
     win.show();
 
-    for adv in adventures.iter() {
-        chooser.add_choice(&adv.title);
-    }
+    adventures.iter().for_each(|x| chooser.add_choice(&x.title));
+    chooser.add_choice("New");
     chooser.set_value(0);
 
+    let conf = Rc::new(RefCell::new(false));
+
     butt_accept.set_callback({
-        |x| {
+        let conf = Rc::clone(&conf);
+        move |x| {
+            *conf.borrow_mut() = true;
             x.window().unwrap().hide();
         }
     });
     butt_cancel.set_callback({
-        let mut chooser = chooser.clone();
         move |x| {
             x.window().unwrap().hide();
-            chooser.set_value(-1);
         }
     });
     butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
@@ -60,10 +68,119 @@ pub fn ask_to_choose_adventure(adventures: &Vec<Adventure>) -> Option<usize> {
     while win.shown() {
         app::wait();
     }
-    if chooser.value() < 0 {
-        return None;
+    if *conf.borrow() {
+        Some(chooser.value() as usize)
+    } else {
+        None
     }
-    Some(chooser.value() as usize)
+}
+pub fn ask_for_new_adventure() -> Option<Adventure> {
+    let mut win = Window::default()
+        .with_size(500, 250)
+        .with_label("Creating Adventure");
+
+    Frame::new(50, 10, 400, 20, "Creating Adventure");
+    let mut sel = SelectBrowser::new(10, 35, 230, 200, "Location");
+    let mut name = TextEditor::new(260, 50, 230, 40, "name");
+    let mut butt_accept = Button::new(410, 210, 80, 30, "Accept");
+    let mut butt_cancel = Button::new(250, 210, 80, 30, "Cancel");
+
+    win.end();
+    win.make_modal(true);
+    win.show();
+
+    let conf = Rc::new(RefCell::new(false));
+
+    butt_accept.set_callback({
+        let conf = Rc::clone(&conf);
+        move |x| {
+            *conf.borrow_mut() = true;
+            x.window().unwrap().hide();
+        }
+    });
+    butt_cancel.set_callback({
+        move |x| {
+            x.window().unwrap().hide();
+        }
+    });
+    butt_accept.set_shortcut(Shortcut::from_key(Key::Enter));
+    butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
+
+    name.set_buffer(TextBuffer::default());
+    sel.add("New Root Location");
+    paths!("books")
+        .iter()
+        .for_each(|x| sel.add(x.to_str().unwrap()));
+    sel.set_callback(|x| {
+        if x.value() == 1 {
+            // opening a dialog to let user choose a new location
+            let mut dialog = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseDir);
+            dialog.set_directory(&paths!("books")[0]).unwrap();
+            dialog.show();
+            let mut dir = dialog.directory();
+            // first we have to test if the chosen path is where program will be able to read it
+            if is_on_adventure_path(&dir) == false {
+                signal_error!(
+                    "The selected path isn't inside of any folders expected to hold adventures."
+                );
+                return;
+            }
+            // next we have to test if user chosen an folder with no adventures
+            dir.push("adventure");
+            dir.set_extension("txt");
+            if dir.exists() {
+                signal_error!("You need to choose a folder that doesn't contain another adventure");
+                return;
+            }
+            // everything seems to be in order, add and select the new path
+            dir.set_extension("");
+            dir.pop();
+            x.add(dir.to_str().unwrap());
+            x.select(x.size());
+        }
+    });
+
+    while win.shown() {
+        app::wait();
+    }
+    if *conf.borrow() {
+        if let Some(path) = sel.selected_text() {
+            let title = name.buffer().unwrap().text();
+            if title.len() == 0 {
+                signal_error!("Enter a valid name for the adventure");
+                return None;
+            }
+            let folder = title.trim().to_lowercase().replace(" ", "-").to_string();
+            let mut dir = PathBuf::from(path);
+            dir.push(folder);
+            if dir.exists() {
+                dir.push("adventure");
+                dir.set_extension("txt");
+                if dir.exists() {
+                    signal_error!("Selected path already contains adventure with specified name");
+                    return None;
+                }
+                dir.pop();
+                dir.set_extension("");
+            } else {
+                if let Err(e) = create_dir(&dir) {
+                    signal_error!("Error creating a directory: {}", e);
+                    return None;
+                }
+            }
+            let adventure = Adventure {
+                title,
+                path: dir.to_str().unwrap().to_string(),
+                ..Default::default()
+            };
+            let sa = adventure.serialize_to_string();
+            save_adventure(dir.to_str().unwrap(), sa);
+            return Some(adventure);
+        } else {
+            signal_error!("Choose a location for the adventure");
+        }
+    }
+    return None;
 }
 
 pub fn ask_for_text(label: &str) -> Option<String> {

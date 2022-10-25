@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    adventure::{Adventure, Choice, Condition, Name, Page, Record},
-    evaluation::{Random, EvaluationError},
-    file::read_page,
+    adventure::{Adventure, Choice, Condition, Name, Page, ParsingError, Record},
+    evaluation::{EvaluationError, Random},
+    file::{read_page, FileError},
     window::MainWindow,
 };
 use regex::Regex;
@@ -16,19 +16,15 @@ pub fn render_page(
     adventure: &Adventure,
     page_name: &String,
     rand: &mut Random,
-) -> Result<Page, EvaluationError> {
-    let page;
-    match read_page(&adventure.path, page_name) {
-        Ok(p) => page = p,
-        Err(e) => {
-            // TODO do proper error handling
-            panic!(
-                "Page {} of {} failed to load due to: {}",
-                page_name, adventure.title, e
-            );
-        }
-    }
-    let story = parse_story_text(&page.story, &adventure.records, &adventure.names);
+) -> Result<Page, GameError> {
+    let page = match read_page(&adventure.path, page_name) {
+        Ok(p) => p,
+        Err(e) => return Err(GameError::FileError(e)),
+    };
+    let story = match parse_story_text(&page.story, &adventure.records, &adventure.names) {
+        Ok(s) => s,
+        Err(e) => return Err(e),
+    };
     let choices;
     match parse_choices(&page.choices, &page.conditions, &adventure.records, rand) {
         Ok(v) => choices = v,
@@ -45,7 +41,7 @@ fn parse_story_text(
     story_text: &String,
     records: &HashMap<String, Record>,
     names: &HashMap<String, Name>,
-) -> String {
+) -> Result<String, GameError> {
     let reg = Regex::new(r"\[\s*(\w+(?:\s|\w)*)\]").unwrap();
 
     let mut res = story_text.clone();
@@ -60,10 +56,12 @@ fn parse_story_text(
         } else if names.contains_key(name.as_str()) {
             res.replace_range(whole.range(), &names.get(name.as_str()).unwrap().value);
         } else {
-            panic!("Adventure lacks '{}' record or name", name.as_str());
+            return Err(GameError::ParsingError(ParsingError::MissingRecord(
+                name.as_str().to_string(),
+            )));
         }
     }
-    res
+    Ok(res)
 }
 /// Goes over all choices, evaluating their conditions and returns a list of bool and string tuples, representing whatever the choice meets conditions and the text of the choice
 fn parse_choices(
@@ -71,7 +69,7 @@ fn parse_choices(
     conditions: &HashMap<String, Condition>,
     records: &HashMap<String, Record>,
     rand: &mut Random,
-) -> Result<Vec<(bool, String)>, EvaluationError> {
+) -> Result<Vec<(bool, String)>, GameError> {
     let mut res = Vec::new();
     for choice in choices.iter() {
         let enabled;
@@ -79,7 +77,7 @@ fn parse_choices(
             if let Some(con) = conditions.get(&choice.condition) {
                 match con.evaluate(records, rand) {
                     Ok(v) => enabled = v,
-                    Err(e) => return Err(e),
+                    Err(e) => return Err(GameError::EvaluationError(e)),
                 }
             } else {
                 // TODO probably error handlign in case condition doesn't exist
@@ -94,6 +92,13 @@ fn parse_choices(
     Ok(res)
 }
 
+#[derive(Debug)]
+pub enum GameError {
+    EvaluationError(EvaluationError),
+    ParsingError(ParsingError),
+    FileError(FileError),
+}
+
 #[derive(Clone)]
 pub enum Event {
     DisplayMainMenu,
@@ -105,6 +110,16 @@ pub enum Event {
     StoryChoice(usize),
     EditAdventure,
     Editor(crate::editor::Event),
+}
+
+impl Display for GameError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GameError::EvaluationError(e) => write!(f, "{}", e),
+            GameError::ParsingError(e) => write!(f, "{}", e),
+            GameError::FileError(e) => write!(f, "{}", e),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -149,7 +164,7 @@ mod tests {
             },
         );
 
-        let res = parse_story_text(&story, &records, &names);
+        let res = parse_story_text(&story, &records, &names).unwrap();
         assert_eq!(res, expected);
     }
     #[test]

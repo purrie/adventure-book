@@ -149,7 +149,15 @@ impl EditorWindow {
         for page in pages {
             match read_page(&adventure.path, &page) {
                 Ok(p) => drop(self.pages.insert(page, p)),
-                Err(e) => signal_error!("{}", e),
+                Err(e) => match e {
+                    crate::file::FileError::ParsingFailure(_, p) => match p {
+                        crate::adventure::ParsingError::IncomplatePage(p) => {
+                            drop(self.pages.insert(page, p))
+                        }
+                        _ => signal_error!("{}", p),
+                    },
+                    _ => signal_error!("{}", e),
+                },
             };
         }
         self.set_starting_page(self.adventure.start.clone());
