@@ -13,6 +13,7 @@ type Dropdown = fltk::menu::Choice;
 
 use crate::{
     adventure::{Choice, Page, GAME_OVER_KEYWORD},
+    dialog::ask_to_confirm,
     editor::{emit, variables::variable_receiver, Event},
     icons::BIN_ICON,
 };
@@ -52,7 +53,7 @@ impl ChoiceEditor {
         let x_menu = area.x + w_selector + margin_menu;
         let w_menu = area.w - w_selector - margin_menu * 2;
         let h_menu = font_size + font_size / 2;
-        let y_menu_condition = area.y + font_size;
+        let y_menu_condition = area.y + h_menu;
         let y_menu_test = y_menu_condition + h_menu * 2;
         let y_menu_result = y_menu_test + h_menu * 2;
 
@@ -75,7 +76,7 @@ impl ChoiceEditor {
         let mut text = TextEditor::new(x_text, y_text, w_text, h_text, "Choice Text");
         Frame::new(
             x_menu,
-            y_menu_condition - font_size,
+            y_menu_condition - h_menu,
             w_menu,
             h_menu,
             "Condition",
@@ -201,6 +202,7 @@ impl ChoiceEditor {
         // Since both will have the same index number and the selector will think it's the same item
         self.selector.do_callback();
         if choices.len() == 0 {
+            self.hide_controls();
             return;
         }
         choices
@@ -232,29 +234,31 @@ impl ChoiceEditor {
     ///
     /// It also loads next in line choice into UI if there is any
     pub fn remove_choice(&mut self, choices: &mut Vec<Choice>) {
-        let selected = self.selector.value();
-        if selected == 0 {
+        let selected = self.selector.value() - 1;
+        if selected < 0 {
             return;
         }
-        choices.remove(selected as usize);
-        self.selector.remove(self.selector.size());
+        if ask_to_confirm("Are you sure you want to remove the selected choice?") {
+            choices.remove(selected as usize);
+            self.selector.remove(self.selector.size());
 
-        // loading a new element
-        let new_size = self.selector.size();
-        if new_size <= selected {
-            // removed last element on the list
-            if new_size == 0 {
-                // no elements to load, hide the UI
-                self.hide_controls();
-                self.selector.select(0);
-                self.selector.do_callback();
+            // loading a new element
+            let new_size = self.selector.size();
+            if new_size <= selected {
+                // removed last element on the list
+                if new_size == 0 {
+                    // no elements to load, hide the UI
+                    self.hide_controls();
+                    self.selector.select(0);
+                    self.selector.do_callback();
+                } else {
+                    self.selector.select(new_size);
+                    self.selector.do_callback();
+                }
             } else {
-                self.selector.select(new_size);
+                self.selector.select(selected);
                 self.selector.do_callback();
             }
-        } else {
-            self.selector.select(selected);
-            self.selector.do_callback();
         }
     }
     /// Event response that saves currently selected element to the list
@@ -319,5 +323,6 @@ impl ChoiceEditor {
             self.result.set_value(-1);
             self.result.redraw();
         }
+        self.show_controls();
     }
 }

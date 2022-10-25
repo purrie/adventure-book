@@ -176,6 +176,7 @@ impl ConditionEditor {
             self.selector.select(self.selector.size());
             self.selector.do_callback();
         }
+        self.show_controls();
     }
     /// Fills the selector with a new set of Conditions
     ///
@@ -195,15 +196,27 @@ impl ConditionEditor {
         }
         // clearing the condition UI if nothing was loaded
         if set {
-            self.name.set_label("Select a condition");
-            self.expression_left.buffer().as_mut().unwrap().set_text("");
-            self.expression_right
-                .buffer()
-                .as_mut()
-                .unwrap()
-                .set_text("");
-            self.comparison.set_value(0);
+            self.hide_controls();
         }
+    }
+    fn show_controls(&mut self) {
+        self.comparison.show();
+        self.expression_left.show();
+        self.expression_right.show();
+        self.name.show();
+    }
+    fn hide_controls(&mut self) {
+        self.comparison.hide();
+        self.expression_left.hide();
+        self.expression_right.hide();
+        self.name.hide();
+        self.expression_left.buffer().as_mut().unwrap().set_text("");
+        self.expression_right
+            .buffer()
+            .as_mut()
+            .unwrap()
+            .set_text("");
+        self.comparison.set_value(0);
     }
     /// Event response that renames entry in the selector to a new name
     ///

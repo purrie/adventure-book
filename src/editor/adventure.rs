@@ -22,8 +22,6 @@ pub struct AdventureEditor {
     names: VariableEditor,
 }
 
-// TODO implement choosing starting page
-
 impl AdventureEditor {
     /// Creates adventure editor UI, setting up callbacks and widgets in provided area
     pub fn new(area: Rect) -> Self {

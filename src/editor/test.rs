@@ -35,7 +35,9 @@ pub struct TestEditor {
     expression_right: TextEditor,
     comparison: fltk::menu::Choice,
     success: fltk::menu::Choice,
+    success_label: Frame,
     failure: fltk::menu::Choice,
+    failure_label: Frame,
 }
 
 impl TestEditor {
@@ -96,7 +98,7 @@ impl TestEditor {
             "Right side expression",
         );
         let mut comparison = fltk::menu::Choice::new(x_comp, y_comp, w_comp, h_line, None);
-        Frame::new(
+        let success_label = Frame::new(
             x_second_column,
             y_result_success - font_size,
             w_second_column,
@@ -110,7 +112,7 @@ impl TestEditor {
             h_line,
             None,
         );
-        Frame::new(
+        let failure_label = Frame::new(
             x_second_column,
             y_result_failure - font_size,
             w_second_column,
@@ -171,7 +173,9 @@ impl TestEditor {
             expression_right,
             comparison,
             success,
+            success_label,
             failure,
+            failure_label,
         }
     }
     /// Loads provided test into UI
@@ -193,20 +197,25 @@ impl TestEditor {
             .set_text(&test.expression_r);
         self.comparison.set_value(test.comparison.to_index());
         let mut i = 0;
-        while let Some(choice) = self.success.text(i) {
-            if choice == test.success_result {
-                self.success.set_value(i);
-                break;
+        if self.success.size() > 0 {
+            while let Some(choice) = self.success.text(i) {
+                if choice == test.success_result {
+                    self.success.set_value(i);
+                    break;
+                }
+                i += 1;
             }
-            i += 1;
         }
-        i = 0;
-        while let Some(choice) = self.failure.text(i) {
-            if choice == test.failure_result {
-                self.failure.set_value(i);
+        if self.failure.size() > 0 {
+            i = 0;
+            while let Some(choice) = self.failure.text(i) {
+                if choice == test.failure_result {
+                    self.failure.set_value(i);
+                }
+                i += 1;
             }
-            i += 1;
         }
+        self.show_controls();
     }
     /// Fills the UI with data to edit the tests
     pub fn populate(
@@ -233,16 +242,36 @@ impl TestEditor {
             }
         }
         if set {
-            // TODO hide the UI if there is nothing to edit
-            self.expression_left.buffer().unwrap().set_text("");
-            self.expression_right.buffer().unwrap().set_text("");
-            self.name.set_label("");
-            self.comparison.set_value(0);
-            self.success.set_value(-1);
-            self.success.clear();
-            self.failure.set_value(-1);
-            self.failure.clear();
+            self.hide_controls();
         }
+    }
+    /// Hides controls customizing the test
+    fn hide_controls(&mut self) {
+        self.expression_left.hide();
+        self.expression_right.hide();
+        self.name.hide();
+        self.comparison.hide();
+        self.success.hide();
+        self.failure.hide();
+        self.success_label.hide();
+        self.failure_label.hide();
+        self.expression_left.buffer().unwrap().set_text("");
+        self.expression_right.buffer().unwrap().set_text("");
+        self.name.set_label("");
+        self.comparison.set_value(0);
+        self.success.set_value(-1);
+        self.failure.set_value(-1);
+    }
+    /// Shows controls for test customization
+    fn show_controls(&mut self) {
+        self.expression_left.show();
+        self.expression_right.show();
+        self.name.show();
+        self.comparison.show();
+        self.success.show();
+        self.failure.show();
+        self.success_label.show();
+        self.failure_label.show();
     }
     /// Returns text of currently selected item, or None if nothing is selected
     fn selected(&self) -> Option<String> {

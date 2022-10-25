@@ -35,6 +35,9 @@ pub struct ResultEditor {
     effect: Frame,
     next_page: fltk::menu::Choice,
     effect_value: TextEditor,
+    next_page_label: Frame,
+    butt_rec: Button,
+    butt_nam: Button,
 }
 
 impl ResultEditor {
@@ -97,7 +100,7 @@ impl ResultEditor {
         let mut butt_rem_effect = Button::new(x_rem, y_butt_mod, w_butt, h_butt, None); // no add or rename because the names are constant and you add in other controls
 
         let name = Frame::new(x_column_2, y_name, w_column_2, h_line, "Name");
-        Frame::new(
+        let next_page_label = Frame::new(
             x_column_2,
             y_page - font_size,
             w_column_2,
@@ -194,6 +197,9 @@ impl ResultEditor {
             name,
             effect,
             next_page,
+            next_page_label,
+            butt_rec,
+            butt_nam,
             effect_value: expression,
         }
     }
@@ -289,6 +295,7 @@ impl ResultEditor {
         }
         self.name.set_label(&res.name);
         self.populate_side_effects(res);
+        self.show_controls();
     }
     /// Fills out the editor with story result data and selects the first element if present
     fn populate_results(&mut self, res: &HashMap<String, StoryResult>) {
@@ -303,10 +310,7 @@ impl ResultEditor {
             }
         }
         if set {
-            self.name.set_label("No Results");
-            self.selector_effects.clear();
-            self.effect_value.buffer().unwrap().set_text("");
-            self.effect.set_label("No Side Effects");
+            self.hide_controls();
         }
     }
     /// Fills the next page choice dropdown with page names
@@ -325,12 +329,36 @@ impl ResultEditor {
                 self.effect.set_label(e.0);
                 self.effect_value.buffer().unwrap().set_text(e.1);
                 set = false;
+                self.show_effects();
             }
         }
         if set {
-            self.effect.set_label("No Side Effects");
-            self.effect_value.buffer().unwrap().set_text("");
+            self.hide_effects();
         }
+    }
+    fn show_controls(&mut self) {
+        self.name.show();
+        self.next_page_label.show();
+        self.next_page.show();
+        self.butt_nam.show();
+        self.butt_rec.show();
+    }
+    fn hide_controls(&mut self) {
+        self.name.hide();
+        self.next_page_label.hide();
+        self.next_page.hide();
+        self.butt_nam.hide();
+        self.butt_rec.hide();
+        self.effect.hide();
+        self.effect_value.hide();
+    }
+    fn show_effects(&mut self) {
+        self.effect.show();
+        self.effect_value.show();
+    }
+    fn hide_effects(&mut self) {
+        self.effect.hide();
+        self.effect_value.hide();
     }
     /// tests if a side effect already exists in the story result
     fn contains_side_effect(&self, name: &str) -> bool {
@@ -577,6 +605,7 @@ impl ResultEditor {
             }
             self.effect.set_label(&se);
             self.effect_value.buffer().unwrap().set_text(v);
+            self.show_effects();
         } else {
             println!("SideEffect Load error: couldn't find the effect to load");
         }
