@@ -10,6 +10,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::vec::Vec;
 
+#[derive(Debug)]
 pub enum FileError {
     LoadingFailure(PathBuf),
     ParsingFailure(PathBuf, ParsingError),
@@ -31,12 +32,10 @@ macro_rules! paths {
             .iter()
             .collect::<PathBuf>(),
             [".", "data", $path].iter().collect::<PathBuf>(),
-            ["usr", "share", PROJECT_PATH_NAME, $path]
-                .iter()
-                .collect::<PathBuf>(),
         ]
     };
 }
+pub(crate) use paths;
 
 impl Display for FileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -135,9 +134,26 @@ pub fn is_adventure_on_path(path: &PathBuf) -> bool {
 }
 /// Tests if the path is within a path from adventures can be read
 pub fn is_on_adventure_path(path: &PathBuf) -> bool {
-    for p in paths!("books") {
-        if path.starts_with(p) {
+    let expected_paths = paths!("books").map(|x| {
+        if x.is_absolute() {
+            return x;
+        } else {
+            if let Ok(p) = x.canonicalize() {
+                return p;
+            } else {
+                unreachable!()
+            }
+        }
+    });
+    if path.is_absolute() {
+        if expected_paths.iter().any(|x| path.starts_with(x)) {
             return true;
+        }
+    } else {
+        if let Ok(p) = path.canonicalize() {
+            if expected_paths.iter().any(|x| p.starts_with(x)) {
+                return true;
+            }
         }
     }
     false
