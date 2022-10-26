@@ -10,3 +10,5 @@ Main benefit for this would be to allow storing multiple adventures within a git
 There need to be some way to automatically check for any issues or unused elements in the pages.
 ** TODO Autosave
 There are situations where the program may close unexpectedly. Every save operation should be committed to drive to prevent loss of work.
+* Known issues
+None so far

@@ -230,8 +230,8 @@ impl ChoiceEditor {
     /// Event response that adds an element to choice list
     pub fn add_choice(&mut self, choices: &mut Vec<Choice>) {
         // save the old selection if it exists
-        let selected = self.selector.value();
-        if selected > 0 {
+        let selected = self.selector.value() - 1;
+        if selected >= 0 {
             self.save_choice(choices, Some(selected as usize));
         }
 
