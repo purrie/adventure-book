@@ -21,15 +21,14 @@ pub fn render_page(
         Ok(p) => p,
         Err(e) => return Err(GameError::FileError(e)),
     };
-    let story = match parse_story_text(&page.story, &adventure.records, &adventure.names) {
-        Ok(s) => s,
-        Err(e) => return Err(e),
-    };
-    let choices;
-    match parse_choices(&page.choices, &page.conditions, &adventure.records, rand) {
-        Ok(v) => choices = v,
-        Err(e) => return Err(e),
-    }
+    let story = parse_keywords(&page.story, &adventure.records, &adventure.names)?;
+    let choices = parse_choices(
+        &page.choices,
+        &page.conditions,
+        &adventure.records,
+        &adventure.names,
+        rand,
+    )?;
 
     main_window.game_window.fill_choices(choices);
     main_window.game_window.fill_records(&adventure.records);
@@ -37,7 +36,7 @@ pub fn render_page(
     Ok(page)
 }
 /// Parses supplied text and returns string with tags replaced with their values as found in records and names maps
-fn parse_story_text(
+fn parse_keywords(
     story_text: &String,
     records: &HashMap<String, Record>,
     names: &HashMap<String, Name>,
@@ -48,13 +47,10 @@ fn parse_story_text(
     while let Some(caps) = reg.captures(&res) {
         let whole = caps.get(0).unwrap();
         let name = caps.get(1).unwrap();
-        if records.contains_key(name.as_str()) {
-            res.replace_range(
-                whole.range(),
-                &records.get(name.as_str()).unwrap().value_as_string(),
-            );
-        } else if names.contains_key(name.as_str()) {
-            res.replace_range(whole.range(), &names.get(name.as_str()).unwrap().value);
+        if let Some(rec) = records.get(name.as_str()) {
+            res.replace_range(whole.range(), &rec.value_as_string());
+        } else if let Some(name) = names.get(name.as_str()) {
+            res.replace_range(whole.range(), &name.value);
         } else {
             return Err(GameError::ParsingError(ParsingError::MissingRecord(
                 name.as_str().to_string(),
@@ -63,11 +59,24 @@ fn parse_story_text(
     }
     Ok(res)
 }
-/// Goes over all choices, evaluating their conditions and returns a list of bool and string tuples, representing whatever the choice meets conditions and the text of the choice
+
+/// Parses choices for availability and keywords
+///
+/// The function tests if the choice is available based on its condition.
+/// Then it evaluates all keywords found within the choice text
+///
+/// # Error
+///
+/// The function will result in error if any condition evaluation results in an error
+///
+/// The function will result in error if the condition a choice is set to isn't present in the conditions hashmap
+///
+/// The function will also fail if parsing keywords in choice text fails
 fn parse_choices(
     choices: &Vec<Choice>,
     conditions: &HashMap<String, Condition>,
     records: &HashMap<String, Record>,
+    names: &HashMap<String, Name>,
     rand: &mut Random,
 ) -> Result<Vec<(bool, String)>, GameError> {
     let mut res = Vec::new();
@@ -80,13 +89,13 @@ fn parse_choices(
                     Err(e) => return Err(GameError::EvaluationError(e)),
                 }
             } else {
-                // TODO probably error handlign in case condition doesn't exist
-                enabled = false;
+                return Err(GameError::ConditionNotFound(choice.condition.clone()));
             }
         } else {
             enabled = true;
         }
-        res.push((enabled, choice.text.clone()));
+        let text = parse_keywords(&choice.text, records, names)?;
+        res.push((enabled, text));
     }
 
     Ok(res)
@@ -97,6 +106,7 @@ pub enum GameError {
     EvaluationError(EvaluationError),
     ParsingError(ParsingError),
     FileError(FileError),
+    ConditionNotFound(String),
 }
 
 #[derive(Clone)]
@@ -118,6 +128,9 @@ impl Display for GameError {
             GameError::EvaluationError(e) => write!(f, "{}", e),
             GameError::ParsingError(e) => write!(f, "{}", e),
             GameError::FileError(e) => write!(f, "{}", e),
+            GameError::ConditionNotFound(e) => {
+                write!(f, "Condition {} have not been found in the page", e)
+            }
         }
     }
 }
@@ -131,7 +144,7 @@ mod tests {
         evaluation::Random,
     };
 
-    use super::{parse_choices, parse_story_text};
+    use super::{parse_choices, parse_keywords};
 
     #[test]
     fn story_text_parsing() {
@@ -164,7 +177,7 @@ mod tests {
             },
         );
 
-        let res = parse_story_text(&story, &records, &names).unwrap();
+        let res = parse_keywords(&story, &records, &names).unwrap();
         assert_eq!(res, expected);
     }
     #[test]
@@ -185,10 +198,11 @@ mod tests {
                 name: "con".to_string(),
             },
         );
+        let names = HashMap::new();
         let records = HashMap::new();
         let mut rand = Random::new(69420);
 
-        let res = parse_choices(&choices, &conditions, &records, &mut rand).unwrap();
+        let res = parse_choices(&choices, &conditions, &records, &names, &mut rand).unwrap();
         for r in res {
             assert!(r.0);
             assert_eq!(r.1, "Choose".to_string());
@@ -218,8 +232,9 @@ mod tests {
             },
         );
         let records = HashMap::new();
+        let names = HashMap::new();
 
-        let res = parse_choices(&choices, &conditions, &records, &mut rand).unwrap();
+        let res = parse_choices(&choices, &conditions, &records, &names, &mut rand).unwrap();
         for r in res {
             assert_eq!(r.0, lv > rv);
             assert_eq!(r.1, "Choose".to_string());
