@@ -25,10 +25,12 @@ use crate::{
 pub struct ChoiceEditor {
     selector: SelectBrowser,
     text: TextEditor,
-    controls: Group,
     condition: Dropdown,
     test: Dropdown,
     result: Dropdown,
+    condition_label: Frame,
+    test_label: Frame,
+    result_label: Frame,
 }
 
 impl ChoiceEditor {
@@ -72,21 +74,19 @@ impl ChoiceEditor {
         let mut butt_add = Button::new(x_butt_add, y_butt, w_butt, h_butt, "@+");
         let mut butt_rem = Button::new(x_butt_rem, y_butt, w_butt, h_butt, None);
 
-        let controls = Group::new(x_menu, y_menu_condition, w_menu, h_selector, None);
         let mut text = TextEditor::new(x_text, y_text, w_text, h_text, "Choice Text");
-        Frame::new(
+        let condition_label = Frame::new(
             x_menu,
-            y_menu_condition - h_menu,
+            y_menu_condition - font_size,
             w_menu,
             h_menu,
             "Condition",
         );
         let condition = Dropdown::new(x_menu, y_menu_condition, w_menu, h_menu, None);
-        Frame::new(x_menu, y_menu_test - font_size, w_menu, h_menu, "Test");
+        let test_label = Frame::new(x_menu, y_menu_test - font_size, w_menu, h_menu, "Test");
         let mut test = Dropdown::new(x_menu, y_menu_test, w_menu, h_menu, None);
-        Frame::new(x_menu, y_menu_result - font_size, w_menu, h_menu, "Result");
+        let result_label = Frame::new(x_menu, y_menu_result - font_size, w_menu, h_menu, "Result");
         let mut result = Dropdown::new(x_menu, y_menu_result, w_menu, h_menu, None);
-        controls.end();
         group.end();
 
         let mut bin = SvgImage::from_data(BIN_ICON).unwrap();
@@ -147,23 +147,37 @@ impl ChoiceEditor {
         Self {
             selector,
             text,
-            controls,
             test,
             condition,
             result,
+            condition_label,
+            test_label,
+            result_label,
         }
     }
     /// Hides controls
     ///
     /// Used for hiding the UI when user isn't meant to manipulate it
     fn hide_controls(&mut self) {
-        self.controls.hide();
+        self.condition_label.hide();
+        self.condition.hide();
+        self.test_label.hide();
+        self.test.hide();
+        self.result_label.hide();
+        self.result.hide();
+        self.text.hide();
     }
     /// Displays controls
     ///
     /// Used to display the UI when user adds a new choice to the UI
     fn show_controls(&mut self) {
-        self.controls.show();
+        self.condition_label.show();
+        self.condition.show();
+        self.test_label.show();
+        self.test.show();
+        self.result_label.show();
+        self.result.show();
+        self.text.show();
     }
     /// Clears and readds elements to dropdown menus, refreshing available choices
     ///
