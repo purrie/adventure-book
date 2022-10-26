@@ -67,7 +67,6 @@ fn main() {
                         }
                         main_window.switch_to_adventure_choice();
                     } else {
-                        // TODO display alert saying that no adventures were found
                         signal_error!("Could not find any adventures!");
                         s.send(Event::DisplayMainMenu);
                     }

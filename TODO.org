@@ -1,0 +1,12 @@
+#+title: List of items that would be useful in the project
+
+* General Ideas
+** TODO support nested adventures
+Currently, all adventures need to be within books folder, I want the capture process also consider any subfolder that isn't adventure for capturing.
+
+Main benefit for this would be to allow storing multiple adventures within a git repository to have collections of stories.
+* Editor
+** TODO Error checker
+There need to be some way to automatically check for any issues or unused elements in the pages.
+** TODO Autosave
+There are situations where the program may close unexpectedly. Every save operation should be committed to drive to prevent loss of work.

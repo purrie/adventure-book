@@ -870,7 +870,6 @@ mod tests {
         comp = "<=".into();
         assert_eq!(comp, Comparison::LessEqual);
     }
-    // TODO write test that would make parsing double links in choices invalid, like having two results for example
     #[test]
     fn choice_parse_condition_result() {
         let data = "Do something brave! {condition: brave} {result: proceed}".to_string();

@@ -105,7 +105,6 @@ pub struct EditorWindow {
     /// Map of file name keys and pages on those file names
     pages: HashMap<String, Page>,
 }
-// TODO use cache folder and save pages and metadata in real time to allow crash recovery and editing continuation on accidental application closing
 /// UI governing creation and edition of adventures and individual pages
 impl EditorWindow {
     pub fn new(area: Rect) -> Self {
@@ -267,9 +266,6 @@ impl EditorWindow {
         self.adventure_editor.show();
     }
     fn save_project(&mut self) {
-        // TODO strip unused page and adventure parts, warn user about it
-        // alternative would be to not strip anything to allow resuming work, but instead implement a check-for-errors button
-
         // save any unsaved data
         if self.adventure_editor.active() {
             self.adventure_editor.save(&mut self.adventure);
@@ -314,7 +310,6 @@ impl EditorWindow {
         self.page_editor.load_page(page, &self.adventure);
 
         // loading page elements
-        // TODO hide UI elements on subeditors when nothing is present/selected to avoid confusing users
         self.page_editor
             .conditions
             .populate_conditions(&page.conditions);

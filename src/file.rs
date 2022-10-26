@@ -70,7 +70,6 @@ impl Display for FileError {
 pub fn capture_adventures() -> Vec<Adventure> {
     let mut ret = Vec::<Adventure>::new();
 
-    // TODO support adventures in nested folders
     // going over the paths
     for path in paths!("books") {
         // reading all the directories on path
