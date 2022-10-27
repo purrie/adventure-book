@@ -5,6 +5,8 @@
 Currently, all adventures need to be within books folder, I want the capture process also consider any subfolder that isn't adventure for capturing.
 
 Main benefit for this would be to allow storing multiple adventures within a git repository to have collections of stories.
+** TODO Conditional text in pages
+Would be cool to have text be tied to a condition so pages would be capable of displaying different text based on whatever a condition is met or not
 * Editor
 ** TODO Error checker
 There need to be some way to automatically check for any issues or unused elements in the pages.
