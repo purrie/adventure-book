@@ -285,7 +285,7 @@ impl ChoiceEditor {
             },
             None => match self.selector.value() {
                 0 => return,
-                x => match choices.get_mut(x as usize) {
+                x => match choices.get_mut((x - 1) as usize) {
                     Some(c) => c,
                     None => return,
                 },
