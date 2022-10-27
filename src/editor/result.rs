@@ -216,11 +216,15 @@ impl ResultEditor {
         &self,
         is_record: bool,
         res: &str,
+        se: Option<String>,
         records: &HashMap<String, Record>,
     ) -> Option<String> {
-        let se = match self.selected_side_effect() {
+        let se = match se {
+            None => match self.selected_side_effect() {
+                Some(s) => s,
+                None => return None,
+            },
             Some(s) => s,
-            None => return None,
         };
         let value = self.effect_value.buffer().unwrap().text();
         match value.trim().to_string() {
@@ -301,11 +305,14 @@ impl ResultEditor {
     fn populate_results(&mut self, res: &HashMap<String, StoryResult>) {
         self.selector_results.clear();
         self.selector_results.do_callback();
+        self.selector_effects.clear();
+        self.selector_effects.do_callback();
         let mut set = true;
         for r in res.iter() {
             self.selector_results.add(r.0);
             if set {
                 self.load_result(r.1);
+                self.selector_results.select(1);
                 set = false;
             }
         }
@@ -328,6 +335,7 @@ impl ResultEditor {
             if set {
                 self.effect.set_label(e.0);
                 self.effect_value.buffer().unwrap().set_text(e.1);
+                self.selector_effects.select(1);
                 set = false;
                 self.show_effects();
             }
@@ -424,16 +432,26 @@ impl ResultEditor {
             // or if there's none, exit early
             let se = match self.selected_side_effect() {
                 Some(s) => s,
-                None => return,
+                None => {
+                    println!("No side effect selected to save");
+                    return
+                },
             };
             let is_record = adventure.records.contains_key(&se);
             let value = match self.evaluate_correct_side_effect_value(
                 is_record,
                 &result.name,
+                Some(se.clone()),
                 &adventure.records,
             ) {
                 Some(x) => x,
-                None => return,
+                None => {
+                    println!(
+                        "Save error: couldn't evaluate value of the side effect {} in {}",
+                        se, result.name
+                    );
+                    return;
+                }
             };
             result.side_effects.insert(se, value);
         }
@@ -525,13 +543,14 @@ impl ResultEditor {
     /// Event response that saves effect data from UI into specified side effect
     ///
     /// If no name is provided then it will save into currently selected side effect
-    pub fn save_effect(&mut self, page: &mut Page, adventure: &Adventure, se: Option<String>) {
+    pub fn save_effect(&mut self, results: &mut HashMap<String, StoryResult>, adventure: &Adventure, se: Option<String>) {
         if self.has_side_effects() == false {
+            println!("Error: Tried to save side effect when none is present in the result");
             return;
         }
         // grabbing result
         let res = match self.selected_result() {
-            Some(r) => match page.results.get_mut(&r) {
+            Some(r) => match results.get_mut(&r) {
                 Some(r) => r,
                 None => {
                     println!("Save error: Couldn't find selected result");
@@ -556,7 +575,7 @@ impl ResultEditor {
         };
         let is_record = adventure.records.contains_key(&se);
         let value =
-            match self.evaluate_correct_side_effect_value(is_record, &res.name, &adventure.records)
+            match self.evaluate_correct_side_effect_value(is_record, &res.name, Some(se.clone()), &adventure.records)
             {
                 Some(x) => x,
                 None => {

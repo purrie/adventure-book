@@ -153,9 +153,9 @@ impl EditorWindow {
                         crate::adventure::ParsingError::IncomplatePage(p) => {
                             drop(self.pages.insert(page, p))
                         }
-                        _ => signal_error!("{}", p),
+                        _ => signal_error!("Fatal Error while parsing page {:?}: {}", &page, p),
                     },
-                    _ => signal_error!("{}", e),
+                    _ => signal_error!("Fatal Error while loading a page {}: {}", &page, e),
                 },
             };
         }
@@ -213,7 +213,7 @@ impl EditorWindow {
             Event::SaveSideEffect(se)    => {
                 self.page_editor
                     .results
-                    .save_effect(page_mut!(self), &self.adventure, se)
+                    .save_effect(&mut page_mut!(self).results, &self.adventure, se)
             }
             Event::LoadSideEffect(se)    => self
                 .page_editor
