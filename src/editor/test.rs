@@ -197,6 +197,7 @@ impl TestEditor {
             .set_text(&test.expression_r);
         self.comparison.set_value(test.comparison.to_index());
         let mut i = 0;
+        self.success.set_value(-1);
         if self.success.size() > 0 {
             while let Some(choice) = self.success.text(i) {
                 if choice == test.success_result {
@@ -206,14 +207,13 @@ impl TestEditor {
                 i += 1;
             }
         }
-        if self.failure.size() > 0 {
-            i = 0;
-            while let Some(choice) = self.failure.text(i) {
-                if choice == test.failure_result {
-                    self.failure.set_value(i);
-                }
-                i += 1;
+        i = 0;
+        self.failure.set_value(-1);
+        while let Some(choice) = self.failure.text(i) {
+            if choice == test.failure_result {
+                self.failure.set_value(i);
             }
+            i += 1;
         }
         self.show_controls();
     }
@@ -363,8 +363,9 @@ impl TestEditor {
             ..Default::default()
         };
         self.selector.add(&name);
-        self.load_ui(&test);
         page.tests.insert(name, test);
+        self.selector.select(self.selector.size());
+        self.selector.do_callback();
     }
     /// Event response that removes a selected test from the page
     ///
