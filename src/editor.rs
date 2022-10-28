@@ -345,6 +345,10 @@ impl EditorWindow {
                 return;
             }
             if let Some(page) = self.pages.remove(&self.current_page) {
+                self.pages
+                    .iter_mut()
+                    .map(|x| x.1.results.iter_mut().filter(|x| x.1.next_page == self.current_page))
+                    .for_each(|x| x.for_each(|x| x.1.next_page = name.clone()));
                 self.file_list.rename_selected(&name);
                 self.pages.insert(name.clone(), page);
                 self.current_page = name;
