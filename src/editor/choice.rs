@@ -238,7 +238,8 @@ impl ChoiceEditor {
         // create a new entry
         let new_choice = Choice::default();
         choices.push(new_choice);
-        self.selector.add(&self.selector.size().to_string());
+        let size = self.selector.size() + 1;
+        self.selector.add(&size.to_string());
         // select and load the new entry
         self.show_controls();
         self.selector.select(self.selector.size());
