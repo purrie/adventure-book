@@ -61,7 +61,7 @@ pub fn evaluate_expression(
         let r: Vec<i32> = match x
             .split(&cut[..])
             .map(|x| {
-                if let Ok(ok) = x.parse() {
+                if let Ok(ok) = x.trim().parse() {
                     Ok(ok)
                 } else {
                     Err(EvaluationError::NotANumber(x.to_string()))
@@ -107,7 +107,7 @@ pub fn evaluate_expression(
             ev1 = 'x';
         } else {
             // if there is no main random number generation keyword then we treat this as a constant value
-            if let Ok(v) = x.parse() {
+            if let Ok(v) = x.trim().parse() {
                 return Ok(v);
             } else {
                 return Err(EvaluationError::NotANumber(x.to_string()));
