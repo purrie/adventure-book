@@ -333,9 +333,8 @@ impl ResultEditor {
         for e in se.side_effects.iter() {
             self.selector_effects.add(e.0);
             if set {
-                self.effect.set_label(e.0);
-                self.effect_value.buffer().unwrap().set_text(e.1);
                 self.selector_effects.select(1);
+                self.selector_effects.do_callback();
                 set = false;
                 self.show_effects();
             }
