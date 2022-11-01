@@ -15,4 +15,4 @@ There need to be some way to automatically check for any issues or unused elemen
 ** TODO Autosave
 There are situations where the program may close unexpectedly. Every save operation should be committed to drive to prevent loss of work.
 * Known issues
-None so far
+** FIXME Titles in play mode are not displayed
