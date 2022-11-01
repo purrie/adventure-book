@@ -202,7 +202,7 @@ impl EditorWindow {
             Event::RenameTest            => self.page_editor.tests.rename(page_mut!(self)),
             Event::AddTest               => self.page_editor.tests.add(&mut page_mut!(self)),
             Event::RemoveTest            => self.page_editor.tests.remove(&mut page_mut!(self)),
-            Event::AddResult             => self.page_editor.results.add(&mut page_mut!(self).results),
+            Event::AddResult             => self.page_editor.results.add(&mut page_mut!(self).results, &self.current_page),
             Event::RenameResult          => self.page_editor.results.rename(page_mut!(self)),
             Event::RemoveResult          => self.page_editor.results.remove(page_mut!(self)),
             Event::SaveResult(res)       => {

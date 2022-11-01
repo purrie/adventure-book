@@ -230,10 +230,12 @@ impl TestEditor {
         self.failure.clear();
         self.selector.clear();
         self.selector.do_callback();
-        for result in results.iter() {
-            self.success.add_choice(result.0);
-            self.failure.add_choice(result.0);
-        }
+        let mut results: Vec<&String> = results.keys().collect();
+        results.sort();
+        results.iter().for_each(|x| {
+            self.success.add_choice(x);
+            self.failure.add_choice(x);
+        });
         for test in tests.iter() {
             self.selector.add(test.0);
             if set {
@@ -355,12 +357,29 @@ impl TestEditor {
             signal_error!("Cannot add {} because it already exists", name);
             return;
         }
+        // Setting default results for the test.
+        // Since the dropdowns are sorted, we have predictable selections
+        // Setting success to last and failure to first element
+        // That is because, in testing, I noticed that results named like
+        // Win, success, return and other that tend to be success results
+        // Those are on end of the list while failures tend to be earlier
+
+        // second last element is actually the last one
+        let success_result = match self.success.text(self.success.size() - 2) {
+            Some(c) => c,
+            None => unreachable!(),
+        };
+        let failure_result = match self.failure.text(0) {
+            Some(c) => c,
+            None => unreachable!(),
+        };
         let test = Test {
             name: name.clone(),
             expression_l: "1d20".to_string(),
             expression_r: "10".to_string(),
             comparison: Comparison::Greater,
-            ..Default::default()
+            success_result,
+            failure_result,
         };
         self.selector.add(&name);
         page.tests.insert(name, test);

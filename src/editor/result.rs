@@ -459,7 +459,7 @@ impl ResultEditor {
         }
     }
     /// Event response that adds a new result into the page collection
-    pub fn add(&mut self, results: &mut HashMap<String, StoryResult>) {
+    pub fn add(&mut self, results: &mut HashMap<String, StoryResult>, default_page: &String) {
         let name = match ask_for_text("Enter name for a new result") {
             Some(n) if n.len() > 0 => n,
             _ => return,
@@ -470,6 +470,7 @@ impl ResultEditor {
         }
         let res = StoryResult {
             name: name.clone(),
+            next_page: default_page.clone(),
             ..Default::default()
         };
         self.selector_results.add(&res.name);
