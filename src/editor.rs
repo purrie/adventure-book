@@ -308,7 +308,7 @@ impl EditorWindow {
     /// Loads current page into UI
     fn load_page(&mut self) {
         let page = page!(self);
-        self.page_editor.load_page(page, &self.adventure);
+        self.page_editor.load_page(page, &self.current_page, &self.adventure);
 
         // loading page elements
         self.page_editor

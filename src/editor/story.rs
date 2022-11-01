@@ -3,7 +3,7 @@ use fltk::{
     draw::Rect,
     group::{Group, Tabs},
     prelude::*,
-    text::{TextBuffer, TextEditor},
+    text::{TextBuffer, TextEditor}, frame::Frame, enums::Align,
 };
 
 use crate::{
@@ -21,6 +21,7 @@ use super::{
 /// Aside from text editors, it has quick insert buttons for inserting records and names into the text
 pub struct StoryEditor {
     group: Group,
+    page_name: Frame,
     title: TextEditor,
     story: TextEditor,
     records: VariableEditor,
@@ -36,6 +37,7 @@ impl StoryEditor {
         let group = Group::new(area.x, area.y, area.w, area.h, None);
 
         let font_size = app::font_size();
+        let h_line = font_size + font_size / 2;
 
         let x_tabs = area.x;
         let y_tabs = area.y;
@@ -68,6 +70,8 @@ impl StoryEditor {
 
         tabs.end();
 
+        let mut page_name = Frame::new(x_tabs, y_tabs, w_tabs - 10, h_line, None);
+
         let records = VariableEditor::new(
             Rect::new(x_records, y_sidepanel, w_sidepanel, h_sidepanel),
             true,
@@ -79,6 +83,7 @@ impl StoryEditor {
 
         group.end();
 
+        page_name.set_align(Align::Inside.union(Align::Right));
         title.set_buffer(TextBuffer::default());
         story.set_buffer(TextBuffer::default());
         story.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
@@ -135,6 +140,7 @@ impl StoryEditor {
 
         Self {
             group,
+            page_name,
             title,
             story,
             records,
@@ -152,7 +158,8 @@ impl StoryEditor {
         self.group.redraw();
         self.group.show();
     }
-    pub fn load_page(&mut self, page: &Page, adventure: &Adventure) {
+    pub fn load_page(&mut self, page: &Page, page_name: &String, adventure: &Adventure) {
+        self.page_name.set_label(page_name);
         self.title.buffer().as_mut().unwrap().set_text(&page.title);
         self.story.buffer().as_mut().unwrap().set_text(&page.story);
 
