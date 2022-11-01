@@ -323,7 +323,9 @@ impl ResultEditor {
     /// Fills the next page choice dropdown with page names
     fn populate_pages(&mut self, pages: &HashMap<String, Page>) {
         self.next_page.clear();
-        pages.iter().for_each(|x| self.next_page.add_choice(x.0));
+        let mut keys: Vec<&String> = pages.keys().collect();
+        keys.sort();
+        keys.iter().for_each(|x| self.next_page.add_choice(x));
     }
     /// populates side effect editor
     fn populate_side_effects(&mut self, se: &StoryResult) {
@@ -433,8 +435,8 @@ impl ResultEditor {
                 Some(s) => s,
                 None => {
                     println!("No side effect selected to save");
-                    return
-                },
+                    return;
+                }
             };
             let is_record = adventure.records.contains_key(&se);
             let value = match self.evaluate_correct_side_effect_value(
@@ -542,7 +544,12 @@ impl ResultEditor {
     /// Event response that saves effect data from UI into specified side effect
     ///
     /// If no name is provided then it will save into currently selected side effect
-    pub fn save_effect(&mut self, results: &mut HashMap<String, StoryResult>, adventure: &Adventure, se: Option<String>) {
+    pub fn save_effect(
+        &mut self,
+        results: &mut HashMap<String, StoryResult>,
+        adventure: &Adventure,
+        se: Option<String>,
+    ) {
         if self.has_side_effects() == false {
             println!("Error: Tried to save side effect when none is present in the result");
             return;
@@ -573,18 +580,21 @@ impl ResultEditor {
             },
         };
         let is_record = adventure.records.contains_key(&se);
-        let value =
-            match self.evaluate_correct_side_effect_value(is_record, &res.name, Some(se.clone()), &adventure.records)
-            {
-                Some(x) => x,
-                None => {
-                    println!(
-                        "Save error: couldn't evaluate value of the side effect {}",
-                        se
-                    );
-                    return;
-                }
-            };
+        let value = match self.evaluate_correct_side_effect_value(
+            is_record,
+            &res.name,
+            Some(se.clone()),
+            &adventure.records,
+        ) {
+            Some(x) => x,
+            None => {
+                println!(
+                    "Save error: couldn't evaluate value of the side effect {}",
+                    se
+                );
+                return;
+            }
+        };
         res.side_effects.insert(se, value);
     }
     /// Event response that loads a side effect by name into the UI
