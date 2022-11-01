@@ -7,6 +7,8 @@ Currently, all adventures need to be within books folder, I want the capture pro
 Main benefit for this would be to allow storing multiple adventures within a git repository to have collections of stories.
 ** TODO Conditional text in pages
 Would be cool to have text be tied to a condition so pages would be capable of displaying different text based on whatever a condition is met or not
+** TODO Dummy choice in pages
+If a page doesn't have any choices declared, the game should create a dummy choice allowing player to exit to menu as page like that would be considered a game over screen.
 * Editor
 ** TODO Error checker
 There need to be some way to automatically check for any issues or unused elements in the pages.
