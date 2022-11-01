@@ -428,33 +428,34 @@ impl ResultEditor {
                     selected
                 );
             }
-
-            // this part saves currently selected side effect
-            // or if there's none, exit early
-            let se = match self.selected_side_effect() {
-                Some(s) => s,
-                None => {
-                    println!("No side effect selected to save");
-                    return;
-                }
-            };
-            let is_record = adventure.records.contains_key(&se);
-            let value = match self.evaluate_correct_side_effect_value(
-                is_record,
-                &result.name,
-                Some(se.clone()),
-                &adventure.records,
-            ) {
-                Some(x) => x,
-                None => {
-                    println!(
-                        "Save error: couldn't evaluate value of the side effect {} in {}",
-                        se, result.name
-                    );
-                    return;
-                }
-            };
-            result.side_effects.insert(se, value);
+            if result.side_effects.len() > 0 {
+                // this part saves currently selected side effect
+                // or if there's none, exit early
+                let se = match self.selected_side_effect() {
+                    Some(s) => s,
+                    None => {
+                        println!("No side effect selected to save");
+                        return;
+                    }
+                };
+                let is_record = adventure.records.contains_key(&se);
+                let value = match self.evaluate_correct_side_effect_value(
+                    is_record,
+                    &result.name,
+                    Some(se.clone()),
+                    &adventure.records,
+                ) {
+                    Some(x) => x,
+                    None => {
+                        println!(
+                            "Save error: couldn't evaluate value of the side effect {} in {}",
+                            se, result.name
+                        );
+                        return;
+                    }
+                };
+                result.side_effects.insert(se, value);
+            }
         }
     }
     /// Event response that adds a new result into the page collection
