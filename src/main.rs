@@ -40,6 +40,7 @@ fn main() {
         "Adventure Book",
     );
     window.make_resizable(true);
+    window.set_xclass("Choose your own adventure");
 
     let mut main_window = MainWindow::create(window_size);
     window.end();
