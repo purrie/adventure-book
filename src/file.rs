@@ -253,6 +253,7 @@ pub fn capture_pages(path: &str) -> Vec<String> {
             res.push(name);
         }
     }
+    res.sort();
     res
 }
 /// Opens a page file and reads its contents, creating Page object
