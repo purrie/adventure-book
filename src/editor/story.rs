@@ -62,9 +62,9 @@ impl StoryEditor {
         text_page.end();
 
         let choices = ChoiceEditor::new(children);
-        let conditions = ConditionEditor::new(children);
-        let tests = TestEditor::new(children);
         let results = ResultEditor::new(children);
+        let tests = TestEditor::new(children);
+        let conditions = ConditionEditor::new(children);
 
         tabs.end();
 
