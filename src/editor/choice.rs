@@ -184,6 +184,7 @@ impl ChoiceEditor {
     /// The function will attempt to reload previously selected choice
     pub fn populate_dropdowns(&mut self, page: &Page) {
         self.condition.clear();
+        self.condition.add_choice(" ");
         page.conditions
             .iter()
             .for_each(|x| self.condition.add_choice(x.0));
@@ -295,8 +296,8 @@ impl ChoiceEditor {
         // saving the data
         choice.text = self.text.buffer().as_ref().unwrap().text();
         choice.condition = match self.condition.choice() {
-            Some(text) => text,
-            None => String::new(),
+            Some(text) if text != " " => text,
+            _ => String::new(),
         };
         choice.test = match self.test.choice() {
             Some(text) => text,
@@ -327,16 +328,20 @@ impl ChoiceEditor {
         if choice.test.len() != 0 {
             let index = self.test.find_index(&choice.test);
             self.test.set_value(index);
+            self.result.set_value(-1);
+            self.result.redraw();
         } else {
             self.test.set_value(-1);
             self.test.redraw();
-        }
-        if choice.result.len() != 0 {
-            let index = self.result.find_index(&choice.result);
-            self.result.set_value(index);
-        } else {
-            self.result.set_value(-1);
-            self.result.redraw();
+
+            if choice.result.len() != 0 {
+                let index = self.result.find_index(&choice.result);
+                self.result.set_value(index);
+            } else {
+                // dunno why, but it seems the second to last element is actually the last one
+                self.result.set_value(self.result.size() - 2);
+                self.result.redraw();
+            }
         }
         self.show_controls();
     }
