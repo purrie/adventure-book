@@ -258,7 +258,8 @@ impl ConditionEditor {
             ..Default::default()
         };
         self.selector.add(&cond.name);
-        self.load_ui(&cond);
+        self.selector.select(self.selector.size());
+        self.selector.do_callback();
         conditions.insert(name, cond);
     }
     /// Event rezponse that renames selected condition
