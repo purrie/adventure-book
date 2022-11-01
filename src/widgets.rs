@@ -90,9 +90,12 @@ impl Selector {
                 let w = wid.w();
                 let h = wid.h();
                 let opt = options.borrow();
-                let line_size = wid.label_size();
+                let label_size = wid.label_size();
+                let line_size = label_size + label_size / 5;
+                let box_size = label_size + label_size / 5;
+                let box_loc = box_size - box_size / 5;
                 let margin = width(" ") as i32;
-                let mut row = y + line_size;
+                let mut row = y + label_size;
                 let sel = selected.borrow();
                 let high = highlight.borrow();
 
@@ -102,15 +105,16 @@ impl Selector {
                         draw_box(
                             FrameType::BorderFrame,
                             x,
-                            row - line_size,
+                            row - box_loc,
                             w,
-                            line_size + line_size / 4,
+                            box_size,
                             Color::Black.lighter(),
                         );
                     }
-                    set_draw_color(Color::Black);
                     if *high == i as i32 {
                         set_draw_color(Color::Blue);
+                    } else {
+                        set_draw_color(Color::Black);
                     }
                     draw_text(&item, x + margin, row);
                     row += line_size;
@@ -126,7 +130,9 @@ impl Selector {
                 let cursor_position = app::event_coords();
                 let cursor_position = (cursor_position.0 - wid.x(), cursor_position.1 - wid.y());
                 let elements = options.borrow().len();
-                let sel = cursor_position.1 / wid.label_size();
+                let label_size = wid.label_size();
+                let line_size = label_size + label_size / 5;
+                let sel = cursor_position.1 / line_size;
 
                 match ev {
                     Event::Push => {
