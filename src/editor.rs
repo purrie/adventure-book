@@ -159,6 +159,7 @@ impl EditorWindow {
                 },
             };
         }
+        self.current_page = String::new();
         self.set_starting_page(self.adventure.start.clone());
     }
     pub fn process(&mut self, ev: Event) {
