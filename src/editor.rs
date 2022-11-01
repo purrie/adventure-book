@@ -162,6 +162,9 @@ impl EditorWindow {
         self.current_page = String::new();
         self.set_starting_page(self.adventure.start.clone());
     }
+    pub fn get_adventure(&self) -> (Adventure, Option<usize>) {
+        (self.adventure.clone(), self.adventure_index)
+    }
     pub fn process(&mut self, ev: Event) {
         match ev {
             Event::Save                  => self.save_project(),

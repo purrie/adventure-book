@@ -45,7 +45,7 @@ fn main() {
     window.end();
     window.show();
 
-    let mut selected_adventure = usize::MAX;
+    let mut selected_adventure = 0;
     let mut active_storybook = Adventure::default();
     let mut active_page = Page::default();
     let mut rng = Random::new(69420);
@@ -60,11 +60,8 @@ fn main() {
                 Event::DisplayAdventureSelect => {
                     if adventures.len() > 0 {
                         main_window.main_menu.fill_adventure_choices(&adventures);
-                        if selected_adventure == usize::MAX {
-                            selected_adventure = 0;
-                            let adventure = &adventures[0];
-                            main_window.main_menu.set_adventure_preview_text(adventure);
-                        }
+                        let adventure = &adventures[selected_adventure];
+                        main_window.main_menu.set_adventure_preview_text(adventure);
                         main_window.switch_to_adventure_choice();
                     } else {
                         signal_error!("Could not find any adventures!");
@@ -204,7 +201,19 @@ fn main() {
                         }
                     }
                 }
-                Event::Editor(e) => main_window.editor_window.process(e),
+                Event::Editor(e) => {
+                    if e == crate::editor::Event::Save {
+                        main_window.editor_window.process(e);
+                        let ret = main_window.editor_window.get_adventure();
+                        if let Some(index) = ret.1 {
+                            adventures[index] = ret.0;
+                        } else {
+                            adventures.push(ret.0);
+                        }
+                    } else {
+                        main_window.editor_window.process(e);
+                    }
+                }
             }
         }
     }
