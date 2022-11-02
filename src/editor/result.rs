@@ -123,13 +123,14 @@ impl ResultEditor {
             let sender = sender.clone();
             let mut old_result: Option<String> = None;
             move |x| {
-                if let Some(text) = x.selected_text() {
-                    if let Some(old) = &old_result {
-                        if old == &text {
-                            return;
-                        }
-                        sender.send(emit!(Event::SaveResult(Some(old.clone()))));
-                    }
+                let new = x.selected_text();
+                if new == old_result {
+                    return;
+                }
+                if let Some(old) = &old_result {
+                    sender.send(emit!(Event::SaveResult(Some(old.clone()))));
+                }
+                if let Some(text) = new {
                     old_result = Some(text.clone());
                     sender.send(emit!(Event::LoadResult(text)));
                 } else {
@@ -141,13 +142,14 @@ impl ResultEditor {
             let sender = sender.clone();
             let mut old_result: Option<String> = None;
             move |x| {
-                if let Some(text) = x.selected_text() {
-                    if let Some(old) = &old_result {
-                        if old == &text {
-                            return;
-                        }
-                        sender.send(emit!(Event::SaveSideEffect(Some(old.clone()))))
-                    }
+                let new = x.selected_text();
+                if new == old_result {
+                    return;
+                }
+                if let Some(old) = &old_result {
+                    sender.send(emit!(Event::SaveSideEffect(Some(old.clone()))))
+                }
+                if let Some(text) = new {
                     old_result = Some(text.clone());
                     sender.send(emit!(Event::LoadSideEffect(text)));
                 } else {
