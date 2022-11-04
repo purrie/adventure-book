@@ -15,7 +15,7 @@ macro_rules! variable_receiver {
     ($widget:expr) => {
         $widget.handle(|w, ev| {
             if ev == fltk::enums::Event::DndRelease {
-                app::paste_text(w);
+                w.paste();
                 return true;
             }
             false
@@ -126,8 +126,8 @@ impl VariableEditor {
                             // and keeps pasting random things from all buffers when you call paste
                             // even when you specify where it should get the text from
                             // so other buffer needs to be cleared
-                            app::copy2("");
-                            app::copy(&create_keyword(&l.label()));
+                            app::copy("");
+                            app::copy2(&create_keyword(&l.label()));
                             app::dnd();
                             true
                         }
