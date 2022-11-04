@@ -286,7 +286,7 @@ impl Page {
                 page.results.insert(res.name.clone(), res);
             } else if story_line {
                 // adding a line to story if it's immediately after story keyword and doesn't match any other keywords
-                page.story = format!("{}\n\n{}", page.story, line);
+                page.story = format!("{}\n{}", page.story, line);
             }
         }
         if page.is_playable() {
