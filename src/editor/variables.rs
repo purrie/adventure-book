@@ -62,6 +62,7 @@ impl VariableEditor {
     pub fn clear(&mut self) {
         self.scroll.clear();
         self.children = 0;
+        self.scroll.redraw();
     }
     /// Adds a new variable to the editor, creating buttons and a label
     ///
