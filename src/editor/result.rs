@@ -127,8 +127,11 @@ impl ResultEditor {
                 if new == old_result {
                     return;
                 }
-                if let Some(old) = &old_result {
-                    sender.send(emit!(Event::SaveResult(Some(old.clone()))));
+                // Blocking save when nothing is loaded in
+                if x.size() > 0 {
+                    if let Some(old) = &old_result {
+                        sender.send(emit!(Event::SaveResult(Some(old.clone()))));
+                    }
                 }
                 if let Some(text) = new {
                     old_result = Some(text.clone());
@@ -146,8 +149,12 @@ impl ResultEditor {
                 if new == old_result {
                     return;
                 }
-                if let Some(old) = &old_result {
-                    sender.send(emit!(Event::SaveSideEffect(Some(old.clone()))))
+                // Blocking save when there's nothing loaded in
+                // This prevents attempt to save right after the selector is repopulated on new result
+                if x.size() > 0 {
+                    if let Some(old) = &old_result {
+                        sender.send(emit!(Event::SaveSideEffect(Some(old.clone()))))
+                    }
                 }
                 if let Some(text) = new {
                     old_result = Some(text.clone());
@@ -161,8 +168,11 @@ impl ResultEditor {
         select_mod.set_selection_color(Color::Blue);
         butt_add_result.set_callback({
             let sender = sender.clone();
+            let sel = select_result.clone();
             move |_| {
-                sender.send(emit!(Event::SaveResult(None)));
+                if sel.size() > 0 {
+                    sender.send(emit!(Event::SaveResult(None)));
+                }
                 sender.send(emit!(Event::AddResult));
             }
         });
@@ -171,14 +181,20 @@ impl ResultEditor {
         butt_rem_effect.emit(sender.clone(), emit!(Event::RemoveSideEffect));
         butt_rec.set_callback({
             let sender = sender.clone();
+            let sel = select_mod.clone();
             move |_| {
-                sender.send(emit!(Event::SaveSideEffect(None)));
+                if sel.size() > 0 {
+                    sender.send(emit!(Event::SaveSideEffect(None)));
+                }
                 sender.send(emit!(Event::AddSideEffectRecord));
             }
         });
         butt_nam.set_callback({
+            let sel = select_mod.clone();
             move |_| {
-                sender.send(emit!(Event::SaveSideEffect(None)));
+                if sel.size() > 0 {
+                    sender.send(emit!(Event::SaveSideEffect(None)));
+                }
                 sender.send(emit!(Event::AddSideEffectName));
             }
         });
