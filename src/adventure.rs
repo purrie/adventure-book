@@ -208,14 +208,18 @@ impl Adventure {
         }
         true
     }
-    pub fn rename_keyword(&mut self, old: &str, new: &str) {
-        if let Some(mut v) = self.records.remove(old) {
-            v.name = new.to_string();
-            self.records.insert(new.to_string(), v);
+    pub fn update_record(&mut self, old: &str, new: Record) {
+        if let Some(_) = self.records.remove(old) {
+            self.records.insert(new.name.clone(), new);
+        } else {
+            println!("Failed to find a record {} to update", old);
         }
-        if let Some(mut v) = self.names.remove(old) {
-            v.keyword = new.to_string();
-            self.names.insert(new.to_string(), v);
+    }
+    pub fn update_name(&mut self, old: &str, new: Name) {
+        if let Some(_) = self.names.remove(old) {
+            self.names.insert(new.keyword.clone(), new);
+        } else {
+            println!("Failed to find a name {} to update", old);
         }
     }
 }

@@ -7,7 +7,7 @@ use fltk::{
 };
 
 use crate::{
-    adventure::{Adventure, Page},
+    adventure::{Adventure, Page, Name, Record},
     editor::variables::variable_receiver,
 };
 
@@ -165,11 +165,11 @@ impl StoryEditor {
 
         self.records.clear();
         for rec in adventure.records.iter() {
-            self.records.add_record(rec.0, true);
+            self.records.add_record(rec.1, true);
         }
         self.names.clear();
         for nam in adventure.names.iter() {
-            self.names.add_record(nam.0, true);
+            self.names.add_name(nam.1, true);
         }
     }
     pub fn save_page(&self, page: &mut Page, adventure: &Adventure) {
@@ -194,12 +194,14 @@ impl StoryEditor {
             self.names.hide();
         }
     }
-    pub fn add_variable(&mut self, name: &String, is_name: bool) {
-        if is_name {
-            self.names.add_record(name, true);
-        } else {
-            self.records.add_record(name, true);
-        }
+    /// Adds a new name to the UI
+    pub fn add_name(&mut self, name: &Name) {
+        self.names.add_name(name, true);
+        self.group.redraw();
+    }
+    /// Adds a new record to the UI
+    pub fn add_record(&mut self, record: &Record) {
+        self.records.add_record(record, true);
         self.group.redraw();
     }
     pub fn clear_variables(&mut self, names: bool) {

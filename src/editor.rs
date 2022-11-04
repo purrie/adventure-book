@@ -176,8 +176,8 @@ impl EditorWindow {
             Event::OpenPage(name)        => self.open_page(name),
             Event::AddRecord             => self.add_keyword(false),
             Event::AddName               => self.add_keyword(true),
-            Event::EditRecord(old)       => self.rename_keyword(old),
-            Event::EditName(old)         => self.rename_keyword(old),
+            Event::EditRecord(old)       => self.rename_keyword(true, old),
+            Event::EditName(old)         => self.rename_keyword(false, old),
             Event::RemoveRecord(name)    => self.remove_keyword(name, false),
             Event::RemoveName(name)      => self.remove_keyword(name, true),
             Event::SaveCondition(cond)   => self
@@ -398,14 +398,14 @@ impl EditorWindow {
     }
     fn add_keyword(&mut self, is_name: bool) {
         if is_name {
-            if let Some(nam) = ask_for_name() {
+            if let Some(nam) = ask_for_name(None) {
                 if is_keyword_valid(&nam.keyword) {
                     if self.adventure.names.contains_key(&nam.keyword) {
                         signal_error!("The keyword {} is already present", nam.keyword);
                         return;
                     }
-                    self.adventure_editor.add_variable(&nam.keyword, true);
-                    self.page_editor.add_variable(&nam.keyword, true);
+                    self.adventure_editor.add_name(&nam);
+                    self.page_editor.add_name(&nam);
                     self.adventure.names.insert(nam.keyword.clone(), nam);
                 } else {
                     signal_error!(
@@ -415,14 +415,14 @@ impl EditorWindow {
                 }
             }
         } else {
-            if let Some(rec) = ask_for_record() {
+            if let Some(rec) = ask_for_record(None) {
                 if is_keyword_valid(&rec.name) {
                     if self.adventure.records.contains_key(&rec.name) {
                         signal_error!("The keyword {} is already present", rec.name);
                         return;
                     }
-                    self.adventure_editor.add_variable(&rec.name, false);
-                    self.page_editor.add_variable(&rec.name, false);
+                    self.adventure_editor.add_record(&rec);
+                    self.page_editor.add_record(&rec);
                     self.adventure.records.insert(rec.name.clone(), rec);
                     self.group.redraw();
                 } else {
@@ -434,39 +434,84 @@ impl EditorWindow {
             }
         }
     }
-    fn rename_keyword(&mut self, old: String) {
-        if let Some(new_name) = ask_for_text(&format!("Renaming {} to?", &old)) {
-            if is_keyword_valid(&new_name) == false {
-                signal_error!("Keyword {} is invalid, use only regular letters", new_name);
-                return;
+    fn rename_keyword(&mut self, is_record: bool, old: String) {
+        // saving unsaved page edits
+        if self.adventure_editor.active() == false {
+            let mut page = page_mut!(self);
+            self.page_editor.save_page(&mut page, &self.adventure);
+            self.page_editor
+                .choices
+                .save_choice(&mut page.choices, None);
+            self.page_editor
+                .tests
+                .save(&mut page_mut!(self).tests, None);
+            self.page_editor
+                .conditions
+                .save(&mut page_mut!(self).conditions, None);
+            self.page_editor
+                .results
+                .save(&mut page_mut!(self).results, None, &self.adventure);
+        }
+        // renaming and updating the records
+        if is_record {
+            // grabbing the old record for default values
+            let rec = match self.adventure.records.get(&old) {
+                Some(r) => r,
+                None => {
+                    println!("Error: Tried to rename a record that doesn't exist: {}", old);
+                    return;
+                }
+            };
+            if let Some(new_rec) = ask_for_record(Some(rec)) {
+                if is_keyword_valid(&new_rec.name) == false {
+                    signal_error!("Keyword {} is invalid, use only regular letters", new_rec.name);
+                    return;
+                }
+                // test for a different name only happens when the name was changed
+                if old != new_rec.name {
+                    if self.adventure.records.contains_key(&new_rec.name) || self.adventure.names.contains_key(&new_rec.name) {
+                        signal_error!("Keyword {} is already used, choose a different name", new_rec.name);
+                        return;
+                    }
+                }
+                self.pages
+                    .iter_mut()
+                    .for_each(|x| x.1.rename_keyword(&old, &new_rec.name));
+                self.adventure.update_record(&old, new_rec);
             }
-            if self.adventure_editor.active() == false {
-                // saving unsaved page edits
-                let mut page = page_mut!(self);
-                self.page_editor.save_page(&mut page, &self.adventure);
-                self.page_editor
-                    .choices
-                    .save_choice(&mut page.choices, None);
-                self.page_editor
-                    .tests
-                    .save(&mut page_mut!(self).tests, None);
-                self.page_editor
-                    .conditions
-                    .save(&mut page_mut!(self).conditions, None);
-                self.page_editor
-                    .results
-                    .save(&mut page_mut!(self).results, None, &self.adventure);
+        } else {
+            // as above, grabbing the name for default values in dialog
+            let nam = match self.adventure.names.get(&old) {
+                Some(n) => n,
+                None => {
+                    println!("Error: Tried to rename a name that doesn't exist: {}", old);
+                    return;
+                }
+            };
+            if let Some(new_nam) = ask_for_name(Some(nam)) {
+                if is_keyword_valid(&new_nam.keyword) == false {
+                   signal_error!("Keyword {} is invalid, use only regular letters", new_nam.keyword);
+                    return;
+                }
+                // test for a different name only happens when the name was changed
+                if old != new_nam.keyword {
+                    if self.adventure.records.contains_key(&new_nam.keyword) || self.adventure.names.contains_key(&new_nam.keyword) {
+                        signal_error!("Keyword {} is already used, choose a different name", new_nam.keyword);
+                        return;
+                    }
+                }
+                self.pages
+                    .iter_mut()
+                    .for_each(|x| x.1.rename_keyword(&old, &new_nam.keyword));
+                self.adventure.update_name(&old, new_nam);
             }
-            self.pages
-                .iter_mut()
-                .for_each(|x| x.1.rename_keyword(&old, &new_name));
-            self.adventure.rename_keyword(&old, &new_name);
+        }
 
-            if self.adventure_editor.active() {
-                self.adventure_editor.load(&self.adventure);
-            } else {
-                self.load_page();
-            }
+        // updating the UI
+        if self.adventure_editor.active() {
+            self.adventure_editor.load(&self.adventure);
+        } else {
+            self.load_page();
         }
     }
     fn remove_keyword(&mut self, name: String, is_name: bool) {
@@ -489,8 +534,8 @@ impl EditorWindow {
                 self.adventure_editor.clear_variables(true);
                 self.page_editor.clear_variables(true);
                 self.adventure.names.iter().for_each(|x| {
-                    self.adventure_editor.add_variable(&x.1.keyword, true);
-                    self.page_editor.add_variable(&x.1.keyword, true);
+                    self.adventure_editor.add_name(&x.1);
+                    self.page_editor.add_name(&x.1);
                 });
             }
         } else {
@@ -512,8 +557,8 @@ impl EditorWindow {
                 self.adventure_editor.clear_variables(false);
                 self.page_editor.clear_variables(false);
                 self.adventure.records.iter().for_each(|x| {
-                    self.adventure_editor.add_variable(&x.1.name, false);
-                    self.page_editor.add_variable(&x.1.name, false);
+                    self.adventure_editor.add_record(&x.1);
+                    self.page_editor.add_record(&x.1);
                 });
             }
         }

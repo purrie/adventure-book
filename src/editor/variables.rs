@@ -1,10 +1,10 @@
 use fltk::{
-    app, button::Button, draw::Rect, frame::Frame, group::Scroll, image::SvgImage, prelude::*,
+    app, button::Button, draw::Rect, frame::Frame, group::Scroll, image::SvgImage, prelude::*, enums::Align,
 };
 type HandleEvent = fltk::enums::Event;
 
 use crate::{
-    adventure::create_keyword,
+    adventure::{create_keyword, Name, Record},
     icons::{BIN_ICON, GEAR_ICON},
 };
 
@@ -15,7 +15,7 @@ macro_rules! variable_receiver {
     ($widget:expr) => {
         $widget.handle(|w, ev| {
             if ev == fltk::enums::Event::DndRelease {
-                w.paste();
+                app::paste_text(w);
                 return true;
             }
             false
@@ -67,8 +67,9 @@ impl VariableEditor {
     /// Adds a new variable to the editor, creating buttons and a label
     ///
     /// variable: Name to display in the editor
+    /// extra: Extra part of the label shown in brackets
     /// inserter: Whatever to create a quick insert button for text editors or not
-    pub fn add_record(&mut self, variable: &String, inserter: bool) {
+    pub fn add_line(&mut self, variable: &String, extra: &String, inserter: bool) {
         let child_count = self.children;
 
         let mut x = self.scroll.x();
@@ -111,6 +112,11 @@ impl VariableEditor {
 
         let mut label = Frame::new(x, y, w, h, None);
         label.set_label(variable);
+
+        let mut extra_label = Frame::new(x, y, w, h, None);
+        extra_label.set_align(Align::Inside.union(Align::Left));
+        extra_label.set_label(&format!("( {} )", extra));
+
         if inserter {
             label.handle({
                 move |l, ev| -> bool {
@@ -135,8 +141,20 @@ impl VariableEditor {
         self.scroll.add(&butt_edit);
         self.scroll.add(&butt_delete);
         self.scroll.add(&label);
+        self.scroll.add(&extra_label);
 
         self.children += 1;
+    }
+
+    pub fn add_record(&mut self, record: &Record, inserter: bool) {
+        let extra = match record.category.as_str() {
+            "" => record.value_as_string(),
+            x => format!("{}, {}", x, record.value_as_string()),
+        };
+        self.add_line(&record.name, &extra, inserter);
+    }
+    pub fn add_name(&mut self, name: &Name, inserter: bool) {
+        self.add_line(&name.keyword, &name.value, inserter);
     }
 
     pub fn show(&mut self) {

@@ -224,21 +224,27 @@ pub fn ask_for_text(label: &str) -> Option<String> {
         true => Some(input.value()),
     }
 }
-pub fn ask_for_record() -> Option<Record> {
+pub fn ask_for_record(record: Option<&Record>) -> Option<Record> {
     let label = "Insert record data";
 
     let mut win = Window::default().with_size(300, 170).with_label(label);
 
     Frame::new(50, 10, 200, 20, None).with_label(label);
-    let name = Input::new(80, 30, 200, 30, "Keyword");
-    let category = Input::new(80, 60, 200, 30, "Category");
-    let value = IntInput::new(80, 90, 200, 30, "Default");
+    let mut name = Input::new(80, 30, 200, 30, "Keyword");
+    let mut category = Input::new(80, 60, 200, 30, "Category");
+    let mut value = IntInput::new(80, 90, 200, 30, "Default");
     let mut butt_accept = Button::new(210, 130, 80, 30, "Accept");
     let mut butt_cancel = Button::new(10, 130, 80, 30, "Cancel");
 
     win.end();
     win.make_modal(true);
     win.show();
+
+    if let Some(rec) = record {
+        name.set_value(&rec.name);
+        category.set_value(&rec.category);
+        value.set_value(&rec.value.to_string());
+    }
 
     let accept = Rc::new(RefCell::new(false));
 
@@ -283,13 +289,13 @@ pub fn ask_for_record() -> Option<Record> {
         _ => None,
     }
 }
-pub fn ask_for_name() -> Option<Name> {
+pub fn ask_for_name(default: Option<&Name>) -> Option<Name> {
     let label = "Input name data";
     let mut win = Window::default().with_size(300, 150).with_label(label);
 
     Frame::new(50, 10, 200, 20, None).with_label(label);
-    let name = Input::new(80, 30, 200, 30, "Keyword");
-    let value = Input::new(80, 60, 200, 30, "Default");
+    let mut name = Input::new(80, 30, 200, 30, "Keyword");
+    let mut value = Input::new(80, 60, 200, 30, "Default");
 
     let mut butt_accept = Button::new(210, 110, 80, 30, "Accept");
     let mut butt_cancel = Button::new(10, 110, 80, 30, "Cancel");
@@ -297,6 +303,11 @@ pub fn ask_for_name() -> Option<Name> {
     win.end();
     win.make_modal(true);
     win.show();
+
+    if let Some(val) = default {
+        name.set_value(&val.keyword);
+        value.set_value(&val.value);
+    }
 
     let accept = Rc::new(RefCell::new(false));
 

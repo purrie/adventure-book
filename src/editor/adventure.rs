@@ -6,7 +6,7 @@ use fltk::{
     text::{TextBuffer, TextEditor},
 };
 
-use crate::adventure::Adventure;
+use crate::adventure::{Adventure, Record, Name};
 
 use super::variables::VariableEditor;
 
@@ -89,13 +89,14 @@ impl AdventureEditor {
             .unwrap()
             .set_text(description);
     }
-    /// Creates a variable UI for a new variable
-    pub fn add_variable(&mut self, name: &String, is_name: bool) {
-        if is_name {
-            self.names.add_record(name, false);
-        } else {
-            self.records.add_record(name, false);
-        }
+    /// Adds a new name to the UI
+    pub fn add_name(&mut self, name: &Name) {
+        self.names.add_name(name, false);
+        self.group.redraw();
+    }
+    /// Adds a new record to the UI
+    pub fn add_record(&mut self, record: &Record) {
+        self.records.add_record(record, false);
         self.group.redraw();
     }
     pub fn clear_variables(&mut self, names: bool) {
@@ -111,11 +112,11 @@ impl AdventureEditor {
         self.set_description(&adventure.description);
         self.records.clear();
         for rec in adventure.records.iter() {
-            self.records.add_record(rec.0, false);
+            self.records.add_record(rec.1, false);
         }
         self.names.clear();
         for nam in adventure.names.iter() {
-            self.names.add_record(nam.0, false);
+            self.names.add_name(nam.1, false);
         }
         self.group.redraw();
     }
