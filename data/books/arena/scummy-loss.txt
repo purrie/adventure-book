@@ -1,0 +1,8 @@
+title: Disgraceful loss
+story: You've tried all the tricks you could, yet the opponent is just stronger, and after a long fight, it's clear you won't be able to win without cheating a little. You grab some sand into your hand and throw it into opponent's face, swinging your weapon right after, yet, he manages to dodge and turn the blow against you, knocking you to the ground. All you've won today is spectator's ire.
+choice: Return to the arena, maybe next time it will work out better for me...{condition: alive}{result: redo}
+choice: This is too much for me...{condition: dead}{result: ded}
+condition: alive;[strength];>;0
+condition: dead;[strength];<=;0
+result: ded;die
+result: redo;recover

@@ -1,0 +1,4 @@
+title: Lack of fame
+story: While you tried going out and interacting with your fans, trying to get people to be more hyped about your matches, you only found mediocre responses and no enthusiasm. Even worse, the only enthusiasm you've met was for your competing gladiators, more fameous than you. You have no choice but to return to the arena and prove them wrong for ignoring you with action.
+choice: They will change their mind once they see me win.{result: back}
+result: back;continue-arena

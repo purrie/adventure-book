@@ -1,0 +1,4 @@
+title: The long rest
+story: While the medics did what they could, the recovery took longer than usual. When you're back at the arena, you can feel the difference in enthusiasm of the spectators and fans. It seems people here are as quick to get to like a gladiator as they are to forget about him.
+choice: Ah, well. I will just have to regain their attention.{result: back}
+result: back;continue-arena

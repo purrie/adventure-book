@@ -1,0 +1,13 @@
+title: At the Arena
+story: You're back at the arena where you await to have your match scheduled.
+choice: Request a strong opponent{condition: grace}{test: challenge}
+choice: Get a regular match{condition: grace}{test: easy}
+choice: Get called by your manager{condition: disgrace}{result: disgrace}
+condition: grace;[fame] + [strength];>=;0
+condition: disgrace;[fame] + [strength];<;0
+test: challenge;1d20 + [fame];>;10;hard;fair
+test: easy;1d20;>;15;easy;fair
+result: fair;fair-battle
+result: disgrace;disgrace
+result: hard;hard-battle
+result: easy;easy-battle

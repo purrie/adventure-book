@@ -1,0 +1,4 @@
+title: Back on your feet
+story: One thing that is certain on the arena is talent of the medics working here. They patch you up and prepare for a next battle quickly and efficiently.
+choice: Now, back to the arena.{result: back}
+result: back;continue-arena

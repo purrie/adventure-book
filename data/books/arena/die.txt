@@ -1,0 +1,3 @@
+title: Grievous wound
+story: Unfortunately, the wound taken in the last battle was too serious and the medics couldn't get it fixed. While you may still want to seek glory in the arena, your condition makes it impossible, forcing you to retire early.
+choice: Unfortunate... your high score is [fame]{result: game over}

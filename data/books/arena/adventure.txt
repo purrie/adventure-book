@@ -1,0 +1,5 @@
+title: The Arena
+description: Enter the arena as a gladiator to seek glory and fame. How far will you be able to go in this career?
+start: start
+record: fame;;0
+record: strength;;5

@@ -1,0 +1,9 @@
+title: Fair Fight
+story: When you enter the arena, you are greeted by a warrior of similar strength and fame to you.
+choice: Face the gladiator in a fair fight{test: battle}
+choice: Attempt to win spectator's favor by extending the combat for as long as you have strength for{test: show}
+test: battle;1d20 + [strength];>;10;win;lose
+test: show;1d20+ [strength];>;10 + [fame];entertain;lose
+result: lose;battle-lost;strength;-1
+result: entertain;entertaining-win;strength;-1;fame;3
+result: win;battle-won;fame;1

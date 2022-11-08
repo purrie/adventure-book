@@ -1,0 +1,9 @@
+title: Entering the arena
+story: You enter the arena, you're armed and ready to battle.
+choice: Challenge the strongest{test: hard}
+choice: Go for an easier match{test: easy}
+test: hard;1d20;>;10;hard;normal
+test: easy;1d20;>;10 + [strength] + [fame];easy;normal
+result: hard;hard-battle
+result: easy;easy-battle
+result: normal;fair-battle

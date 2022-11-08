@@ -1,0 +1,4 @@
+title: A solid win
+story: You fight your opponent, trading blow for blow. He's strong, but you're no pushover either. Soon an opportunity for a finishing strike appears and you put all your strength into it, knocking your opponent to the ground to the cheer of the spectators!
+choice: The glory is mine!{result: back}
+result: back;recover

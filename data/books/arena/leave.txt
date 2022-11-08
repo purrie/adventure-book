@@ -1,0 +1,3 @@
+title: Retirement
+story: You gained a lot of fame and glory in your time in the arena and although the life of a gladiator is satisfying, your rest is well earned. In your time in the arena, you gained [fame] fame and while your fans will miss your fights, they all threw a send off party for you where together with other gladiators and friends, everyone celebrated your achievements.
+choice: Congratulations! Your high score is [fame][strength]{result: game over}

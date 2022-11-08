@@ -1,0 +1,10 @@
+title: Rookie gladiator
+story: When you enter the arena, you realize the management assigned you to fight a rookie. He looks visibly nervous about his first fight. You're fairly confident you can easily defeat him.
+choice: Fight the rookie honorably{test: fight}
+choice: Since the rookie doesn't pose a threat, it would be easy to turn this into a spectacle. The fans will love it.{test: show}
+test: show;1d20 + [fame];>;10;win show;loss show
+test: fight;1d20 + [strength];>;10;win;loss
+result: loss;rookie-loss;strength;-1
+result: win show;rookie-show;fame;2
+result: win;rookie-win;fame;1
+result: loss show;rookie-bully;fame;-2

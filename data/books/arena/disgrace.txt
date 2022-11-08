@@ -1,0 +1,3 @@
+title: Disgrace
+story: You're called to meet with your manager at the Arena. When you meet him, he doesn't have a good expression on his face. He doesn't beat around the bushes. The spectators either hate you or don't care to the point where the arena seats are empty for your matches. He is forced to retire you from the arena and wishes you best of look as far from here as possible.
+choice: Unfortunate. Your final score is [fame]{result: game over}

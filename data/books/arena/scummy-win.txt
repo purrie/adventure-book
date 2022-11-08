@@ -1,0 +1,4 @@
+title: Dirty Fighting
+story: You've tried all the tricks you could, yet the opponent is just stronger, and after a long fight, it's clear you won't be able to win without cheating a little. You grab some sand into your hand and throw it into opponent's face, swinging your weapon right after. The sand manages to distract your opponent long enough to get a couple good hits in to turn the advantage to your side and within a couple minutes, your opponent is down on the ground, defeated.
+choice: Win is a win, and that is all that matters{result: back}
+result: back;recover

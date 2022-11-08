@@ -1,0 +1,4 @@
+title: Party
+story: You go out to meet and hangout with your fans and are met with warm reception as people quickly gather to celebrate your recent battles. You spend the whole day and then the night drinking, eating and exchanging stories with everyone. It refreshes your spirit and invitorates fan interest in you.
+choice: Now it's time to entertain the fans on the arena.{result: back}
+result: back;continue-arena

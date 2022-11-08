@@ -1,0 +1,4 @@
+title: Gym
+story: The arena gym is well socked with many pieces of equpiment and sparring mats to train every single skill a gladiator may need to perform well here. While you put all your strength into your training regiment and exercised plenty you realize it will take more time to actually see the improvement.
+choice: Maybe next time{result: back}
+result: back;continue-arena

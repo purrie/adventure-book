@@ -1,0 +1,4 @@
+title: Entertained Crowd
+story: You put out a great show, starting with a fairly even match with the other gladiator. He noticed your efforts and played along to get the crowd going. Cheers were echoing throughout the arena with each traded blow. As the battle reached its climax, both of you started fighting more seriously, trying to reap the glory of your battle, each for their own. While your opponent was skilled, either through luck or your own skill, you managed find the advantage you need and struck him off his feet, leaving you as the victor of this arena battle.
+choice: Get some well deserved rest.{result: return}
+result: return;recover

@@ -1,0 +1,8 @@
+title: Loss
+story: You trade blows with your opponent one after another. He's strong and each moment your strengths escape you and it's clear which way the fight will go. You try your best but exhausted, you let your guard down and he delivers a final blow, knocking you to the ground.
+choice: Leave the arena, for now{condition: alive}{result: redo}
+choice: This is too much for me...{condition: dead}{result: dead}
+condition: dead;[strength];<=;0
+condition: alive;[strength];>;0
+result: dead;die
+result: redo;recover

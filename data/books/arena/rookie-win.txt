@@ -1,0 +1,4 @@
+title: Easy win
+story: You trade blows with the rookie, not letting him find any purchase in the battle. He doesn't have enough experience to pace himself properly and the scales turn to your side quickly. It's almost pitiful, this isn't a good way of gaining fame here. Win is a win nonetheless.
+choice: Back to the barracks{result: back}
+result: back;recover

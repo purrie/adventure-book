@@ -1,0 +1,8 @@
+title: Shameful Display
+story: You underestimate the rookie and don't put your whole skill into the fight, and he quickly takes advantage of it. By the time you realize what's happening, you're at severe disadvantage and with each blow traded you feel yourself pushed back more and more. You throw yourself forth at the rookie in desperate last strike to turn the tables on him but you're too exhausted to put enough strength into it, and he parries your strike, knocking you to the ground with a counterattack.
+choice: Disgrace...{condition: alive}{result: return}
+choice: This isn't how it's supposed to end...{condition: dead}{result: ded}
+condition: dead;[strength];<=;0
+condition: alive;0;>;0
+result: return;recover
+result: ded;die

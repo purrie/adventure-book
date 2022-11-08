@@ -1,0 +1,4 @@
+title: Mentoring
+story: You pretend to face the rookie seriously, trading blows and swinging your weapon in flashy and extravagant way. While the other guy is a novice, he realizes what you're doing and plays along, he seems more relaxed seeing you're not out to just beat him into the ground and attempts to copy you. He's somewhat clumsy but the spectators seem to enjoy the fight, you can clearly hear encouraging cheers for the rookie, and many others for yourself, praising you for your skill. In the end, it is clear the rookie while still trying, he won't be able to defeat you as he lacks the stamina to both fight and entertain the crowd and as you noticed his falling strength, you delivered a final blow, knocking him down to the cheers of the crowd.
+choice: I may have new fans now, and not only in the spectators.{result: back}
+result: back;recover

@@ -1,0 +1,4 @@
+title: Training montage
+story: The arena gym is well socked with many pieces of equpiment and sparring mats to train every single skill a gladiator may need to perform well here. And you're going to take full advantage of it. You lift weights, swing weapons and spar with your fellow gladiators. While tiring, it feels good and you can clearly feel the effects as the exercises leave you stronger.
+choice: Beefcake!{result: back}
+result: back;continue-arena

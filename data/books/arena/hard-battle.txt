@@ -1,0 +1,10 @@
+title: Tough opponent
+story: You enter the arena and are met with a formidable looking opponent.
+choice: Fight fairly even if it means a loss{test: fair}
+choice: Do everything you can to win.{test: scummy}
+test: fair;1d20 + [strength];>;15 + [fame];win;lose
+test: scummy;1d20 + [strength];>=;10 + [fame];win scummy;lose scummy
+result: win scummy;scummy-win;fame;1
+result: lose scummy;scummy-loss;fame;-1;strength;-1
+result: lose;battle-lost;strength;-1
+result: win;battle-won;fame;2

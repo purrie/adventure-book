@@ -1,0 +1,4 @@
+title: Bully
+story: While you intended to turn this into spectacle, the other gladiator didn't get a clue and tried fighting you seriously. Lacking strength tho, he didn't manage to do much more than throw desperate fit for unreachable goal. The cheers that greeted you when you entered the arena slowly turned into booing as the fight started looking more and more like bullying the poor rookie rather than a spectacle for entertainment. Having no other choice, you cut him down and retreat from the arena.
+choice: Am I the baddie?{result: back}
+result: back;recover

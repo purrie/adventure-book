@@ -1,0 +1,22 @@
+title: At the arena barracks
+story: You're back in your room, enjoying some rest in between matches. Through gossip and conversations with your peers, you can asses your fame is rated at [fame]. You can feel like you can continue fighting as a gladiator, your condition making you feel like you're [strength] men strong.
+choice: Schedule a next match{result: battle}
+choice: Visit the medics to tend to your wounds{condition: can recover}{test: recovery}
+choice: Train at the gym{condition: can train}{test: train}
+choice: Meet with your fans{condition: fame}{test: show}
+choice: Retire, enjoying the earned glory{condition: retirement}{result: retire}
+condition: retirement;[fame];>;5
+condition: fame;[fame];>;0
+condition: can train;[strength];>=;5
+condition: can recover;[strength];<;5
+test: train;1d20;>;11 + [strength];training;trainno
+test: show;1d20 + [fame];>;15;fanservice;fanflat
+test: recovery;1d20;>=;20 - [strength];recover;weak recover
+result: recover;recover-speedy;strength;1
+result: fanservice;show-on;fame;1
+result: trainno;train-bad
+result: battle;continue-arena
+result: weak recover;recover-late;strength;1;fame;-1
+result: retire;leave
+result: training;train;strength;1
+result: fanflat;show-off
