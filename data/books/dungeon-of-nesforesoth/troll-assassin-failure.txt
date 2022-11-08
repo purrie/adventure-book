@@ -1,0 +1,4 @@
+title: Teeth in the Night
+story: You draw your [weapon] and sneak up to the beast, walking right up to its ugly face. It seems to be sleeping, somewhat restlessly, you know you don't have time to hesitate now that you're here. You lift your weapon and as you are about to drive it into troll's neck, you see its eyes snap open and fix on you. The sight is startling enough to give you a pause, long enough that the troll takes advantage of it immediately, swiping its clawed hands at you.
+choice: Oh no...{result: hurtin}
+result: hurtin;troll-fight-hurt;Health;-2d3 + [Armor]

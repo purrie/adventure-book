@@ -1,0 +1,4 @@
+title: Blade in the Dark
+story: You draw your [weapon] and sneak up to the beast, walking right up to its ugly face. It seems to be sleeping, somewhat restlessly, you know you don't have time to hesitate now that you're here. You lift your weapon and drive it at troll's neck, intending to slay it before it can react. A great roar echoes throughout the halls as the troll is startled awake with your blade piercing its skin. Its flesh is tough tho so you don't manage to slice its throat good enough. The beast is bleeding a lot but it lifted itself up and intends to retaliate. Even if the wound is enough to make it bleed to death, you still need to defend yourself before the creature expires.
+choice: You raise your [weapon] and prepare for combat.{result: game over}
+result: attack;troll-fight-attack

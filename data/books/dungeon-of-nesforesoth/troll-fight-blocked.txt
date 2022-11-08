@@ -1,0 +1,4 @@
+title: Out of the way
+story: You can see the troll's claws literally fly right in front of your face as you move back, just outside of its reach. The sight reminds you that this isn't some play and the thing could kill you with one good placed hit.
+choice: Put your guts into it and get back to fight.{result: back}
+result: back;troll-fight-attack

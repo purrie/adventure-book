@@ -1,0 +1,4 @@
+title: Loot Goblin
+story: You keep stuffing your pack with coins and gems until you can fit no more. You put your pack back on and move towards the doors. The overstuffed backpack bulging comicly on your back but you manage to carry it out of the room and then lock the door behind you without the troll noticing anything. You congratulate yourself on job well done, outsmarting dragon's guardian and now you can continue forth towards the main objective for which you're here.
+choice: Onwards.{result: go}
+result: go;prison

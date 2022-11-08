@@ -1,0 +1,4 @@
+title: Defense
+story: You move yourself out of the way and use your [weapon] to deflect the razor sharp claws safely  away from yourself. The creature hisses at you with disapproval.
+choice: It's your time to strike at the creature.{result: back}
+result: back;monsters-attack

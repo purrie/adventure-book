@@ -1,0 +1,14 @@
+title: Dungeon of Nesforesoth
+description: Evil dragon Nesforesoth has been terrorising surrounding lands, burning villages and slaughtering travelers. Local lord has hired you to act as his hero to slay the beast.
+start: intro
+record: Weapon Power;Hero;6
+record: Health;Hero;10
+record: Armor;Hero;2
+record: peasants;hidden;0
+record: monsters health;hidden;6
+record: treasure;hidden;0
+record: troll;hidden;20
+record: Stamina;Hero;10
+name: evil wizard;Scorchikus the Mad
+name: dragon;Nesforesoth
+name: weapon;sword

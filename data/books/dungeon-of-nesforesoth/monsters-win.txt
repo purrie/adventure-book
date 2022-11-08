@@ -1,0 +1,4 @@
+title: Silence falls again
+story: You turn towards where you thought another monster was, but see none. Panicked that it may have snuck behind you, you turn and see nothing. It takes a moment of looking around until you realize the halls of this place are silent again now and you're surrounded by corpses of no longer living creatures. If any survived, they chose to escape with their lives rather than fight. You're free to continue.
+choice: You see light coming from behind the wooden doors down the path, investigate it.{result: reward}
+result: reward;alchemy

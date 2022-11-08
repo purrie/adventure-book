@@ -1,0 +1,6 @@
+title: Poison after all...
+story: You take a sip from the bottle but before you finish it, you start gagging and spit it out as you can feel your body burning and trying to clear itself from this filth. It was a wrong decision. It seems these potions are too strong for you, you can't handle these potions...
+
+After you finish vomiting the viscus liquid together with your lunch, you collect yourself from the floor. Even glance in direction of those bottles makes you shiver with disgust. You decide to leave before you get any other silly ideas.
+choice: It makes you wonder for what creature are these potions and how big it must be to handle such a dose.{result: next}
+result: next;troll

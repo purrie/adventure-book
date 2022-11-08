@@ -1,0 +1,10 @@
+title: Trolled
+story: With the last hit, the lumbering monster seems to stumble on its feet. It still growls at you angrily, wanting to tear you to shreds but it seems it reached the limit of its strength and now it falls onto its knees. The rotund body jiggles under the force and is pulled to the ground, smashing gracelessly against the stone floor giving its last breath. Blood pools beneath the massive body. You seem to be safe now.
+choice: Wipe your sweat away and proceed to loot the treasure.{condition: space for treasure}{result: loot}
+choice: Move on deeper into the dungeon.{result: continue}
+choice: This money is not worth it. It only serves as a dead weight. Throw away what you already gathered.{condition: has treasure}{result: discard loot}
+condition: space for treasure;[treasure];<;2
+condition: has treasure;[treasure];>;0
+result: loot;troll-fight-loot;treasure;2 - [treasure]
+result: continue;prison
+result: discard loot;prison;treasure;-[treasure]

@@ -1,0 +1,4 @@
+title: Slow and Steady
+story: Carefully moving forward, you examine the floor and sure you manage to find a pattern to those pressure plates, as long as you know they're there, you can easily spot and avoid them. It does take time to move but at least you're going to cross it in one piece.
+choice: Who knows, there might be use for these traps later. You will just have to be careful.{result: next}
+result: next;monsters

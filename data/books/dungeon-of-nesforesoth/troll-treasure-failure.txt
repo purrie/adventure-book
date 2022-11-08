@@ -1,0 +1,4 @@
+title: Shiny...?
+story: You carefully sneak past the troll, taking care to move as far around him as you can, it takes some time but you reach the gold. You start stuffing your pockets, putting some of it into your bag as a loud snore startles you, turning back, you see the troll's enormous face right behind you, staring at you with hatred as its large clawed hand strikes your back.
+choice: Oh, no...{result: strike}
+result: strike;troll-fight-hurt;Health;-2d3 + [Armor]

@@ -1,0 +1,6 @@
+title: Prison
+story: Leaving the smelly troll room behind, you approach another large and well lit part of the dungeon. Peeking into it carefully, you discover it is actually a prison. The room seems to be empty, lacking any guards so it may be relatively easy to lead the prisoners out of here.
+choice: Examine the prison cells{test: people}
+test: people;[peasants];<=;10;people alive;people dead
+result: people alive;prison
+result: people dead;prison

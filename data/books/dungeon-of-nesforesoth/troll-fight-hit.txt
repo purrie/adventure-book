@@ -1,0 +1,6 @@
+title: Bleeding the Beast
+story: The troll may be big but it's fairly slow and it doesn't take much to dodge his strikes. The fight continues, and now you've found opportunity to strike back, you swing your [weapon] it connects, slashing the monster. It reels back in pain, roaring and grunting.
+choice: Press the advantage!{test: troll}
+test: troll;[troll];>;0;win;fight
+result: fight;troll-fight-attack
+result: win;troll-fight-win

@@ -1,0 +1,4 @@
+title: Well deserved reward
+story: You approach the hoard and start stuffing the coins and other valuables wherever you have free space. If anything, you won't leave this place in poverty.
+choice: Go deeper into the dungeon.{result: continue}
+result: continue;prison

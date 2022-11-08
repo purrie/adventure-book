@@ -1,0 +1,16 @@
+title: troll
+story: You continue through the dungeon, wary of any danger that might await you behind every corner. The dark humid corridors lighten in the distance as you can see a half open large doors. Peeking through it, you're greeted with a large hall, well lighted with many torches. You see the hall opens into two passage ways, one continuing forward, across from the door you entered, and another one to the side from where you can hear what sounds like snoring. Wondering if you've found your target, you sneak up to the door and carefully look through it.
+
+What is revealed to you is a large room with its back being filled with literally a mountain of shining gold coins, various gems and silverware. This must be the dragon's hoard. However, what you see snoring there isn't a dragon, it looks like a troll instead. Its obese body spread across the stone as the giant sleeps all carefree. The troll might be working for the dragon, as a guard for the treasure. Definitely a formidable opponent when faced, fortunately, it's sleeping right now.
+
+This gives you an idea. You could sneak past it and fill your pockets with valuables, this would be a nice bonus to whatever the Lord is going to pay you for this job. However, it would be very dangerous to have your back to the beast and hands deep in gold if it would wake up. You could sneak up to it and stab it but what you know about trolls, it is very unlikely you could kill it even if you got a perfect strike. It would be a tough fight which you're not sure you can afford to have right now. Which leaves you with what your mind calls most sensible choice, closing this doors and locking them so you can continue deeper into the dungeon to do what you were hired to do, save the peasants and slay the dragon.
+choice: Sneak past the troll and enrich yourself.{test: treasure}
+choice: Sneak up to the troll and attempt to kill it.{test: assassin}
+choice: Forget the treasure and lock the door so you can focus on more important task.{result: leave}
+test: treasure;1d20 + [Stamina];>;15;treasure yes;treasure no
+test: assassin;1d20 + [Stamina];>;20;ass yes;ass no
+result: treasure yes;troll-treasure-success;treasure;1
+result: leave;troll-leave
+result: treasure no;troll-treasure-failure
+result: ass yes;troll-assassin-success;troll;-2d[Weapon Power]
+result: ass no;troll-assassin-failure

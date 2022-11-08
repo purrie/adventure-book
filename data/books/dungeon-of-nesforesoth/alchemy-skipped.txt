@@ -1,0 +1,4 @@
+title: Caution always wins
+story: You never know what kind of things mad alchemist may put into their brews. Maybe the fact he's not here means he poisoned himself and was eaten by the monsters. One thing is certain, touching anything here can cause more harm than good.
+choice: Head out to delve deeper into the dungeon.{result: next}
+result: next;troll

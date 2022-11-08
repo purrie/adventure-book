@@ -1,0 +1,10 @@
+title: Miss-Step
+story: You thought you hit one but they're quick little horrors and the one you targeted swiftly dodged to the side and is now jumping at you with its claws and teeth.
+choice: Defend yourself!{test: normal}
+choice: Put all your strength into it and move out of the way.{condition: stamina}{test: hard}
+condition: stamina;[Stamina];>=;2
+test: hard;1d20;>;10;hard defended;hit
+test: normal;1d20;>;14;defended;hit
+result: defended;monsters-blocked
+result: hard defended;monsters-blocked;Stamina;-2
+result: hit;monsters-hurt;Health;-2d2 + [Armor]

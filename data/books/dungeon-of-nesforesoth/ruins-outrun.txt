@@ -1,0 +1,4 @@
+title: Fast as a hare
+story: This trap is old and rusted. You were able to avoid the blade without being aware of it so the best course of action is to just run through as fast as you can and hope the blades will be slow enough to miss you. With the plan formulated in your head, you prepare yourself for the sprint, gauging how long it will be from the slits in the corridor. You get in the position and start running, hearing clicking behind you as blades swing one after another, proving your theory correct, they are too slow for you. Another correct thing is that there were only a few traps and as soon as you're out of their range, you stop to examine your surroundings, and there seem to be no more dangers here. You can proceed.
+choice: Tiring as it is, this was the best way to go about it.{result: next}
+result: next;monsters

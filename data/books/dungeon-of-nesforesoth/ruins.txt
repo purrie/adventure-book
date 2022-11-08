@@ -1,0 +1,14 @@
+title: The Ruin
+story: As you enter the cave and walk inside, you have to light a torch to see anything. And to your surprise, you discover that inside isn't actually a cave, but ruins of a big stone building as the tunel turns into a sizable corridor with masonry walls and ceiling held on impressive albeit dirty stone columns. The size of the passage is large enough for the dragon you've heard about to pass so you're fairly certain this is the correct place, and seeing how deep it seems to be, you grow weary as to what else beside the dragon you could find here.
+
+You wave your torch, illuminating the darkness in front of you, which reveals just how old this place is with rocks crumbling from the walls, old skeletons littering the sides of the hallway. As you walk, you stumble forward as a rock gives way when you stand on it, then you hear a distinct click and instinctively jump back only to be greeted by a massive blade swinging from the ceiling right in front of your face, thankfully, missing you harmlessly. The blade swings a couple more times before it starts ratcheting back into its hiding place in the wall, making old metalic creeky sounds until it disappears in the dark slit. As you take a careful look, you see the hallway in front of you is littered with slits like that. no doubt, hiding more blades only waiting to be sprung at unaware visitor. Looks like this place is a death trap and not just because of the dragon deep within.
+choice: Run past the traps.{test: run}
+choice: Disable the traps.{test: disable}
+choice: Move carefully while avoiding the pressure plates.{test: careful}
+test: run;1d20;>=;8;run;fail
+test: disable;1d20;>=;12;disable;fail
+test: careful;1d20;>=;10;careful;fail
+result: fail;ruins-fail;Health;-3d2 + [Armor]
+result: run;ruins-outrun;Stamina;-1d4
+result: disable;ruins-disable;peasants;1d4
+result: careful;ruins-careful;peasants;1d6

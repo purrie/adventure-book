@@ -1,0 +1,13 @@
+title: Troll Fighting
+story: You stand before the lumbering beast, its claws ready to strike. You keep your [weapon] high, more to keep it handy for strikes when opportunity presents itself rather than for defense. You're fairly certain your only option there is to avoid getting hit, even a grazing hit could prove fatal with a monster this size. You have to wage your options carefully here.
+choice: Go all in, strike it down as fast as you can as time is against you here.{condition: stam}{test: aggro}
+choice: Strike at the troll when opportunity arrises.{test: norm}
+choice: Play this one out carefully, no point in rushing in and getting yourself killed. Strike when it's safe.{test: safe}
+condition: stam;[Stamina];>;0
+test: safe;1d20;>=;8;safe;lose
+test: aggro;1d20 + [Stamina];>=;15;aggressive;lose
+test: norm;1d20 ;>;10;normal;lose
+result: safe;troll-fight-hit;troll;-1d[Weapon Power] + 2
+result: lose;troll-fight-defend
+result: aggressive;troll-fight-hit;troll;-1d[Weapon Power] - 2;Stamina;-1
+result: normal;troll-fight-hit;troll;-1d[Weapon Power]

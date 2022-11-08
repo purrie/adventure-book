@@ -1,0 +1,6 @@
+title: Blood Drawn
+story: This little monster is faster than it looks and before you can see it, you can feel wet liquid spilling from where it struck you and red stain growing from the spot over your clothes.
+choice: Pull away and prepare for a counter attack{test: ded}
+test: ded;[Health];>;0;not dead;dead
+result: dead;death
+result: not dead;monsters-attack

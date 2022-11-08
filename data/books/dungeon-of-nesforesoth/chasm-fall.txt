@@ -1,0 +1,8 @@
+title: Snap!
+story: As you're crossing the bridge, about in the middle of it, one of the planks snap as you rest your weight on it. You grab tightly onto the rope in panic to pull yourself up but the strain is too much and the bridge snaps in two. Fortunately, you're on the correct side as it swings you towards the cave only for you to hit the chasm's wall. All that's left is to climb up to reach the entrance.
+choice: The crash against the wall was painful, you might have broken a rib but you still manage to climb up{result: health}
+choice: As you hit the wall, your sword cracks against the rocks and falls from your scabbard into the darkness, you will have to rely on your trusty dagger from now on{result: weapon}
+choice: The hit against the wall was thankfully absorbed by your armor, tho now, all bent up, it will be more of a danger to wear than help so you will have to discard it for now{result: armor}
+result: armor;ruins;Armor;-2
+result: health;ruins;Health;-1d4
+result: weapon;ruins;weapon;dagger;Weapon Power;-2

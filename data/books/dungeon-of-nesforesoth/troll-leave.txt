@@ -1,0 +1,4 @@
+title: Gold is useless if you die
+story: No amount of money is worth getting killed over and this is too much of a gamble to try. You carefully close the doors, fortunately it didn't make enough noise to wake up the troll. After fiddling with the lock some, you manage to trap the troll inside. You push some furniture in front of the door for the good measure and now you're ready to move on to save the folk.
+choice: You continue deeper into the dungeon.{result: move}
+result: move;prison

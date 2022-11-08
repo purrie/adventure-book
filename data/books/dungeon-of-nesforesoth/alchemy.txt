@@ -1,0 +1,18 @@
+title: Alchemy Lab
+story: You approach the doors and press your ear against it. You hear nothing except for bubbling noises. You peek inside and you discover the room is empty, so you enter.
+
+From the looks of it, this is alchemist's workshop. You can see lots of alchemical ingredients of various creepiness levels, a big cauldron set in the corner of the room with flames licking its sides. There's also a table in the middle with three botles, each labeled with really terrible handwriting that you manage to decipher to what you think is "Health," "Vigor," and "Strength" respectively. 
+
+You know enough about elixirs that you're fairly certain those are finished products and you could drink one to gain its effects for a long time, but drinking more than one in a day would prove fatal. This could be the boon you need to help the kidnapped people, but your instincts make you weary of drinking potions you barely deciphered what they are, especially since whoever brewed them, must be at least on good terms with the dragon and other monsters living here.
+choice: Health Potion{test: health}
+choice: Vigor Potion{test: vigor}
+choice: Strength Potion{test: strength}
+choice: None of  them. Never trust random potions found in a dungeon.{result: skip}
+test: health;1d20;>=;[Health] - 4;health;poisoned
+test: vigor;1d20;>=;[Health] - 4;stamina;poisoned
+test: strength;1d20;>=;[Health] - 4;strength;poisoned
+result: strength;alchemy-used;Weapon Power;2
+result: health;alchemy-used;Health;2d3
+result: poisoned;alchemy-poisoned;Health;-1d4
+result: skip;alchemy-skipped
+result: stamina;alchemy-used;Stamina;2d3

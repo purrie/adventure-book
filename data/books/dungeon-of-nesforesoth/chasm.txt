@@ -1,0 +1,8 @@
+title: The Great Chasm
+story: As you approach the cave entrance, you notice the first obstacle to your quest. Before you spreads a massive chasm with depth drowning in darkness far past what your eyesight allows to see. The chasm has a rope bridge built over it, but it is in dire need of repair as its planks look rotted and ropes deteriorated. It would be a gamble whatever it could hold you, or break under your weight. In the distance, you can see where the ground gets close enough to jump over, but it's fairly far, and you know every moment you waste could result in terrible fate for the kidnapped peasants.
+choice: Risk moving through the bridge{test: bridge}
+choice: You can't save anyone if you're dead yourself, go the long safer way.{result: long}
+test: bridge;1d20;>;10;success;failure
+result: long;chasm-long-way
+result: success;chasm-success
+result: failure;chasm-fall

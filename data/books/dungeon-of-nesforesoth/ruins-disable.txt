@@ -1,0 +1,4 @@
+title: Disabling Strike
+story: This isn't the first trap of this type you've seen and bypassing them is relatively easy and quick. You grab a couple of rocks and trigger the trap. Then, as the blade swings in the center of the corridor, you jam a rock or two into the slit, preventing the trap from resetting. You repeat the process for the next couple of traps and before you know it, the passage is clear and you can continue forth.
+choice: Now you can safely go about this path.{result: next}
+result: next;monsters

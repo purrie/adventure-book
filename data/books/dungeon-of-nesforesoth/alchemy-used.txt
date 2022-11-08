@@ -1,0 +1,4 @@
+title: The Strongest Potions!
+story: You take the bottle and without hesitation, put it against your mouth, drinking the contents. As the liquid spreads throughout your body, you start feeling empowered by it. Looks like you've made the right decision.
+choice: Head forth into battle.{result: next}
+result: next;troll

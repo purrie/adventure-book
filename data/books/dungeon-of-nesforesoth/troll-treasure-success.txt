@@ -1,0 +1,8 @@
+title: Shiny
+story: You carefully sneak past the troll, taking care to move as far around him as you can, it takes some time but you reach the gold. You start stuffing your pockets, putting some of it into your bag as a loud snore startles you, turning back, you see the troll roll over onto the other side... phefh, you're safe, for now. You face the gold pile thinking that you could gather some more but it would be risky. Maybe better to get out of here while you still can?
+choice: No, you're not charity. With it, you could set yourself up for the future.{test: greed}
+choice: Better safe than dead, you carefully sneak out of there.{result: leave}
+test: greed;1d20;>;10;greed;fail
+result: greed;troll-treasure-more;treasure;1
+result: fail;troll-treasure-failure
+result: leave;prison

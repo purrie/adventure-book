@@ -1,0 +1,4 @@
+title: Slashed!
+story: As good as your idea seemed to be, in the end, those traps proved to be better than what you expected and soon enough, one of the blades catches you, slashing your body. The only thing saving you being how dull and unmaintained the trap is. Otherwise you're sure you would be cut in half. As much as you hate the idea, you need to move on and save those folks. You gather your remaining strengths, tend to your wound and keep moving forward.
+choice: All of their hope lays in your hands. Continue on.{result: next}
+result: next;monsters
