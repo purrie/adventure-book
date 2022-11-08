@@ -142,6 +142,7 @@ impl EditorWindow {
     pub fn load_adventure(&mut self, adventure: &Adventure, index: usize) {
         self.adventure = adventure.clone();
         self.adventure_index = Some(index);
+        self.pages.clear();
         let pages = capture_pages(&self.adventure.path);
         self.file_list.populate_pages(&pages);
         self.adventure_editor.load(&self.adventure);
