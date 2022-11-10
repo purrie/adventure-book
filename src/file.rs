@@ -157,7 +157,9 @@ pub fn is_on_adventure_path(path: &PathBuf) -> bool {
     }
     false
 }
+/// Removes a folder with the adventure
 pub fn remove_adventure<P: AsRef<Path>>(path: P) {
+    // TODO this should deliberately delete just the text files to avoid removing things unrelated to the adventure
     match remove_dir_all(path) {
         Ok(_) => {}
         Err(_) => {}
@@ -210,6 +212,9 @@ pub fn save_page(path: &str, file_name: String, serialized_page: String) {
         }
     }
 }
+/// Tests if the file name is valid
+///
+/// there's probably a better way to do it, but for now, it saves a temporary dummy file with the name to drive, if it succeeds, it is considered valid
 pub fn is_valid_file_name(name: &str) -> bool {
     let mut test_path = cache_dir().unwrap();
     test_path.push(PROJECT_PATH_NAME);

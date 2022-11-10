@@ -289,15 +289,23 @@ pub fn evaluate_and_compare(
     }
     return Ok(comp.compare(l, r));
 }
+/// Provides various functionality for generating random semi-predictable numbers
 pub struct Random {
     generator: StdRng,
 }
 impl Random {
+    /// Creates a new random number generator from seed
+    ///
+    /// The numbers have predictable values for the same seed
     pub fn new(seed: u64) -> Self {
         Self {
             generator: StdRng::seed_from_u64(seed),
         }
     }
+    /// Generates a random values between 'amount' and 'amount' times 'sides', simulating rolling that many dice
+    ///
+    /// # Error
+    /// The function will panic if any of the values are less than 1
     pub fn die(&mut self, amount: i32, sides: i32) -> i32 {
         assert!(amount > 0);
         assert!(sides > 0);
@@ -305,6 +313,10 @@ impl Random {
         let max = amount * sides;
         self.generator.gen_range(min..=max)
     }
+    /// Generates a random value 'amount' times in range of 1 to 'sides' and counts how many of those are at or above 'threshold' and returns that count
+    ///
+    /// # Error
+    /// The function will panic if any of the values are less than 1
     pub fn pool(&mut self, amount: i32, sides: i32, threshold: i32) -> i32 {
         assert!(sides > 0);
         assert!(amount > 0);
@@ -317,6 +329,10 @@ impl Random {
         }
         res
     }
+    /// Works as pool() but counts how many results are at or below the threshold
+    ///
+    /// # Error
+    /// The function will panic if any of the values are less than 1
     pub fn pool_reverse(&mut self, amount: i32, sides: i32, threshold: i32) -> i32 {
         assert!(sides > 0);
         assert!(amount > 0);
@@ -330,6 +346,10 @@ impl Random {
         }
         res
     }
+    /// Generates a random number based on 'amount' dice each with 'sides' number of sides, if any comes up as maximum value, it will be rolled again and added to the total
+    ///
+    /// # Error
+    /// The function will panic if any provided values are less than 1
     pub fn die_explode(&mut self, amount: i32, sides: i32) -> i32 {
         assert!(amount > 0);
         assert!(sides > 0);

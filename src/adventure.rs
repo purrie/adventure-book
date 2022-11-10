@@ -10,6 +10,7 @@ use crate::evaluation::{evaluate_and_compare, EvaluationError, Random};
 
 pub const GAME_OVER_KEYWORD: &str = "game over";
 
+/// Describes an error that might have occured during parsing of adventure element
 #[derive(Debug)]
 pub enum ParsingError {
     ValueNaN(String),
@@ -19,6 +20,7 @@ pub enum ParsingError {
     IncomplatePage(Page),
     MissingRecord(String),
 }
+/// Holds basic information about adventure, including records, names and path where all the pages can be loaded from
 #[derive(Default, Clone)]
 pub struct Adventure {
     pub title: String,
@@ -28,17 +30,24 @@ pub struct Adventure {
     pub records: HashMap<String, Record>,
     pub names: HashMap<String, Name>,
 }
+/// Represents a numeric value that is tracked throughout an adventure
+///
+/// It is most useful for branching adventure paths through Tests and Conditions
 #[derive(Clone, PartialEq, Debug)]
 pub struct Record {
     pub category: String,
     pub name: String,
     pub value: i32,
 }
+/// Represents a string value that is displayable within adventure page story and title
+///
+/// It's useful for changing certain words within pages or as a container for titles or names of characters or places that would be typo prone otherwise
 #[derive(Clone, PartialEq, Debug)]
 pub struct Name {
     pub keyword: String,
     pub value: String,
 }
+/// Holds both title and story text for an individual page, as well as choices leading to other pages
 #[derive(Debug, Default)]
 pub struct Page {
     pub title: String,
@@ -48,7 +57,7 @@ pub struct Page {
     pub tests: HashMap<String, Test>,
     pub results: HashMap<String, StoryResult>,
 }
-
+/// Helper enum for comparing two expressions
 #[derive(Debug, Eq, PartialEq, Default)]
 pub enum Comparison {
     #[default]
@@ -59,6 +68,9 @@ pub enum Comparison {
     Equal,
     NotEqual,
 }
+/// Holds information allowing a story page to transition to another page
+///
+/// Results can also hold a list of pairs for mutating adventure records and names allowing those to change in reaction to user choice
 #[derive(Debug, Default, PartialEq)]
 pub struct StoryResult {
     pub name: String,
@@ -66,6 +78,7 @@ pub struct StoryResult {
     /// Consists of keys that are record or name keywords, and unevaluated expressions as values that represent how the records or names are changed
     pub side_effects: HashMap<String, String>,
 }
+/// Holds expressions that based on their evaluation and comparison, lead to two different results of a page.
 #[derive(Debug, Default, PartialEq)]
 pub struct Test {
     pub name: String,
@@ -75,6 +88,9 @@ pub struct Test {
     pub success_result: String,
     pub failure_result: String,
 }
+/// Represents a text available to player as a choice in response to presented story
+///
+/// The choice have either a test or a result that it points to, allowing progression to a different page
 #[derive(Debug, Default, PartialEq)]
 pub struct Choice {
     pub text: String,
@@ -82,6 +98,7 @@ pub struct Choice {
     pub test: String,
     pub result: String,
 }
+/// Holds two expressions and comparison type used in determining whatever a choice is available to be chosen by the player
 #[derive(Debug, Default, PartialEq)]
 pub struct Condition {
     pub name: String,
@@ -89,7 +106,7 @@ pub struct Condition {
     pub comparison: Comparison,
     pub expression_l: String,
 }
-// those are for matching tags in choice so we can figure out which choices should be connected to other elements.
+// those are for matching tags in Choice during parsing from string so we can figure out which choices should be connected to other elements.
 const REGEX_CONDITION_IN_CHOICE: &str = r"\{\s*condition:\s*(\w+(?:\s|\w)*)\s*\}";
 const REGEX_TEST_IN_CHOICE: &str = r"\{\s*test:\s*(\w+(?:\s|\w)*)\s*\}";
 const REGEX_RESULT_IN_CHOICE: &str = r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}";
@@ -98,6 +115,7 @@ const REGEX_RESULT_IN_CHOICE: &str = r"\{\s*result:\s*(\w+(?:\s|\w)*)\s*\}";
 pub fn regex_match_keyword(keyword: &str) -> Result<Regex, regex::Error> {
     regex::Regex::new(&format!(r"\[\s*({})\s*\]", keyword))
 }
+/// Turns a string into a keyword that can be matched within parts of adventure page text
 pub fn create_keyword(keyword: &str) -> String {
     format!("[{}]", keyword)
 }
@@ -175,6 +193,10 @@ impl Adventure {
             return Err(ParsingError::Invalid(text));
         }
     }
+    /// Turns the adventure into a string representation that can be either saved to drive or parsed back into adventure
+    ///
+    /// # Limitations
+    /// Function will not serialize adventure path since those are determined during program start when loading the adventures
     pub fn serialize_to_string(&self) -> String {
         let mut ser = format!(
             "title: {}\ndescription: {}\nstart: {}",
@@ -188,6 +210,7 @@ impl Adventure {
             .for_each(|x| ser = format!("{}\nname: {}", ser, x.1.serialize_to_string()));
         ser
     }
+    /// Tests if the adventure has bare minimum to be considered as loaded
     pub fn is_bare_minimum(&self) -> bool {
         if self.title.len() < 1 {
             return false;
@@ -198,6 +221,7 @@ impl Adventure {
 
         true
     }
+    /// Tests if the adventure has bare minimum information to be considered playable
     pub fn is_playable(&self) -> bool {
         if self.start.len() == 0 {
             return false;
@@ -208,6 +232,7 @@ impl Adventure {
         }
         true
     }
+    /// Updates a keyword of a record to a new one
     pub fn update_record(&mut self, old: &str, new: Record) {
         if let Some(_) = self.records.remove(old) {
             self.records.insert(new.name.clone(), new);
@@ -215,6 +240,7 @@ impl Adventure {
             println!("Failed to find a record {} to update", old);
         }
     }
+    /// Updates a keyword of a name to a new one
     pub fn update_name(&mut self, old: &str, new: Name) {
         if let Some(_) = self.names.remove(old) {
             self.names.insert(new.keyword.clone(), new);
@@ -223,6 +249,7 @@ impl Adventure {
         }
     }
 }
+/// Replaces a regex matched string slices within source with a new string slice
 macro_rules! replace_with_regex {
     ($regex:expr, $source:expr, $new:expr) => {
         if let Some(cap) = $regex.captures(&$source) {
@@ -299,6 +326,7 @@ impl Page {
             Err(ParsingError::IncomplatePage(page))
         }
     }
+    /// Transforms page into a string representation of it, suitable for saving onto drive or parsing back into a page struct
     pub fn serialize_to_string(&self) -> String {
         let mut ser = format!("title: {}\nstory: {}", self.title, self.story);
         self.choices
@@ -315,6 +343,7 @@ impl Page {
             .for_each(|x| ser = format!("{}\nresult: {}", ser, x.1.serialize_to_string()));
         ser
     }
+    /// Tests if the page is playable, meaning it has a story text, and a choice that leads somewhere
     pub fn is_playable(&self) -> bool {
         if self.story.len() < 1 {
             return false;
@@ -331,6 +360,9 @@ impl Page {
         }
         true
     }
+    /// Tests if provided keyword is present within the page or its subcontents
+    ///
+    /// The keyword should be a raw text as the function will turn it into a matchable keyword
     pub fn is_keyword_present(&self, keyword: &str) -> bool {
         let regex = regex_match_keyword(keyword);
         if let Err(_) = regex {
@@ -365,6 +397,9 @@ impl Page {
         }
         false
     }
+    /// Renames all occurances of a keyword within the page and subcomponents to a new string.
+    ///
+    /// Both strings need to be raw keywords as the function will turn them into matchable keywords
     pub fn rename_keyword(&mut self, old: &str, new: &str) {
         let regex = regex_match_keyword(old);
         if let Err(_) = regex {
@@ -428,6 +463,7 @@ impl Choice {
             Err(ParsingError::Invalid(text))
         }
     }
+    /// Transforms the choice into a string representation
     fn serialize_to_string(&self) -> String {
         let mut ser = self.text.clone();
         if self.condition.len() > 0 {
@@ -465,12 +501,15 @@ impl Choice {
     pub fn is_constant(&self) -> bool {
         self.result.len() > 0
     }
+    /// Tests if the choice leads to end of a game
     pub fn is_game_over(&self) -> bool {
         self.result == GAME_OVER_KEYWORD
     }
+    /// Tests if the choice is guarded behind a condition
     pub fn has_condition(&self) -> bool {
         self.condition.len() > 0
     }
+    /// Tests if the choice contains a keyword within its text
     pub fn is_keyword_present(&self, keyword: &str) -> bool {
         let regex = regex_match_keyword(keyword);
         if let Err(_) = regex {
@@ -479,6 +518,7 @@ impl Choice {
         let regex = regex.unwrap();
         regex.is_match(&self.text)
     }
+    /// Renames a keyword within the choice text
     fn rename_keyword(&mut self, regex: &Regex, new: &str) {
         replace_with_regex!(regex, self.text, new);
     }
@@ -516,6 +556,7 @@ impl Display for Comparison {
     }
 }
 impl Comparison {
+    /// Performs a test between two values according to the comparison type
     pub fn compare(&self, lhv: i32, rhv: i32) -> bool {
         match self {
             Comparison::Greater => lhv > rhv,
@@ -543,6 +584,10 @@ impl Comparison {
     }
 }
 impl Condition {
+    /// Creates a Condition reading its data from provided string
+    ///
+    /// # Error
+    /// The string needs to have 4 elements divided by ; to be parsed correctly
     pub fn parse_from_string(text: String) -> Result<Condition, ParsingError> {
         // splitting the text into parts. Expected order of data is name, exp right, comparison, exp left. We filter out empty strings
         let args: Vec<&str> = text
@@ -564,12 +609,14 @@ impl Condition {
             expression_r: args[3].to_string(),
         })
     }
+    /// Transforms the Condition into its string representation
     fn serialize_to_string(&self) -> String {
         format!(
             "{};{};{};{}",
             self.name, self.expression_l, self.comparison, self.expression_r
         )
     }
+    /// Performs an evaluation on itself, evaluating and comparing both left and right side expressions
     pub fn evaluate(
         &self,
         records: &HashMap<String, Record>,
@@ -583,6 +630,7 @@ impl Condition {
             rand,
         )
     }
+    /// Tests if a keyword is present within the condition's expressions
     pub fn is_keyword_present(&self, keyword: &str) -> bool {
         let regex = regex_match_keyword(keyword);
         if let Err(_) = regex {
@@ -594,12 +642,19 @@ impl Condition {
         }
         regex.is_match(&self.expression_r)
     }
+    /// Renames a keyword to a new one within each of condition's expressions.
+    ///
+    /// Provided string needs to be a raw keyword since the function will turn it into a matchable keyword
     fn rename_keyword(&mut self, regex: &Regex, new: &str) {
         replace_with_regex!(regex, self.expression_l, new);
         replace_with_regex!(regex, self.expression_r, new);
     }
 }
 impl Test {
+    /// Parses a Test out of a string
+    ///
+    /// # Error
+    /// The string needs to use ; as separator and have 6 elements to be parsed into Test components
     pub fn parse_from_string(text: String) -> Result<Test, ParsingError> {
         let args: Vec<&str> = text
             .split(";")
@@ -620,6 +675,7 @@ impl Test {
             failure_result: args[5].to_string(),
         })
     }
+    /// Transforms the test into a string representation of it
     fn serialize_to_string(&self) -> String {
         format!(
             "{};{};{};{};{};{}",
@@ -631,6 +687,10 @@ impl Test {
             self.failure_result
         )
     }
+    /// Evaluates the expressions within the test and compares them. Then the function returns either a success or failure result name
+    ///
+    /// # Error
+    /// If evaluation fails on either expression, error will be returned instead.
     pub fn evaluate(
         &self,
         records: &HashMap<String, Record>,
@@ -653,6 +713,9 @@ impl Test {
             Err(e) => Err(e),
         }
     }
+    /// Tests if a keyword is present in either of expressions of the test
+    ///
+    /// The string should be a raw keyword, the function will turn it into a matchable keyword
     pub fn is_keyword_present(&self, keyword: &str) -> bool {
         let regex = regex_match_keyword(keyword);
         if let Err(_) = regex {
@@ -664,12 +727,19 @@ impl Test {
         }
         regex.is_match(&self.expression_r)
     }
+    /// Renames a keyword in either of expressions to a new one based on provided regex
     fn rename_keyword(&mut self, regex: &Regex, new: &str) {
         replace_with_regex!(regex, self.expression_l, new);
         replace_with_regex!(regex, self.expression_r, new);
     }
 }
 impl StoryResult {
+    /// Parses a string into a StoryResult
+    ///
+    /// # Error
+    /// The string needs to be separated with ; and contain at least 2 elements to be valid
+    ///
+    /// The third and following elements are pairs of keyword and expression, they need to be in even numbers, otherwise the string is considered not valid.
     pub fn parse_from_string(text: String) -> Result<StoryResult, ParsingError> {
         let mut args: VecDeque<&str> = text
             .split(";")
@@ -700,6 +770,7 @@ impl StoryResult {
             side_effects,
         })
     }
+    /// Transforms the StoryResult into a string representation
     fn serialize_to_string(&self) -> String {
         let mut ser = format!("{};{}", self.name, self.next_page);
         self.side_effects
@@ -707,6 +778,9 @@ impl StoryResult {
             .for_each(|x| ser = format!("{};{};{}", ser, x.0, x.1));
         ser
     }
+    /// Tests if a keyword is present in any of this StoryResult's side effects
+    ///
+    /// The provided keyword should be raw, the function will turn it into matchable keyword
     pub fn is_keyword_present(&self, keyword: &str) -> bool {
         let regex = match regex_match_keyword(keyword) {
             Ok(r) => r,
@@ -716,6 +790,9 @@ impl StoryResult {
             .iter()
             .any(|x| regex.is_match(x.0) || regex.is_match(x.1))
     }
+    /// Renames a keyword within side effects of the result to a new name
+    ///
+    /// Keywords should be raw, the function will turn them into matchable keywords
     fn rename_keyword(&mut self, regex: &Regex, old: &str, new: &str) {
         if let Some(v) = self.side_effects.remove(old) {
             self.side_effects.insert(new.to_string(), v);
@@ -771,14 +848,19 @@ impl Record {
             value,
         })
     }
+    /// Turns the record into a string representation
     fn serialize_to_string(&self) -> String {
         format!("{};{};{}", self.name, self.category, self.value)
     }
+    /// Convenience function that turns the record value into string
     pub fn value_as_string(&self) -> String {
         (self.value as i32).to_string()
     }
 }
 impl Name {
+    /// Parses a string into a Name
+    ///
+    /// The string needs to be separated with ; and have either one or two elements to be valid
     pub fn parse_from_string(text: String) -> Result<Name, ParsingError> {
         let args: Vec<&str> = text
             .split(";")
@@ -799,6 +881,7 @@ impl Name {
             },
         })
     }
+    /// Turns the name into a string representation
     fn serialize_to_string(&self) -> String {
         format!("{};{}", self.keyword, self.value)
     }

@@ -105,8 +105,8 @@ pub struct EditorWindow {
     /// Map of file name keys and pages on those file names
     pages: HashMap<String, Page>,
 }
-/// UI governing creation and edition of adventures and individual pages
 impl EditorWindow {
+    // creates a new editor in specified area
     pub fn new(area: Rect) -> Self {
         let x_file = area.x;
         let y_file = area.y;
@@ -139,6 +139,9 @@ impl EditorWindow {
             current_page: String::new(),
         }
     }
+    /// Loads an adventure into editor
+    ///
+    /// The function may take some time as it loads in all the pages for editing
     pub fn load_adventure(&mut self, adventure: &Adventure, index: usize) {
         self.adventure = adventure.clone();
         self.adventure_index = Some(index);
@@ -163,9 +166,11 @@ impl EditorWindow {
         self.current_page = String::new();
         self.set_starting_page(self.adventure.start.clone());
     }
+    /// Returns adventure and its index if it's existing adventure or None if the adventure has not been loaded yet
     pub fn get_adventure(&self) -> (Adventure, Option<usize>) {
         (self.adventure.clone(), self.adventure_index)
     }
+    /// Processes editor events
     pub fn process(&mut self, ev: Event) {
         match ev {
             Event::Save                  => self.save_project(),
@@ -262,14 +267,17 @@ impl EditorWindow {
             Event::ToggleNames(f)        => self.page_editor.toggle_name_editor(f),
         }
     }
+    /// Hides editor UI
     pub fn hide(&mut self) {
         self.group.hide();
     }
+    /// Shows editor UI
     pub fn show(&mut self) {
         self.group.show();
         self.page_editor.hide();
         self.adventure_editor.show();
     }
+    /// Saves the project into drive
     fn save_project(&mut self) {
         // save any unsaved data
         if self.adventure_editor.active() {
@@ -327,6 +335,7 @@ impl EditorWindow {
 
         self.page_editor.show();
     }
+    /// Removes currently selected page
     fn remove_page(&mut self) {
         if self.adventure_editor.active() {
             return;
@@ -340,6 +349,9 @@ impl EditorWindow {
             self.open_adventure();
         }
     }
+    /// Renames currently selected page
+    ///
+    /// It also updates all references to the page name
     fn rename_page(&mut self) {
         if let Some(name) =
             ask_for_text(&format!("Enter a new name for page {}", self.current_page))
@@ -360,6 +372,7 @@ impl EditorWindow {
             }
         }
     }
+    /// Adds a new empty page
     fn add_page(&mut self) {
         if let Some(name) = ask_for_text("Enter name for the new page") {
             let file_name = name.to_lowercase().replace(" ", "-");
@@ -376,6 +389,7 @@ impl EditorWindow {
             self.open_page(file_name);
         }
     }
+    /// Marks provided page as starting page
     fn set_starting_page(&mut self, p: String) {
         if self.pages.contains_key(&p) {
             self.file_list.mark_line(&self.adventure.start, &p);
@@ -397,6 +411,9 @@ impl EditorWindow {
         self.adventure_editor.show();
         self.current_page = String::new();
     }
+    /// Adds a keyword to the adventure through appropriate user dialog
+    ///
+    /// Provided flag determines if it is a name or record
     fn add_keyword(&mut self, is_name: bool) {
         if is_name {
             if let Some(nam) = ask_for_name(None) {
@@ -435,6 +452,7 @@ impl EditorWindow {
             }
         }
     }
+    /// Renames a keyword in the adventure
     fn rename_keyword(&mut self, is_record: bool, old: String) {
         // saving unsaved page edits
         if self.adventure_editor.active() == false {
@@ -515,6 +533,7 @@ impl EditorWindow {
             self.load_page();
         }
     }
+    /// Removes a keyword from adventure
     fn remove_keyword(&mut self, name: String, is_name: bool) {
         if is_name {
             let keyword = match self.adventure.names.get(&name) {

@@ -20,11 +20,13 @@ use crate::{
     widgets::{Selector, TextRenderer},
 };
 
+/// Main window controls, used for managing states of subwindows
 pub struct MainWindow {
     pub main_menu: MainMenu,
     pub game_window: GameWindow,
     pub editor_window: EditorWindow,
 }
+/// Main menu window responsible for managing pregame widgets and state
 pub struct MainMenu {
     main_manu: Group,
     start_menu: Group,
@@ -33,19 +35,23 @@ pub struct MainMenu {
     adventure_description: TextRenderer,
     adventure_picker: Rc<RefCell<Selector>>,
 }
+/// Responsible for managing the gameplay UI
 pub struct GameWindow {
     game_window: Group,
     records: RecordWindow,
     story: StoryWindow,
     choices: ChoiceWindow,
 }
+/// Subwindow of a GameWindow responsible for displaying records to the player
 struct RecordWindow {
     widget: Widget,
     categories: Rc<RefCell<HashMap<String, HashMap<String, i32>>>>,
 }
+/// Subwindow of a GameWindow responsible for displaying interactive choices to the player
 struct ChoiceWindow {
     window: Scroll,
 }
+/// Subwindow of a GameWindow responsible for displaying story text
 struct StoryWindow {
     text: TextRenderer,
 }
@@ -93,12 +99,14 @@ impl MainWindow {
         self.main_menu.hide();
         self.game_window.show();
     }
+    /// Changes UI to display the editor
     pub fn switch_to_editor(&mut self) {
         self.main_menu.hide();
         self.editor_window.show();
     }
 }
 impl MainMenu {
+    /// Creates main game menu UI
     fn create(area: Rect) -> MainMenu {
         let group = Group::new(area.x, area.y, area.w, area.h, "");
 
@@ -332,7 +340,7 @@ widget_extends!(RecordWindow, Widget, widget);
 impl RecordWindow {
     /// Creates a new record window in provided area
     ///
-    /// The window will be empty, use add_record and update_record to display things
+    /// The window will be empty, use add_record, to update the records, clear the window and readd what you need
     ///
     /// Record window also stores game specific buttons, like returning to main menu
     fn create(rect: Rect) -> Self {

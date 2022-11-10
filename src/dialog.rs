@@ -5,14 +5,13 @@ use fltk::{
     app,
     browser::SelectBrowser,
     button::Button,
-    dialog::NativeFileChooser,
     enums::{Key, Shortcut},
     frame::Frame,
     input::{Input, IntInput},
     menu::Choice,
     prelude::*,
     text::{TextBuffer, TextEditor},
-    window::Window,
+    window::Window, dialog::NativeFileChooser,
 };
 
 use crate::{
@@ -20,6 +19,7 @@ use crate::{
     file::{is_on_adventure_path, paths, save_adventure, PROJECT_PATH_NAME},
 };
 
+/// Displays a simple alert dialog with provided formatable message
 macro_rules! signal_error {
     ($text:expr, $( $x:expr ), *) => {
         fltk::dialog::alert(0, 0, &format!($text, $($x),*))
@@ -30,6 +30,9 @@ macro_rules! signal_error {
 }
 pub(crate) use signal_error;
 
+/// Creates and shows a modal dialog that lets user choose an adventure.
+///
+/// The dialog has additional "New" entry appended that will be returned as equal to provided list's length should it be chosen
 pub fn ask_to_choose_adventure(adventures: &Vec<Adventure>) -> Option<usize> {
     let mut win = Window::default()
         .with_size(300, 150)
@@ -74,6 +77,7 @@ pub fn ask_to_choose_adventure(adventures: &Vec<Adventure>) -> Option<usize> {
         None
     }
 }
+/// Creates and shows a modal dialog to user that allows for creating a new adventure and choosing its path
 pub fn ask_for_new_adventure() -> Option<Adventure> {
     let mut win = Window::default()
         .with_size(500, 250)
@@ -107,36 +111,42 @@ pub fn ask_for_new_adventure() -> Option<Adventure> {
     butt_cancel.set_shortcut(Shortcut::from_key(Key::Escape));
 
     name.set_buffer(TextBuffer::default());
-    sel.add("New Root Location");
+    // new root location not supported yet
+    //sel.add("New Root Location");
     paths!("books")
         .iter()
         .for_each(|x| sel.add(x.to_str().unwrap()));
     sel.set_callback(|x| {
-        if x.value() == 1 {
-            // opening a dialog to let user choose a new location
-            let mut dialog = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseDir);
-            dialog.set_directory(&paths!("books")[0]).unwrap();
-            dialog.show();
-            let mut dir = dialog.directory();
-            // first we have to test if the chosen path is where program will be able to read it
-            if is_on_adventure_path(&dir) == false {
-                signal_error!(
+        match x.selected_text() {
+            Some(n) if n == "New Root Location" => {
+                // opening a dialog to let user choose a new location
+                let mut dialog = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseDir);
+                dialog.set_directory(&paths!("books")[0]).unwrap();
+                dialog.show();
+                let mut dir = dialog.directory();
+                // first we have to test if the chosen path is where program will be able to read it
+                if is_on_adventure_path(&dir) == false {
+                    signal_error!(
                     "The selected path isn't inside of any folders expected to hold adventures."
                 );
-                return;
+                    return;
+                }
+                // next we have to test if user chosen an folder with no adventures
+                dir.push("adventure");
+                dir.set_extension("txt");
+                if dir.exists() {
+                    signal_error!(
+                        "You need to choose a folder that doesn't contain another adventure"
+                    );
+                    return;
+                }
+                // everything seems to be in order, add and select the new path
+                dir.set_extension("");
+                dir.pop();
+                x.add(dir.to_str().unwrap());
+                x.select(x.size());
             }
-            // next we have to test if user chosen an folder with no adventures
-            dir.push("adventure");
-            dir.set_extension("txt");
-            if dir.exists() {
-                signal_error!("You need to choose a folder that doesn't contain another adventure");
-                return;
-            }
-            // everything seems to be in order, add and select the new path
-            dir.set_extension("");
-            dir.pop();
-            x.add(dir.to_str().unwrap());
-            x.select(x.size());
+            _ => {}
         }
     });
 
@@ -182,7 +192,12 @@ pub fn ask_for_new_adventure() -> Option<Adventure> {
     }
     return None;
 }
-
+/// Creates and shows a modal dialog to the user asking for a text input
+///
+/// The label will be presented above the input.
+///
+/// # Warning
+/// Be warned that an empty string is a valid input for the user
 pub fn ask_for_text(label: &str) -> Option<String> {
     let len = i32::max(fltk::draw::width(label) as i32 + 20, 300);
 
@@ -224,6 +239,12 @@ pub fn ask_for_text(label: &str) -> Option<String> {
         true => Some(input.value()),
     }
 }
+/// Creates and shows a modal dialog asking user to put data for record creation into it
+///
+/// If optional record value is provided then the fields are prefilled with data from the record
+///
+/// # Warning
+/// While the function return will always be a valid record, it still needs to be tested for duplicate keyword
 pub fn ask_for_record(record: Option<&Record>) -> Option<Record> {
     let label = "Insert record data";
 
@@ -289,6 +310,10 @@ pub fn ask_for_record(record: Option<&Record>) -> Option<Record> {
         _ => None,
     }
 }
+/// Asks user to input data to create a name
+///
+/// # Warning
+/// While the function ensures the returned name is valid, it still needs to be tested for duplicate keyword
 pub fn ask_for_name(default: Option<&Name>) -> Option<Name> {
     let label = "Input name data";
     let mut win = Window::default().with_size(300, 150).with_label(label);
@@ -339,6 +364,7 @@ pub fn ask_for_name(default: Option<&Name>) -> Option<Name> {
         _ => None,
     }
 }
+/// Presents a simple modal dialog asking to confirm a choice
 pub fn ask_to_confirm(label: &str) -> bool {
     let len = i32::max(fltk::draw::width(label) as i32 + 20, 300);
 
@@ -375,6 +401,9 @@ pub fn ask_to_confirm(label: &str) -> bool {
     }
     conf.take()
 }
+/// Presents a dialog with a dropdown populated with the data from the provided iterator
+///
+/// Returns an index of chosen element and its name
 pub fn ask_for_choice<'a, T: Iterator>(label: &str, choices: T) -> Option<(i32, String)>
 where
     T::Item: Into<&'a String>,

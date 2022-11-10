@@ -20,6 +20,7 @@ pub struct FileList {
 }
 
 impl FileList {
+    /// Creates a new file list within specified area
     pub fn new(area: Rect) -> Self {
         let group = Group::new(area.x, area.y, area.w, area.h, None);
 
@@ -101,12 +102,14 @@ impl FileList {
             self.page_list.add(&text);
         }
     }
+    /// Removes selected line from the file list
     pub fn remove_line(&mut self) {
         let selection = self.page_list.value();
         if selection > 0 {
             self.page_list.remove(selection);
         }
     }
+    /// Marks a selected line with a star, taking the star away from the previous line
     pub fn mark_line(&mut self, previous: &str, new: &str) {
         if let Some(x) = find_item(&self.page_list, previous) {
             self.page_list.set_icon::<SvgImage>(x, None);
@@ -118,12 +121,14 @@ impl FileList {
             self.page_list.set_icon(x, Some(star));
         }
     }
+    /// Renames the selected line to a new name
     pub fn rename_selected(&mut self, new_name: &str) {
         let x = self.page_list.value();
         if x > 0 {
             self.page_list.set_text(x, new_name);
         }
     }
+    ///Adds a new line and selects it
     pub fn add_line(&mut self, text: &str) {
         self.page_list.add(text);
         self.page_list.select(self.page_list.size());

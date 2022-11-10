@@ -33,6 +33,7 @@ pub struct StoryEditor {
 }
 
 impl StoryEditor {
+    /// Creates a new story editor in specified area
     pub fn new(area: Rect) -> Self {
         let group = Group::new(area.x, area.y, area.w, area.h, None);
 
@@ -151,13 +152,16 @@ impl StoryEditor {
             results,
         }
     }
+    /// Hides the editor
     pub fn hide(&mut self) {
         self.group.hide();
     }
+    /// Shows and redraws the editor
     pub fn show(&mut self) {
         self.group.redraw();
         self.group.show();
     }
+    /// Loads a page and list of records and names into editor
     pub fn load_page(&mut self, page: &Page, page_name: &String, adventure: &Adventure) {
         self.page_name.set_label(page_name);
         self.title.buffer().as_mut().unwrap().set_text(&page.title);
@@ -172,6 +176,7 @@ impl StoryEditor {
             self.names.add_name(nam.1, true);
         }
     }
+    /// Saves the data from the editor into the provided page
     pub fn save_page(&self, page: &mut Page, adventure: &Adventure) {
         page.title = self.title.buffer().as_ref().unwrap().text();
         page.story = self.story.buffer().as_ref().unwrap().text();
@@ -180,6 +185,7 @@ impl StoryEditor {
         self.tests.save(&mut page.tests, None);
         self.results.save(&mut page.results, None, adventure);
     }
+    /// Toggles the display of records UI
     pub fn toggle_record_editor(&mut self, on: bool) {
         if on {
             self.records.show();
@@ -187,6 +193,7 @@ impl StoryEditor {
             self.records.hide();
         }
     }
+    /// Toggles the display of names UI
     pub fn toggle_name_editor(&mut self, on: bool) {
         if on {
             self.names.show();
@@ -204,6 +211,7 @@ impl StoryEditor {
         self.records.add_record(record, true);
         self.group.redraw();
     }
+    /// Clears either records or names UI depending on the provided flag
     pub fn clear_variables(&mut self, names: bool) {
         if names {
             self.names.clear();

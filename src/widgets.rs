@@ -9,12 +9,14 @@ use fltk::{
     widget_extends, browser::SelectBrowser,
 };
 
+/// Fancy non-interactive text renderer that allows background
 pub struct TextRenderer {
     widget: Widget,
     text: Rc<RefCell<Vec<String>>>,
 }
 
 impl TextRenderer {
+    /// Creates a new text renderer in specified area with text to render
     pub fn new(x: i32, y: i32, w: i32, h: i32, text: &str) -> Self {
         let mut widget = Widget::new(x, y, w, h, None);
         let text = text
@@ -54,6 +56,7 @@ impl TextRenderer {
         });
         Self { widget, text }
     }
+    /// Sets new text to render
     pub fn set_text(&mut self, text: &str) {
         *self.text.borrow_mut() = text
             .split_inclusive(&[' ', '\n'][..])
@@ -66,14 +69,15 @@ impl TextRenderer {
 }
 widget_extends!(TextRenderer, Widget, widget);
 
+/// Fancy custom selector that doesn't obscure what's behind it in drawing order
 pub struct Selector {
     widget: Widget,
     options: Rc<RefCell<Vec<String>>>,
     selected: Rc<RefCell<usize>>,
 }
 
-#[allow(dead_code)]
 impl Selector {
+    /// Creates a new selector widget in specified area
     pub fn new(x: i32, y: i32, w: i32, h: i32) -> Self {
         let mut widget = Widget::new(x, y, w, h, None);
         let options = Rc::new(RefCell::new(vec![]));
@@ -173,21 +177,21 @@ impl Selector {
             selected,
         }
     }
+    /// Clears all the elements of the selector
     pub fn clear(&mut self) {
         self.options.borrow_mut().clear();
     }
+    /// Adds a new element to the selector
     pub fn add(&mut self, choice: String) {
         self.options.borrow_mut().push(choice);
     }
+    /// Returns a text of selected item, or None if there's nothing selected
     pub fn selected_text(&self) -> Option<String> {
         let arr = self.options.borrow();
         if let Some(text) = arr.get(*self.selected.borrow()) {
             return Some(text.clone());
         }
         None
-    }
-    pub fn selected(&self) -> usize {
-        *self.selected.borrow()
     }
 }
 widget_extends!(Selector, Widget, widget);

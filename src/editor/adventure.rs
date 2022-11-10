@@ -99,6 +99,7 @@ impl AdventureEditor {
         self.records.add_record(record, false);
         self.group.redraw();
     }
+    /// Clears either names or records editor UI
     pub fn clear_variables(&mut self, names: bool) {
         if names {
             self.names.clear();

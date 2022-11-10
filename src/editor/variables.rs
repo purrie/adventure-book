@@ -69,7 +69,7 @@ impl VariableEditor {
     /// variable: Name to display in the editor
     /// extra: Extra part of the label shown in brackets
     /// inserter: Whatever to create a quick insert button for text editors or not
-    pub fn add_line(&mut self, variable: &String, extra: &String, inserter: bool) {
+    fn add_line(&mut self, variable: &String, extra: &String, inserter: bool) {
         let child_count = self.children;
 
         let mut x = self.scroll.x();
@@ -122,10 +122,7 @@ impl VariableEditor {
                 move |l, ev| -> bool {
                     match ev {
                         HandleEvent::Push => {
-                            // copy2 is called because default fltk behavior is retarded
-                            // and keeps pasting random things from all buffers when you call paste
-                            // even when you specify where it should get the text from
-                            // so other buffer needs to be cleared
+                            // seems to be needed since pasting seems to paste from both sources no matter what I tried
                             app::copy("");
                             app::copy2(&create_keyword(&l.label()));
                             app::dnd();
@@ -145,7 +142,7 @@ impl VariableEditor {
 
         self.children += 1;
     }
-
+    /// Creates a new line with all necessary controls for the Record
     pub fn add_record(&mut self, record: &Record, inserter: bool) {
         let extra = match record.category.as_str() {
             "" => record.value_as_string(),
@@ -153,14 +150,16 @@ impl VariableEditor {
         };
         self.add_line(&record.name, &extra, inserter);
     }
+    /// Creates a new line with all the necessary controls for the Name
     pub fn add_name(&mut self, name: &Name, inserter: bool) {
         self.add_line(&name.keyword, &name.value, inserter);
     }
-
+    /// Displays the editor
     pub fn show(&mut self) {
         self.button.show();
         self.scroll.show();
     }
+    /// Hides the editor
     pub fn hide(&mut self) {
         self.button.hide();
         self.scroll.hide();

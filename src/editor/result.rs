@@ -363,6 +363,7 @@ impl ResultEditor {
             self.hide_effects();
         }
     }
+    /// Shows the part of editor responsible for customizing a result
     fn show_controls(&mut self) {
         self.name.show();
         self.next_page_label.show();
@@ -370,6 +371,7 @@ impl ResultEditor {
         self.butt_nam.show();
         self.butt_rec.show();
     }
+    /// Hides part of editor responsible for customizing a result
     fn hide_controls(&mut self) {
         self.name.hide();
         self.next_page_label.hide();
@@ -379,10 +381,12 @@ impl ResultEditor {
         self.effect.hide();
         self.effect_value.hide();
     }
+    /// Shows the side effect editor UI
     fn show_effects(&mut self) {
         self.effect.show();
         self.effect_value.show();
     }
+    /// Hides the side effect editor UI
     fn hide_effects(&mut self) {
         self.effect.hide();
         self.effect_value.hide();

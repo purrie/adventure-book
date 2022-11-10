@@ -199,12 +199,14 @@ impl ConditionEditor {
             self.hide_controls();
         }
     }
+    /// Shows the part of editor responsible for customizing condition
     fn show_controls(&mut self) {
         self.comparison.show();
         self.expression_left.show();
         self.expression_right.show();
         self.name.show();
     }
+    /// Hides the part of editor responsible for customizing condition
     fn hide_controls(&mut self) {
         self.comparison.hide();
         self.expression_left.hide();
