@@ -1,0 +1,6 @@
+title: Blood and Guts
+story: Dragon's claws slash across your chest, sending you flying backwards as you tumble down on the floor. The pain leaves you shaken, your ears ring and vision blurs for a moment, seeing the outline of the dragon on its mound of treasure, laughing victorously. You're fairly certain the dragon didn't put even half of its strength into this hit, as you would have been slashed in half. It certainly is intending on toying with you. How can you even hope to defeat such powerful creature?
+choice: Get up and retry your attack, there's no other way of surviving this.{test: try again}
+test: try again;[Health];<=;0;ded;alive
+result: alive;dragon-attack
+result: ded;death

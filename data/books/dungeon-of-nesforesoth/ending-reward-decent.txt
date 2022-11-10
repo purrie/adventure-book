@@ -1,0 +1,6 @@
+title: Landlord
+story: The lord hands you a bag of coin, something that will let you live off of it for some time before you have to look for another quest. However, while you didn't manage to meet all of his expectations, the lord extends an invitation for you to settle in his land as you're a resourceful hero that he would appreciate having nearby, of course, he promises to pay for your work should you agree. He doesn't demand an answer right away so whatever you end up living here or venturing to other parts of the lands is ultimately up to you.
+choice: Take the reward and leave for the road{result: leave}
+choice: Accept the offer and settle in his lands{result: settle}
+result: leave;ending-leaving
+result: settle;ending-settling-decent

@@ -2,5 +2,5 @@ title: True Strike!
 story: You slash and stab the beast with your [weapon] and the blade connects, spilling blood and eliciting a cry of pain from the creature as it falls dead to the floor.
 choice: Ready your [weapon] for another strike.{result: game over}
 test: monsters;[monsters health];<=;0;win;continue
-result: win;monsters-win
 result: continue;monsters-attack
+result: win;monsters-win

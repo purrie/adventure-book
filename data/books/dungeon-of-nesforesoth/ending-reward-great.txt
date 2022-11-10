@@ -1,0 +1,6 @@
+title: Hero
+story: The lord gives you a sizable chest full of valuables as a reward for your deeds. He also offers you some land in his domain for you to settle and wishes to use part of dragon's hoard to fund the construction of a mansion for you to reside in. Money and land, that's a large reward you didn't quite expect but you're pleasantly surprised. What adds to your surprise is that the lord wishes to make you a protector of his lands, which entails a great honor aside from decent pay. With this you could easily retire from your adventuring days and settle here into while less exciting, a definitely more comfortable and fulfilling life in of itself.
+choice: Take the reward and leave for the road{result: leave}
+choice: Accept his offer and settle in his lands{result: settle}
+result: leave;ending-leaving
+result: settle;ending-settling-mansion

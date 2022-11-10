@@ -1,0 +1,3 @@
+title: A new magical journey
+story: It brings a tear to your eye seeing some of your children deciding to embark in search of adventures of their own. It fills you part in joy and pride as you know nothing builds character and personal strength like being on the road and taking the role of a hero, but also part in sadness as you know first hand how hard and dangerous path before them is. You decide this is the time to use the wealth you managed to steal from the dragon and use it to equip your children appropriately, even sponsoring a magical item for each. This will give them a great headstart for their adventures, your only hope is that it won't get to their heads but you taught them well.
+choice: A new exciting journey awaits them.{result: game over}

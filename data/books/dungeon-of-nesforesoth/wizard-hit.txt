@@ -1,0 +1,6 @@
+title: Bleeding the wizard
+story: You duck under another fire bolt flying at you and propel yourself forward, catching the wizard off guard. You swing your [weapon] at him, drawing blood. The enraged mage erupts in flame, causing you to jump back so you don't suffer his counter attack.
+choice: Wait for opportunity to strike{test: wizard}
+test: wizard;[wizard hp];<=;0;dead;alive
+result: alive;wizard-attack
+result: dead;wizard-dead

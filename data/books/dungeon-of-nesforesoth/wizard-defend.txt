@@ -1,0 +1,4 @@
+title: Uncanny Reflexes
+story: It looked like the explosion engulfed you, causing the wizard to laugh manicaly but luck is on your side and you manage to move away just in time to avoid any serious damage. You keep moving around the room, giving the wizard hard time getting you. The frustrated mage yells obscenities at you, flinging balls of green flame that spray across the walls behind you, completely missing.
+choice: Wait for an opportunity to strike{result: attack}
+result: attack;wizard-attack

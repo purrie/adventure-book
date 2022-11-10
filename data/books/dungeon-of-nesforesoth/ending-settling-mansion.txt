@@ -1,0 +1,6 @@
+title: Lord Protector
+story: The promised mansion is swiftly built and you end up living like a lord yourself within it. You establish a couple more work buildings and barns for your animals and trade. While this life is fairly different than what you're used to, you're not complaining. Being in good standing with the lord and the folk brings you many perks you enjoy over the years. While it's not the same as you're used to, there's plenty of adventure for you to engage in as the lands are much in need of such a hero as yourself. You eventually end up being known as the Lord Protector of these lands, being respected by people local and those from neighboring lands.
+choice: It's good to be a hero.{test: hero}
+test: hero;[peasants];<;5;hero;retire
+result: retire;ending-retirement
+result: hero;ending-settling-hero

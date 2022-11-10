@@ -1,0 +1,3 @@
+title: A new adventure begins
+story: It brings a tear to your eye seeing some of your children deciding to embark in search of adventures of their own. It fills you part in joy and pride as you know nothing builds character and personal strength like being on the road and taking the role of a hero, but also part in sadness as you know first hand how hard and dangerous path before them is. You only wish you could have done more to equip them better for it but you know you did all you could.
+choice: A new adventure begins.{result: game over}

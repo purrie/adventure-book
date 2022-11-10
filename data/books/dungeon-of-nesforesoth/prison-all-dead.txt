@@ -1,0 +1,6 @@
+title: Just skeletons
+story: When you approach the holding cells looking for any peasants, all you find within are corpses and skeletons. It all looks fresh, bloody and morbid. You're fairly sure those were the people you came here to rescue. It seems you didn't make it in time and the dragon or whatever else living here already had its way with them. All you can do now is to avenge the dead by slaying the dragon and any other monster responsible for this.
+
+In the corner of your eye you see light flickering, beaconing your attention in the direction of the doors from behind which the light glows. 
+choice: Investigate the doors{result: wizard}
+result: wizard;wizard

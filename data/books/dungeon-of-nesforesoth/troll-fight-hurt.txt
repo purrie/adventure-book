@@ -2,5 +2,5 @@ title: Blooded
 story: The troll's claws connect with your side, the force of the hit knocking the air out of your lungs and tossing you across the room. One good thing coming out of it, is you now have some distance between you and the monster to get yourself back together.
 choice: Get up and fight for your life!{test: alive}
 test: alive;[Health];>;0;fight;dead
-result: dead;death
 result: fight;troll-fight-attack
+result: dead;death

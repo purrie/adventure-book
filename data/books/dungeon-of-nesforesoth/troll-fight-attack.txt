@@ -4,9 +4,9 @@ choice: Go all in, strike it down as fast as you can as time is against you here
 choice: Strike at the troll when opportunity arrises.{test: norm}
 choice: Play this one out carefully, no point in rushing in and getting yourself killed. Strike when it's safe.{test: safe}
 condition: stam;[Stamina];>;0
-test: safe;1d20;>=;8;safe;lose
-test: aggro;1d20 + [Stamina];>=;15;aggressive;lose
-test: norm;1d20 ;>;10;normal;lose
+test: norm;1d20;>;10 + [treasure];normal;lose
+test: aggro;1d20;>=;12 + [treasure];aggressive;lose
+test: safe;1d20;>=;8 + [treasure];safe;lose
 result: safe;troll-fight-hit;troll;-1d[Weapon Power] + 2
 result: lose;troll-fight-defend
 result: aggressive;troll-fight-hit;troll;-1d[Weapon Power] - 2;Stamina;-1

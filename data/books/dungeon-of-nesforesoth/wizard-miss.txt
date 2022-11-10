@@ -1,0 +1,10 @@
+title: Inferno
+story: You think you've found an opportunity to strike at the mage. Closing in, you realize it's been a trap all along as the mad wizard grins in the most disturbing way possible. He erupts in flame as you close in, engulfing you in it.
+choice: Jump back before it's too late.{test: dodge}
+choice: Put all your strength into dodging the attack.{condition: stamina}{test: power dodge}
+condition: stamina;[Stamina];>;0
+test: power dodge;1d20;>;8 + [treasure];super avoid;hurt
+test: dodge;1d20;>;10 + [treasure];avoid;hurt
+result: hurt;wizard-hurt;Health;-2d3 + [Armor]
+result: avoid;wizard-defend
+result: super avoid;wizard-defend;Stamina;-1

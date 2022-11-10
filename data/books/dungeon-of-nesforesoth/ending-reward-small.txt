@@ -1,0 +1,4 @@
+title: A coin for the hero
+story: The lord gives you his gratitude for what you did. He gives you a sack of coins, not quite much but then again, you can't really demand more as you didn't achieve much in this quest.
+choice: Accept the reward, however small it might be.{result: end}
+result: end;ending-leaving

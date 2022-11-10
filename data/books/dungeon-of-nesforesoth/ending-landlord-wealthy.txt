@@ -1,0 +1,3 @@
+title: New Heroes
+story: It brings a tear to your eye seeing some of your children deciding to embark in search of adventures of their own. It fills you part in joy and pride as you know nothing builds character and personal strength like being on the road and taking the role of a hero, but also part in sadness as you know first hand how hard and dangerous path before them is. You hare grateful that you managed to save off the treasure you stole from the dragon in your youth that you can now use to equip your children appropriately for the road awaiting them.
+choice: New heroes are born.{result: game over}

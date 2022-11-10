@@ -4,10 +4,10 @@ choice: Attack the monsters!{result: game over}
 choice: Slaughter them, sacrifice the defense to fuel all your strength into your attack.{condition: stamina}{result: game over}
 choice: Take defensive stance and rely on counter attacks.{result: game over}
 condition: stamina;[Stamina];>;0
+test: defensive;1d20;>;6;weak hit;fail
 test: normal;1d20;>;8;hit;fail
 test: aggresive;1d20;>;10;hard hit;fail
-test: defensive;1d20;>;6;weak hit;fail
-result: hard hit;monsters-hit;Stamina;-1;monsters health;-1d[Weapon Power] - 2
-result: hit;monsters-hit;monsters health;-1d[Weapon Power]
 result: fail;monsters-defend
 result: weak hit;monsters-hit;monsters health;-1d[Weapon Power] + 2
+result: hard hit;monsters-hit;monsters health;-1d[Weapon Power] - 2;Stamina;-1
+result: hit;monsters-hit;monsters health;-1d[Weapon Power]

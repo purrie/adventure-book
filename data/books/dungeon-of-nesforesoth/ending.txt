@@ -1,0 +1,12 @@
+title: Emerging from the darkness
+story: The halls of this dungeon seem much brighter as you walk through to the exit. The great evil no longer present within them. As you leave the ancient halls behind and return to the outside, a setting sun greets you with its warm orange glow. You did a mighty good deed today and you're certain people of these lands will be forever grateful to you for it.
+
+You make your way back to the village to meet with the local lord. He welcomes you with a hopeful smile on his face, eager to hear the news you bring. He asks you what happened to his people?
+choice: Give him the bad news.{condition: dead}{result: dead}
+choice: Tell him you've found the kidnapped and returned them to their homes.{condition: alive}{test: some or all}
+condition: alive;[peasants];<;10
+condition: dead;[peasants];>=;10
+test: some or all;[peasants];>=;5;some;alive
+result: some;ending-people-some
+result: dead;ending-people-dead
+result: alive;ending-people-alive

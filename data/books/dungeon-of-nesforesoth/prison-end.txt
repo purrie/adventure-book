@@ -1,0 +1,6 @@
+title: Back at the village
+story: You suspected this won't be an easy job but didn't expect it to be this dangerous. You decided to instead escort the folk to their village and meet the lord. This is as much as you can do. He will have to find someone else to deal with the dragon. When you enter the lord's mansion, he asks you to explain what happened and if you saved his subjects?
+choice: Give him the good news.{test: folk}
+test: folk;[peasants];<;5;all;some
+result: some;ending-people-some
+result: all;ending-people-alive

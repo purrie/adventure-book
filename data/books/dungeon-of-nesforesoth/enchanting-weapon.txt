@@ -1,0 +1,4 @@
+title: Magic Weapon
+story: You place your [weapon] onto the table and start aligning tools. You place a gem on top of the hand guard and start pouring powders along its blade. The tools start reacting with the process, glowing slightly as the powder is absorbed into the blade and gem sinks into the base of it and starts glowing with power itself. The process takes a couple moments before its finished. You pick up your new weapon from the table and sheathe it at your side.
+choice: You're ready to face the dragon.{result: drag}
+result: drag;dragon;weapon;enchanted [weapon]

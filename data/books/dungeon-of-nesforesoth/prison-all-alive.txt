@@ -1,0 +1,4 @@
+title: Prisoners
+story: You approach the holding cells and are greeted with sounds of soft sobbing. Then you see people locked inside. When they notice you, they're startled as if expecting you to hurt them in some way. The group is fairly large and looking over them, they seem to be all in one piece. You're right on time to rescue them from here.
+choice: Open the lock and lead the peasants out of the dungeon.{result: out}
+result: out;prison-rescue

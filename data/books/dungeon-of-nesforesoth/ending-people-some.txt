@@ -1,0 +1,6 @@
+title: The Rescuer
+story: You tell the lord that you managed to get in there and released the kidnapped folk, but unfortunately, many of them were already dead by the time you got there. The lord is happy to hear at least some survived but has hard time conceling that he hoped for more. He wants to hear how you dealt with the dragon next.
+choice: Explain what happened.{test: is ded}
+test: is ded;[dragon hp];<=;0;ded;alive
+result: alive;ending-dragon-alive
+result: ded;ending-dragon-dead

@@ -1,0 +1,10 @@
+title: Magic Workshop
+story: As you're about to turn away, you notice a glint in the far end of the wizard's torture chamber. It seems, the explosion toppled one of the book cases and revealed a secret passage. Curious where it may lead, you carefully cross the gore filled room to examine the revealed space. As you enter it, you're greeted to what appears to be wizard's laboratory, full of various magical reagents and tools. This is something you would expect to see in regular wizard's workshop rather than the torture chamber behind you. You look through the stuff here, mostly useless for someone not magically inclined as you but you notice one thing that could have an use.
+
+In the center of the room, you see a table with various tools, gems and powders. You recognize it to be an enchanting tools and reagents. While you lack the knowledge and skill to actually make proper magic items. With this setup, you could use the tools and reagents to enchant your weapon or armor.
+choice: Enchant your [weapon]{result: weapon}
+choice: Enchant your armor{test: armor}
+test: armor;[Armor];==;0;broken armor;armor
+result: weapon;enchanting-weapon;Weapon Power;2
+result: broken armor;enchanting-broken-armor;Armor;3
+result: armor;enchanting-armor;Armor;2

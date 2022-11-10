@@ -1,0 +1,6 @@
+title: Explosion
+story: The flames rage around the wizard, he yells in pain at first, then his voice turns into panic as he seems to have lost control over the very flames he wields. The sickly green fire grows and grows around his body, violently raging and sparking all around. You get a clue and quickly duck out of the room, closing the door behind you only somewhat muffling the horrible shreek of [evil wizard] which ends abruptly in a wet gorey pop and splatter of his remains hitting the walls and the floor.
+
+You peek into the room, which is dimly illuminated by small green flames burning here and there, feeding on last bits of the wizard scattered across the room.
+choice: Leave this place.{result: end}
+result: end;enchanting

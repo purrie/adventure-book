@@ -3,8 +3,8 @@ story: You weave and move out of troll's way, avoiding its attacks waiting for o
 choice: Dodge it!{test: dodge}
 choice: Put all of your strength into moving away.{condition: stam}{test: super dodge}
 condition: stam;[Stamina];>;0
-test: super dodge;1d20;>=;8;super dodge;no
-test: dodge;1d20;>;10;dodge;no
-result: no;troll-fight-hurt
+test: dodge;1d20;>;10 + [treasure];dodge;no
+test: super dodge;1d20;>=;8 + [treasure];super dodge;no
 result: super dodge;troll-fight-blocked;Stamina;-1
 result: dodge;troll-fight-blocked
+result: no;troll-fight-hurt

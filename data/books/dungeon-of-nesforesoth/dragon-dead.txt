@@ -1,0 +1,4 @@
+title: Dragon Slayer
+story: When you come closer to the dragon, it seems strange. It is standing over its hoard, still mocking you with its smirk but its eyes and glassed over, unfocused and distant. [dragon] is dead, yet his pride forbiding him from dropping to its knees before you. You exhale a deep sigh of relief. You didn't suspect you would achieve this, but you did. You slayed the menace that terrorized these lands.
+choice: It's time to go back to the village.{result: end}
+result: end;ending

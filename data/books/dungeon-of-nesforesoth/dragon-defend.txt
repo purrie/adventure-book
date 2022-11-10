@@ -1,0 +1,4 @@
+title: Quicker than you look.
+story: You fought many beasts in the past, and while impressive, the dragon isn't all that different. You move out of the way of its claws and hide behind a pillar. Fortunately, it doesn't give a chase, instead laughing mocking you "Is that all you're capable of, great hero?" You resist temptation of mocking it back, being thankful instead that it doesn't seem intent on giving all of its strengths against you.
+choice: Move out of your hiding and prepare another strike.{result: attack}
+result: attack;dragon-attack

@@ -8,11 +8,11 @@ choice: Health Potion{test: health}
 choice: Vigor Potion{test: vigor}
 choice: Strength Potion{test: strength}
 choice: None of  them. Never trust random potions found in a dungeon.{result: skip}
+test: strength;1d20;>=;[Health] - 4;strength;poisoned
 test: health;1d20;>=;[Health] - 4;health;poisoned
 test: vigor;1d20;>=;[Health] - 4;stamina;poisoned
-test: strength;1d20;>=;[Health] - 4;strength;poisoned
-result: strength;alchemy-used;Weapon Power;2
 result: health;alchemy-used;Health;2d3
-result: poisoned;alchemy-poisoned;Health;-1d4
-result: skip;alchemy-skipped
 result: stamina;alchemy-used;Stamina;2d3
+result: skip;alchemy-skipped
+result: strength;alchemy-used;Weapon Power;2
+result: poisoned;alchemy-poisoned;Health;-1d4

@@ -5,10 +5,10 @@ You wave your torch, illuminating the darkness in front of you, which reveals ju
 choice: Run past the traps.{test: run}
 choice: Disable the traps.{test: disable}
 choice: Move carefully while avoiding the pressure plates.{test: careful}
-test: run;1d20;>=;8;run;fail
-test: disable;1d20;>=;12;disable;fail
 test: careful;1d20;>=;10;careful;fail
-result: fail;ruins-fail;Health;-3d2 + [Armor]
-result: run;ruins-outrun;Stamina;-1d4
+test: disable;1d20;>=;12;disable;fail
+test: run;1d20;>=;8;run;fail
 result: disable;ruins-disable;peasants;1d4
+result: run;ruins-outrun;Stamina;-1d4
 result: careful;ruins-careful;peasants;1d6
+result: fail;ruins-fail;Health;-3d2 + [Armor]

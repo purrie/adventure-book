@@ -1,0 +1,6 @@
+title: Settled
+story: You take up the lord on his offer and settle on his lands. While you're more used to living on the road, this change proves somewhat challenging but you have a house you can call your own, and the lord calls upon your aid every now and then to deal with local issues. 
+choice: You eventually get accustomed to your new way of life.{test: good}
+test: good;[peasants];<;5;hero;retire
+result: hero;ending-settling-hero
+result: retire;ending-retirement

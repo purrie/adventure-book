@@ -1,0 +1,6 @@
+title: Torture Chambers
+story: You approach the door from which light shines and peek inside. To your horror you see a person there, but not a peasant, instead, extravagantly dressed man holding an instrument of what you can only guess, torture and pain, with many little blades and pincers protruding from it. He stands in front of a table with straps, suitably large for holding a person. He seems to be cleaning it with a dirty rag. The room is full of all sorts of other tools designed to inflict pain in various ways.
+
+As you stealthily approach the figure, hoping to ambush him before he notices you, you hear a disturbingly ominous voice coming from here. "Who dares to enter the domain of [evil wizard]?" he turns around to face you. You can see his face being a mix of grotesque features as if his face is pulled in all sorts of direction by the corrupting powers he's wielding. Powers that he immediately awakens as sickly green flames start dancing within his palms. "I hope to hear many screams from you, entertain me!" he exclaims as his flames rage towards you.
+choice: Dodge the flames and rush forward to attack{result: attack}
+result: attack;wizard-attack

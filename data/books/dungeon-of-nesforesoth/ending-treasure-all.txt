@@ -1,0 +1,3 @@
+title: Stacked
+story: While the lord's reward wasn't bad all things considered, it pales in comparison to what you managed to take out of the dungeon. This money could set you up for comfortable retirement, or it could allow you to equip yourself better, maybe even with proper magic items. Whatever you end up doing with it, this is a very exciting achievement.
+choice: Onwards, to the next adventure!{result: game over}

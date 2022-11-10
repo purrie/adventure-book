@@ -1,0 +1,6 @@
+title: Out of their hell
+story: You swiftly unlock the cells, releasing the people and explaining to them you were hired to rescue them. The soft sobs and cries turned into hopeful whispers of gratefulness as the folk pour out of their horrible holding cells. You ensure all of them can follow you properly and then you lead them the other way, back out of the dungeon. It takes some time as the way back is fairly long, making you realize once again just how large this place is. Fortunately, you're experienced enough dungoneer to be able to reach the entrance with little issues and the folk are now free.
+choice: Send the folks on their way back to their village and return to the dungeon to deal with the dragon and whoever held them captive{result: back}
+choice: This dungeon turned out to be above your level, escort the folk back to the village and leave the dragon to more experienced hero to deal with.{result: end}
+result: back;prison-back
+result: end;prison-end

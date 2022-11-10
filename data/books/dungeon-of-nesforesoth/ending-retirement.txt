@@ -1,0 +1,10 @@
+title: Retirement
+story: You eventually marry and establish a family with a couple children, all curious and adventurous bunch which eventually grow into capable young men and women taking after you in heart and spirit. You eventually retire from your service to let the younger folk to forge their own stories of adventure and heroism.
+choice: Teach your children all you know before they venture forth.{condition: no treasure}{result: poor}
+choice: Train your children what you know and use the stolen dragon's treasure to equip them.{condition: has treasure}{test: rich}
+condition: has treasure;[treasure];>;0
+condition: no treasure;[treasure];<=;0
+test: rich;[treasure];>;1;rich;wealthy
+result: wealthy;ending-landlord-wealthy
+result: poor;ending-landlord-poor
+result: rich;ending-landlord-rich

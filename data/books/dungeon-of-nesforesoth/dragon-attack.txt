@@ -1,0 +1,13 @@
+title: Approaching Doom
+story: You approach the dragon, surprised it doesn't seem much interested in fighting you and instead standing there, menecingly, as if goading you to strike first. You know that if the dragon wanted, it could strike you down quickly and efficiently, yet, it chose to toy with you instead. Its hubris may actually give you a chance to kill it.
+choice: Charge the dragon and strike it with all your might.{condition: stamina}{test: hard}
+choice: Approach the dragon cautiously and strike.{test: normal}
+choice: Take a defensive stance, strike at the dragon prioritizing defense.{test: soft}
+condition: stamina;[Stamina];>;0
+test: normal;1d20;>;10 + [treasure];normal;miss
+test: soft;1d20;>;8 + [treasure];soft;miss
+test: hard;1d20;>;12 + [treasure];hard;miss
+result: hard;dragon-hit;Stamina;-1;dragon hp;-1d[Weapon Power] - 2
+result: normal;dragon-hit;dragon hp;-1d[Weapon Power]
+result: miss;dragon-miss
+result: soft;dragon-hit;dragon hp;-1d[Weapon Power] + 2

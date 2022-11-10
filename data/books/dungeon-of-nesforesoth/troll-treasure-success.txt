@@ -3,6 +3,6 @@ story: You carefully sneak past the troll, taking care to move as far around him
 choice: No, you're not charity. With it, you could set yourself up for the future.{test: greed}
 choice: Better safe than dead, you carefully sneak out of there.{result: leave}
 test: greed;1d20;>;10;greed;fail
+result: leave;prison
 result: greed;troll-treasure-more;treasure;1
 result: fail;troll-treasure-failure
-result: leave;prison

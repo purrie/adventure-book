@@ -1,0 +1,6 @@
+title: Enchanting Armor
+story: You place your armor on the table. Then you put one of the gems at the collar of it, letting it rest there while you align the tools around the armor. As they start glowing, you sprinkle powders over the surface of your armor and the powders disolve and are absorbed into the metal. The process lasts a couple minutes before its finished. The tools stop glowing but the gem in your armor shines in dim but obvious red glow, illuminating the metal it sinked into in the process.
+
+You pick the armor up and don it. You can feel a tingle touching it as it is filled with protective powers.
+choice: You're ready to face the dragon.{result: drag}
+result: drag;dragon

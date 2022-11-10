@@ -1,0 +1,6 @@
+title: Dragon Survivor
+story: You explain to the lord that the dragon turned out to be more powerful than you initially expected and you couldn't slay it. The lord's face is shaded in despair, but he seems to have expected this. He still wants to reward you somehow for trying.
+choice: Accept the reward{test: reward}
+test: reward;[peasants];>=;5;small;decent
+result: small;ending-reward-small
+result: decent;ending-reward-decent

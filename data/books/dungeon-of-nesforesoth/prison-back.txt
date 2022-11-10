@@ -1,0 +1,4 @@
+title: Back in the dungeon
+story: You ensure that the folk are capable of returning to their homes and send them on their way. They all cheer for you to avenge their friends and families opressed by the dragon. You feel encouraged by their words and you turn to enter the dungeon once again. You walk carefully as you know places like this can never be trusted to be safe but you manage to reach the point where you found the peasants, now with empty holding cells. You ready yourself to continue scouring the place in search of the evil when a flickering light catches your attention. It comes from behind wooden doors at far end of the prison room.
+choice: Approach the doors, expecting trouble.{result: wiz}
+result: wiz;wizard

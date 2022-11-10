@@ -1,0 +1,4 @@
+title: Grave News
+story: You explain to the lord that by the time you arrived, you've found his subjects dead, killed by a mad wizard. The news wash his face in sadness that isn't really dispelled with learning you avenged them. He exhales deeply and asks what of the dragon that lurked in the dungeon?
+choice: You tell him you slayed it.{result: dragon}
+result: dragon;ending-dragon-dead

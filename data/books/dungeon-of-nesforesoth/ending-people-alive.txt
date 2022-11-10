@@ -1,0 +1,6 @@
+title: The Hero
+story: You give the lord good news that you managed to save all of the kidnapped folk which makes him exclaim in joy, praising you for this deed. His face grows concerned though as another thought crosses his mind, "what of the dragon?" He asks with cautious hope in his voice.
+choice: Explain what happened.{test: is ded}
+test: is ded;[dragon hp];<=;0;ded;alive
+result: alive;ending-dragon-alive
+result: ded;ending-dragon-dead

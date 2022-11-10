@@ -1,0 +1,4 @@
+title: Folk Hero
+story: The nice change from your adventuring past however is that the local population is fairly grateful to you and are regularly helping you to adjust to your new settled life. You make many great friends among them. Eventually, the locals decide to establish a celebration in your name, praising you saving them and for all the deeds you did for the community.
+choice: You live a good life{result: end}
+result: end;ending-retirement
