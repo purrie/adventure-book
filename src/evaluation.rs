@@ -46,16 +46,18 @@ pub fn evaluate_expression(
     // best way to do it is to use recursion, this should also handle nested brackets.
     let mut exp = exp.to_string();
     if exp.contains('(') {
-        let reg = Regex::new(r"\(((?:\s|\w|\+|-|\*|/)*)\)").unwrap();
+        let reg = Regex::new(r"\(((?:\s|\w|\+|-|\*|/|\[|\])*)\)").unwrap();
         while let Some(c) = reg.captures(&exp) {
             let whole = c.get(0).unwrap();
             let part = c.get(1).unwrap();
             let ev = evaluate_expression(part.as_str(), records, rand)?;
             exp.replace_range(whole.range(), &ev.to_string());
         }
-        println!("Processing: {}", exp);
     }
-    let tokens: Vec<&str> = exp.split_inclusive(&['+', '-', '*', '/'][..]).map(|x| x.trim()).collect();
+    let tokens: Vec<&str> = exp
+        .split_inclusive(&['+', '-', '*', '/'][..])
+        .map(|x| x.trim())
+        .collect();
     // this function evaluates name of a record into its value, it defaults to 0 on records not found
     // Although, record not found should probably result in an error instead of 0
     let eval_rec = |x: &str| {
@@ -574,7 +576,7 @@ mod tests {
         let records = HashMap::<String, Record>::new();
         let val = "5 * (4 + 1 * (1 + 1) / (20 - (3 * 2)))".to_string();
 
-        let val : i32 = evaluate_expression(&val, &records, &mut rand).unwrap();
+        let val: i32 = evaluate_expression(&val, &records, &mut rand).unwrap();
         let comp = 5 * (4 + 1 * (1 + 1) / (20 - (3 * 2)));
         assert_eq!(val, comp);
     }
@@ -586,7 +588,24 @@ mod tests {
 
         let val = evaluate_expression(&val, &records, &mut rand).unwrap();
         assert_eq!(val, -5);
+    }
+    #[test]
+    fn evaluate_brackets_complex() {
+        let mut rand = Random::new(69420);
+        let mut test = Random::new(69420);
+        let mut records = HashMap::<String, Record>::new();
+        records.insert(
+            "strength".to_string(),
+            Record {
+                category: String::new(),
+                name: "strength".to_string(),
+                value: 13,
+            },
+        );
+        let val = "1d20 + ([strength] - 10) / 2";
 
+        let val = evaluate_expression(val, &records, &mut rand).unwrap();
+        assert_eq!(val, test.die(1, 20) + (13 - 10) / 2);
     }
     #[test]
     fn deterministic_random() {
