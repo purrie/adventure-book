@@ -21,7 +21,7 @@ use crate::{
     icons::{BIN_ICON, GEAR_ICON},
 };
 
-use super::{emit, Event};
+use super::{emit, help, Event, highlight_color};
 
 /// Widgets for customizing results of the page
 ///
@@ -83,6 +83,7 @@ impl ResultEditor {
         let x_add = x_column_1;
         let x_ren = x_add + w_butt;
         let x_rem = x_column_1 + w_column_1 - w_butt;
+        let x_help = x_ren + w_butt * 2;
 
         // controls for side effect second column
         let y_effect = y_results + h_result + h_line;
@@ -98,6 +99,7 @@ impl ResultEditor {
         let mut butt_ren_result = Button::new(x_ren, y_butt_result, w_butt, h_butt, None);
         let mut butt_rem_result = Button::new(x_rem, y_butt_result, w_butt, h_butt, None);
         let mut butt_rem_effect = Button::new(x_rem, y_butt_mod, w_butt, h_butt, None); // no add or rename because the names are constant and you add in other controls
+        let mut help = Button::new(x_help, y_butt_result, w_butt, h_butt, "?");
 
         let name = Frame::new(x_column_2, y_name, w_column_2, h_line, "Name");
         let next_page_label = Frame::new(
@@ -179,6 +181,9 @@ impl ResultEditor {
         butt_ren_result.emit(sender.clone(), emit!(Event::RenameResult));
         butt_rem_result.emit(sender.clone(), emit!(Event::RemoveResult));
         butt_rem_effect.emit(sender.clone(), emit!(Event::RemoveSideEffect));
+        help.emit(sender.clone(), help!("result"));
+        help.set_frame(fltk::enums::FrameType::RoundUpBox);
+        help.set_color(highlight_color!());
         butt_rec.set_callback({
             let sender = sender.clone();
             let sel = select_mod.clone();

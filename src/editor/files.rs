@@ -1,6 +1,6 @@
 use fltk::{
     app, browser::SelectBrowser, button::Button, draw::Rect, group::Group, image::SvgImage,
-    prelude::*,
+    prelude::*
 };
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     widgets::find_item,
 };
 
-use super::{emit, Event};
+use super::{emit, help, Event, highlight_color};
 
 /// Displays the list of files in adventure
 ///
@@ -39,6 +39,7 @@ impl FileList {
         let h_controls = font_size;
         let x_add = x_column_1;
         let x_rename = x_add + w_controls;
+        let x_help = x_rename + w_controls * 2;
         let x_remove = x_column_1 + w_whole - w_controls;
         let x_start = x_remove - w_controls;
 
@@ -48,6 +49,7 @@ impl FileList {
         let mut butt_rem = Button::new(x_remove, y_controls, w_controls, h_controls, None);
         let mut butt_ren = Button::new(x_rename, y_controls, w_controls, h_controls, None);
         let mut butt_str = Button::new(x_start, y_controls, w_controls, h_controls, None);
+        let mut help = Button::new(x_help, y_controls, w_controls, h_controls, "?");
         let mut adventure_meta = Button::new(
             x_column_1,
             y_second_line,
@@ -77,6 +79,9 @@ impl FileList {
         butt_add.emit(s.clone(), emit!(Event::AddPage));
         butt_rem.emit(s.clone(), emit!(Event::RemovePage));
         butt_ren.emit(s.clone(), emit!(Event::RenamePage));
+        help.emit(s.clone(), help!("pages-explorer"));
+        help.set_color(highlight_color!());
+        help.set_frame(fltk::enums::FrameType::RoundUpBox);
         butt_str.set_callback({
             let fl = page_list.clone();
             let s = s.clone();

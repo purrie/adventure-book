@@ -1,4 +1,5 @@
 use dirs::{cache_dir, data_dir};
+use fltk::app;
 use fltk::image::PngImage;
 
 use crate::adventure::*;
@@ -310,4 +311,26 @@ pub fn get_image_png(name: &str) -> Result<PngImage, String> {
         }
     }
     Err(format!("File {} not found", name))
+}
+/// Opens a help page by name
+///
+/// Only the name is necessary, the function will apply the extension and the path
+pub fn open_help(name: &str) {
+    for mut path in paths!("help") {
+        path.push(name);
+        path.set_extension("html");
+        if path.exists() {
+            let mut help = fltk::dialog::HelpDialog::new(100, 100, 800, 600);
+            if let Err(e) = help.load(path) {
+                signal_error!("Error opening a help page: {}", e);
+            } else {
+                help.show();
+                while help.shown() {
+                    app::wait();
+                }
+                return;
+            }
+        }
+    }
+    signal_error!("Could not find a help page: {}", name);
 }

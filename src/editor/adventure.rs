@@ -3,12 +3,12 @@ use fltk::{
     draw::Rect,
     group::Group,
     prelude::*,
-    text::{TextBuffer, TextEditor},
+    text::{TextBuffer, TextEditor}, button::Button,
 };
 
 use crate::adventure::{Adventure, Record, Name};
 
-use super::variables::VariableEditor;
+use super::{variables::VariableEditor, help, highlight_color};
 
 /// Editor for customizing adventure metadata
 ///
@@ -37,6 +37,11 @@ impl AdventureEditor {
         let w_desc = area.w;
         let h_desc = area.h / 2;
 
+        let x_help = x_title + w_title - font_size * 2;
+        let y_help = y_desc - font_size;
+        let w_help = font_size;
+        let h_help = w_help;
+
         let rec_area = Rect::new(
             area.x,
             area.y + y_desc + h_desc,
@@ -48,6 +53,7 @@ impl AdventureEditor {
         let group = Group::new(area.x, area.y, area.w, area.h, None);
         let mut title = TextEditor::new(x_title, y_title, w_title, h_title, "Title");
         let mut description = TextEditor::new(x_desc, y_desc, w_desc, h_desc, "Description");
+        let mut help = Button::new(x_help, y_help, w_help, h_help, "?");
 
         let records = VariableEditor::new(rec_area, true);
         let names = VariableEditor::new(nam_area, false);
@@ -56,6 +62,11 @@ impl AdventureEditor {
         title.set_buffer(TextBuffer::default());
         description.set_buffer(TextBuffer::default());
         description.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
+
+        let (sender, _) = app::channel();
+        help.emit(sender, help!("adventure-meta"));
+        help.set_frame(fltk::enums::FrameType::RoundUpBox);
+        help.set_color(highlight_color!());
 
         Self {
             group,

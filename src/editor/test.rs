@@ -15,13 +15,13 @@ use fltk::{
 use crate::{
     adventure::{Comparison, Page, StoryResult, Test},
     dialog::{ask_for_text, ask_to_confirm},
-    editor::variables::variable_receiver,
+    editor::{variables::variable_receiver, highlight_color},
     file::signal_error,
     icons::{BIN_ICON, GEAR_ICON},
     widgets::find_item,
 };
 
-use super::{emit, Event};
+use super::{emit, help, Event};
 
 /// Widgets for editing tests
 ///
@@ -59,6 +59,7 @@ impl TestEditor {
         let x_add = x_selector;
         let x_ren = x_add + w_butt;
         let x_rem = x_selector + w_selector - w_butt;
+        let x_help = x_ren + w_butt * 2;
 
         let column_margin = 20;
         let x_second_column = x_selector + w_selector + column_margin;
@@ -81,6 +82,7 @@ impl TestEditor {
         let mut add = Button::new(x_add, y_butt, w_butt, h_butt, "@+");
         let mut ren = Button::new(x_ren, y_butt, w_butt, h_butt, None);
         let mut rem = Button::new(x_rem, y_butt, w_butt, h_butt, None);
+        let mut help = Button::new(x_help, y_butt, w_butt, h_butt, "?");
 
         let name = Frame::new(x_second_column, y_name, w_second_column, h_line, "Name");
         let mut expression_left = TextEditor::new(
@@ -133,6 +135,10 @@ impl TestEditor {
         add.emit(sender.clone(), emit!(Event::AddTest));
         ren.emit(sender.clone(), emit!(Event::RenameTest));
         rem.emit(sender.clone(), emit!(Event::RemoveTest));
+        help.emit(sender.clone(), help!("test"));
+        help.set_frame(fltk::enums::FrameType::RoundUpBox);
+        help.set_color(highlight_color!());
+
         selector.set_callback({
             let mut selected = 0;
             move |x| {

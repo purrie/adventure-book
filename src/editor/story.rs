@@ -3,12 +3,12 @@ use fltk::{
     draw::Rect,
     group::{Group, Tabs},
     prelude::*,
-    text::{TextBuffer, TextEditor}, frame::Frame, enums::Align,
+    text::{TextBuffer, TextEditor}, frame::Frame, enums::Align, button::Button,
 };
 
 use crate::{
     adventure::{Adventure, Page, Name, Record},
-    editor::variables::variable_receiver,
+    editor::{variables::variable_receiver, help, highlight_color},
 };
 
 use super::{
@@ -59,9 +59,15 @@ impl StoryEditor {
         let y_story = y_title + h_title + font_size;
         let h_story = children.h - h_title - font_size * 2;
 
+        let x_help = children.x + children.w - font_size * 2;
+        let y_help = y_story - font_size;
+        let w_help = font_size;
+        let h_help = w_help;
+
         let text_page = Group::new(children.x, children.y, children.w, children.h, "Page");
         let mut title = TextEditor::new(children.x, y_title, children.w, h_title, "Title");
         let mut story = TextEditor::new(children.x, y_story, children.w, h_story, "Story Text");
+        let mut help = Button::new(x_help, y_help, w_help, h_help, "?");
         text_page.end();
 
         let choices = ChoiceEditor::new(children);
@@ -88,6 +94,11 @@ impl StoryEditor {
         title.set_buffer(TextBuffer::default());
         story.set_buffer(TextBuffer::default());
         story.wrap_mode(fltk::text::WrapMode::AtBounds, 0);
+
+        let (sender, _) = app::channel();
+        help.emit(sender, help!("story"));
+        help.set_frame(fltk::enums::FrameType::RoundUpBox);
+        help.set_color(highlight_color!());
 
         tabs.set_callback({
             let mut old_select = "Choices".to_string();

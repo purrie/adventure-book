@@ -1,5 +1,5 @@
 use fltk::{
-    app, button::Button, draw::Rect, frame::Frame, group::Scroll, image::SvgImage, prelude::*, enums::Align,
+    app, button::Button, draw::Rect, frame::Frame, group::Scroll, image::SvgImage, prelude::*, enums::{Align, FrameType},
 };
 type HandleEvent = fltk::enums::Event;
 
@@ -8,7 +8,7 @@ use crate::{
     icons::{BIN_ICON, GEAR_ICON},
 };
 
-use super::{emit, Event};
+use super::{emit, help, Event, highlight_color};
 
 /// Sets up handle event for drag and drop receiver from variable editor
 macro_rules! variable_receiver {
@@ -37,18 +37,34 @@ impl VariableEditor {
     ///
     /// is_record: Determines which callbacks will be triggered on button presses
     pub fn new(area: Rect, is_record: bool) -> Self {
-        let mut button = Button::new(area.x, area.y, area.w / 2, 20, None);
+        let x = area.x;
+        let y = area.y;
+        let w = area.w / 2;
+        let h = app::font_size() + 4;
+
+        let x_help = x + w + 10;
+        let w_help = app::font_size();
+        let h_help = w_help;
+        let y_help = y + (h - h_help) / 2;
+
+        let mut button = Button::new(x, y, w, h, None);
+        let mut help = Button::new(x_help, y_help, w_help, h_help, "?");
         let scroll = Scroll::new(area.x, area.y + 20, area.w, area.h - 20, None);
         scroll.end();
+
+        help.set_frame(FrameType::RoundUpBox);
+        help.set_color(highlight_color!());
 
         let (s, _r) = app::channel();
 
         if is_record {
             button.set_label("Add Record");
-            button.emit(s, emit!(Event::AddRecord));
+            button.emit(s.clone(), emit!(Event::AddRecord));
+            help.emit(s, help!("variable-record"));
         } else {
             button.set_label("Add Name");
-            button.emit(s, emit!(Event::AddName));
+            button.emit(s.clone(), emit!(Event::AddName));
+            help.emit(s, help!("variable-name"));
         }
 
         Self {

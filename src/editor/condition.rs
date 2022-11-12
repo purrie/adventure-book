@@ -15,12 +15,12 @@ use fltk::{
 use crate::{
     adventure::{Comparison, Condition, Page},
     dialog::{ask_for_text, ask_to_confirm},
-    editor::variables::variable_receiver,
+    editor::{variables::variable_receiver, highlight_color},
     file::signal_error,
     widgets::find_item,
 };
 
-use super::{emit, Event};
+use super::{emit, help, Event};
 
 /// Condition editor
 ///
@@ -54,6 +54,7 @@ impl ConditionEditor {
         let x_add = x_selector;
         let x_mod = x_add + w_butt;
         let x_rem = x_selector + w_selector - w_butt;
+        let x_help = x_mod + w_butt * 2;
 
         let marging_column = 20;
         let x_second_column = area.x + w_selector + marging_column;
@@ -71,6 +72,7 @@ impl ConditionEditor {
         let mut add = Button::new(x_add, y_butt, w_butt, h_butt, "@+");
         let mut ren = Button::new(x_mod, y_butt, w_butt, h_butt, None);
         let mut rem = Button::new(x_rem, y_butt, w_butt, h_butt, None);
+        let mut help = Button::new(x_help, y_butt, w_butt, h_butt, "?");
 
         let name = Frame::new(x_second_column, y_name, w_second_column, h_line, "Name");
         let mut expression_left = TextEditor::new(
@@ -125,7 +127,10 @@ impl ConditionEditor {
         });
         add.emit(sender.clone(), emit!(Event::AddCondition));
         ren.emit(sender.clone(), emit!(Event::RenameCondition));
-        rem.emit(sender, emit!(Event::RemoveCondition));
+        rem.emit(sender.clone(), emit!(Event::RemoveCondition));
+        help.emit(sender, help!("condition"));
+        help.set_frame(fltk::enums::FrameType::RoundUpBox);
+        help.set_color(highlight_color!());
 
         expression_left.set_buffer(TextBuffer::default());
         expression_right.set_buffer(TextBuffer::default());

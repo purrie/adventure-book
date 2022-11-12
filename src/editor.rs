@@ -7,7 +7,7 @@ use crate::{
     dialog::{ask_for_name, ask_for_record, ask_for_text, ask_to_confirm},
     file::{
         capture_pages, is_valid_file_name, read_page, remove_adventure, save_adventure, save_page,
-        signal_error,
+        signal_error, open_help,
     },
 };
 
@@ -28,6 +28,18 @@ macro_rules! emit {
     };
 }
 pub(crate) use emit;
+macro_rules! help {
+    ($page:expr) => {
+        crate::editor::emit!(crate::editor::Event::OpenHelp($page))
+    };
+}
+pub(crate) use help;
+macro_rules! highlight_color {
+    () => {
+        fltk::enums::Color::Yellow.inactive()
+    };
+}
+pub(crate) use highlight_color;
 macro_rules! page {
     ($editor:expr) => {
         $editor.pages.get(&$editor.current_page).unwrap()
@@ -83,6 +95,7 @@ pub enum Event {
     RefreshResults,
     ToggleRecords(bool),
     ToggleNames(bool),
+    OpenHelp(&'static str),
 }
 
 /// Responsible for managing all the editor widgets, saving adventures and opening existing ones for editing
@@ -265,6 +278,7 @@ impl EditorWindow {
             }
             Event::ToggleRecords(f)      => self.page_editor.toggle_record_editor(f),
             Event::ToggleNames(f)        => self.page_editor.toggle_name_editor(f),
+            Event::OpenHelp(help)        => open_help(help),
         }
     }
     /// Hides editor UI

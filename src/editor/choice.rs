@@ -14,7 +14,7 @@ type Dropdown = fltk::menu::Choice;
 use crate::{
     adventure::{Choice, Page, GAME_OVER_KEYWORD},
     dialog::ask_to_confirm,
-    editor::{emit, variables::variable_receiver, Event},
+    editor::{emit, help, variables::variable_receiver, Event, highlight_color},
     icons::BIN_ICON,
 };
 
@@ -50,6 +50,7 @@ impl ChoiceEditor {
         let h_butt = w_butt;
         let x_butt_add = x_selector;
         let x_butt_rem = x_selector + w_selector - w_butt;
+        let x_butt_help = x_butt_add + w_butt * 2;
 
         let margin_menu = 20;
         let x_menu = area.x + w_selector + margin_menu;
@@ -73,6 +74,7 @@ impl ChoiceEditor {
         );
         let mut butt_add = Button::new(x_butt_add, y_butt, w_butt, h_butt, "@+");
         let mut butt_rem = Button::new(x_butt_rem, y_butt, w_butt, h_butt, None);
+        let mut help = Button::new(x_butt_help, y_butt, w_butt, h_butt, "?");
 
         let mut text = TextEditor::new(x_text, y_text, w_text, h_text, "Choice Text");
         let condition_label = Frame::new(
@@ -98,6 +100,9 @@ impl ChoiceEditor {
         let (s, _r) = app::channel();
         butt_add.emit(s.clone(), emit!(Event::AddChoice));
         butt_rem.emit(s.clone(), emit!(Event::RemoveChoice));
+        help.emit(s, help!("choice"));
+        help.set_frame(fltk::enums::FrameType::RoundUpBox);
+        help.set_color(highlight_color!());
 
         selector.set_callback({
             let mut old_selection = 0;
