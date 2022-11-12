@@ -1,4 +1,5 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use regex::Regex;
 use std::{
     collections::{HashMap, VecDeque},
     fmt::Display,
@@ -41,7 +42,20 @@ pub fn evaluate_expression(
     records: &HashMap<String, Record>,
     rand: &mut Random,
 ) -> Result<i32, EvaluationError> {
-    let tokens: Vec<&str> = exp.split_inclusive(&['+', '-', '*', '/'][..]).collect();
+    // before we start processing the expression, we need to go through it in search of brackets, so those are processed first.
+    // best way to do it is to use recursion, this should also handle nested brackets.
+    let mut exp = exp.to_string();
+    if exp.contains('(') {
+        let reg = Regex::new(r"\(((?:\s|\w|\+|-|\*|/)*)\)").unwrap();
+        while let Some(c) = reg.captures(&exp) {
+            let whole = c.get(0).unwrap();
+            let part = c.get(1).unwrap();
+            let ev = evaluate_expression(part.as_str(), records, rand)?;
+            exp.replace_range(whole.range(), &ev.to_string());
+        }
+        println!("Processing: {}", exp);
+    }
+    let tokens: Vec<&str> = exp.split_inclusive(&['+', '-', '*', '/'][..]).map(|x| x.trim()).collect();
     // this function evaluates name of a record into its value, it defaults to 0 on records not found
     // Although, record not found should probably result in an error instead of 0
     let eval_rec = |x: &str| {
@@ -537,7 +551,43 @@ mod tests {
             test.die(1, 20) * -1
         );
     }
+    #[test]
+    fn evaluate_negative() {
+        let mut rand = Random::new(69420);
+        let records = HashMap::<String, Record>::new();
 
+        let ev = evaluate_expression("2 - 5", &records, &mut rand);
+        assert_eq!(ev, Ok(-3));
+    }
+    #[test]
+    fn evaluate_brackets() {
+        let mut rand = Random::new(69420);
+        let records = HashMap::<String, Record>::new();
+
+        let ev = evaluate_expression("5 * (4 + 1)", &records, &mut rand).unwrap();
+        let res = 5 * (4 + 1);
+        assert_eq!(ev, res);
+    }
+    #[test]
+    fn evaluate_brackets_nested() {
+        let mut rand = Random::new(69420);
+        let records = HashMap::<String, Record>::new();
+        let val = "5 * (4 + 1 * (1 + 1) / (20 - (3 * 2)))".to_string();
+
+        let val : i32 = evaluate_expression(&val, &records, &mut rand).unwrap();
+        let comp = 5 * (4 + 1 * (1 + 1) / (20 - (3 * 2)));
+        assert_eq!(val, comp);
+    }
+    #[test]
+    fn evaluate_brackets_negative() {
+        let mut rand = Random::new(69420);
+        let records = HashMap::<String, Record>::new();
+        let val = "5 * (2 - 3)".to_string();
+
+        let val = evaluate_expression(&val, &records, &mut rand).unwrap();
+        assert_eq!(val, -5);
+
+    }
     #[test]
     fn deterministic_random() {
         let mut r = Random::new(1234567890);
