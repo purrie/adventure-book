@@ -21,3 +21,4 @@ It seems I can make a folder with html documents and call upon them through FLTK
 * Known issues
 ** FIXME Titles in play mode are not displayed
 ** FIXME Hidden group isn't hidden
+** FIXME Variable editors don't rescale properly
