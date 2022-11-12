@@ -8,7 +8,7 @@ choice: Move carefully while avoiding the pressure plates.{test: careful}
 test: careful;1d20;>=;10;careful;fail
 test: disable;1d20;>=;12;disable;fail
 test: run;1d20;>=;8;run;fail
-result: disable;ruins-disable;peasants;1d4
-result: run;ruins-outrun;Stamina;-1d4
-result: careful;ruins-careful;peasants;1d6
 result: fail;ruins-fail;Health;-3d2 + [Armor]
+result: careful;ruins-careful;peasants;1d6
+result: disable;ruins-disable;peasants;1d4;trap;1
+result: run;ruins-outrun;trap;1;Stamina;-1d4

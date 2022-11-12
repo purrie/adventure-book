@@ -1,0 +1,4 @@
+title: On Alert
+story: As you try to approach your pray stealthily, with your [weapon] drawn, you unfortunately stumble over a protruding stone, making enough noise to attract their attention. The monsters don't leave you much time to think as they run at you.
+choice: Prepare to fight them{result: fight}
+result: fight;monsters-attack

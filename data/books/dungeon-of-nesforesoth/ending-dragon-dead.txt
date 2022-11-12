@@ -2,5 +2,5 @@ title: Dragon Slayer
 story: You describe your deadly battle with the dragon, the lord listens wide eyed. You can't help but add some embelishments here and there to the story, to make it for more entertaining tale, which is rewarded with a smile on lord's face that he can't seem to control. When you conclude the story, describing how the powerful dragon in the end was too prideful to admit his defeat, even in death, the lord explodes with cheer and praise. His face gets flooded with tears of joy as he and his people are finally released from under tyrany of the monster. When the lord finally manages to get himself under control, he declares it's time to discuss your reward.
 choice: Accept the reward{test: folk survived}
 test: folk survived;[peasants];<;10;great;good
-result: great;ending-reward-great
 result: good;ending-reward-decent
+result: great;ending-reward-great

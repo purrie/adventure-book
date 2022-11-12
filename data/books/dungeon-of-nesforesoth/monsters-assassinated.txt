@@ -1,0 +1,6 @@
+title: Monster Hunter
+story: You sneak up to the group of monsters, taking advantage of them distracting one another. You pull out your [weapon] and pounce on the group when you're close enough, slashing and stabbing them. One falls after another before they realize what's happening.
+choice: Turn to the closest monster alive and continue your onslaught.{test: ded}
+test: ded;[monsters health];<=;0;win;fight
+result: fight;monsters-attack
+result: win;monsters-win

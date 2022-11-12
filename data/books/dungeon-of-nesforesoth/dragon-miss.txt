@@ -3,8 +3,8 @@ story: You move in to strike the beast but then realize, it's been a trap all al
 choice: Move out of the way and retreat to a safe distance.{test: dodge}
 choice: Put extra effort in rolling back out of the reach.{condition: stamina}{test: effort}
 condition: stamina;[Stamina];>;0
-test: effort;1d20;>;8 + [treasure];effort;hurt
 test: dodge;1d20;>;10 + [treasure];miss;hurt
-result: miss;dragon-defend
+test: effort;1d20;>;8 + [treasure];effort;hurt
 result: hurt;dragon-hurt;Health;-4d2 + [Armor]
 result: effort;dragon-miss;Stamina;-1
+result: miss;dragon-defend

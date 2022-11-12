@@ -1,4 +1,4 @@
 title: Not so rickety bridge
-story: This was tricky but through careful distribution of your weight and your natural agility, you managed to navigate the broken plans and torn up ropes to the other side without falling to your doom.
+story: This was tricky but through careful distribution of your weight and your natural agility, you managed to navigate the broken planks and torn up ropes to the other side without falling to your doom.
 choice: Into the cave to save the folk then{result: in}
 result: in;ruins

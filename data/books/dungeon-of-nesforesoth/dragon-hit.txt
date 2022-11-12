@@ -1,6 +1,6 @@
 title: Blood and Roar
 story: Your tactics pay off, and you manage to move close enough to stab the beast with your [weapon], drawing blood and making it roar angrily, as if it didn't expect you to actually manage to hit it. You quickly move away to avoid any retaliation, narrowly avoiding the claws that swing your way. You move behind a pillar to reorient and hide yourself, but to your surprise, the dragon isn't pursuing you. Instead, as you peek out of the pillar, you see it standing there, over its mound of treasure, looking as snarky as before as if nothing had happened.
-choice: Come out of the pillar's shadow and move in for another strike.{result: game over}
+choice: Come out of the pillar's shadow and move in for another strike.{test: dragon}
 test: dragon;[dragon hp];<=;0;dead;alive
-result: dead;dragon-dead
 result: alive;dragon-attack
+result: dead;dragon-dead

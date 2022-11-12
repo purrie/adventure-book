@@ -4,10 +4,10 @@ choice: Rush forward focusing all your strength into slaying the mad wizard{cond
 choice: Find an opportunity to strike at him{test: normal}
 choice: Focus on dodging the flames rather than striking the wizard and hit him only when it's safe{test: soft}
 condition: stam;[Stamina];>;0
-test: normal;1d20;>;10 + [treasure];hit;miss
 test: soft;1d20;>;8 + [treasure];soft hit;miss
+test: normal;1d20;>;10 + [treasure];hit;miss
 test: hard;1d20;>;12 + [treasure];hard hit;miss
-result: hard hit;wizard-hit;Stamina;-1;wizard hp;-1d[Weapon Power] - 2
-result: miss;wizard-miss
-result: hit;wizard-hit;wizard hp;-1d[Weapon Power]
 result: soft hit;wizard-hit;wizard hp;-1d[Weapon Power] + 2
+result: hit;wizard-hit;wizard hp;-1d[Weapon Power]
+result: miss;wizard-miss
+result: hard hit;wizard-hit;Stamina;-1;wizard hp;-1d[Weapon Power] - 2

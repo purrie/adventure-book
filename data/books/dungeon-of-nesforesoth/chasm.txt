@@ -3,6 +3,6 @@ story: As you approach the cave entrance, you notice the first obstacle to your 
 choice: Risk moving through the bridge{test: bridge}
 choice: You can't save anyone if you're dead yourself, go the long safer way.{result: long}
 test: bridge;1d20;>;10;success;failure
+result: failure;chasm-fall
 result: long;chasm-long-way
 result: success;chasm-success
-result: failure;chasm-fall

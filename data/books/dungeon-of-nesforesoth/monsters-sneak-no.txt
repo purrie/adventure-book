@@ -1,0 +1,4 @@
+title: They see in the dark!
+story: You decided to sneak past them, thinking it would be the safest option but after moving from shadow to shadow past them, you realize, all of them are looking at you. You're spotted! They all run after you, giving you only enough time to pull out your [weapon].
+choice: Swing your [weapon] at the closest approaching monster.{result: no}
+result: no;monsters-defend

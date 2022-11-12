@@ -3,8 +3,8 @@ story: You thought you hit one but they're quick little horrors and the one you 
 choice: Defend yourself!{test: normal}
 choice: Put all your strength into it and move out of the way.{condition: stamina}{test: hard}
 condition: stamina;[Stamina];>=;2
-test: normal;1d20;>;14;defended;hit
 test: hard;1d20;>;10;hard defended;hit
-result: hit;monsters-hurt;Health;-2d2 + [Armor]
-result: hard defended;monsters-blocked;Stamina;-2
+test: normal;1d20;>;14;defended;hit
 result: defended;monsters-blocked
+result: hard defended;monsters-blocked;Stamina;-2
+result: hit;monsters-hurt;Health;-2d2 + [Armor]

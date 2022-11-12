@@ -1,4 +1,4 @@
 title: The Long Way Around
 story: You're unsure if this was worth it as it took you good amount of time to cross the chasm but you're now at the other side of it, right at the entrance without risking your life to cross it. Lets hope the folks inside are not paying the price for it tho.
-choice: You make haste inside to save whoever you can{result: game over}
+choice: You make haste inside to save whoever you can{result: in}
 result: in;ruins;peasants;1d6

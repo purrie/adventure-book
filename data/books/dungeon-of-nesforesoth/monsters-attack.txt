@@ -1,13 +1,13 @@
 title: The initiative is yours!
 story: You ready your [weapon] and prepare to strike. The monsters are in front of you and are more than willing to strike back. The Fight ensues, blade against claw, strike after another breaks the otherwise dead silence within this dungeon.
-choice: Attack the monsters!{result: game over}
-choice: Slaughter them, sacrifice the defense to fuel all your strength into your attack.{condition: stamina}{result: game over}
-choice: Take defensive stance and rely on counter attacks.{result: game over}
+choice: Attack the monsters!{test: normal}
+choice: Slaughter them, sacrifice the defense to fuel all your strength into your attack.{condition: stamina}{test: aggresive}
+choice: Take defensive stance and rely on counter attacks.{test: defensive}
 condition: stamina;[Stamina];>;0
+test: aggresive;1d20;>;10;hard hit;fail
 test: defensive;1d20;>;6;weak hit;fail
 test: normal;1d20;>;8;hit;fail
-test: aggresive;1d20;>;10;hard hit;fail
+result: hit;monsters-hit;monsters health;-1d[Weapon Power]
 result: fail;monsters-defend
 result: weak hit;monsters-hit;monsters health;-1d[Weapon Power] + 2
 result: hard hit;monsters-hit;monsters health;-1d[Weapon Power] - 2;Stamina;-1
-result: hit;monsters-hit;monsters health;-1d[Weapon Power]

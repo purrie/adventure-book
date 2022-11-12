@@ -6,5 +6,5 @@ choice: Enchant your [weapon]{result: weapon}
 choice: Enchant your armor{test: armor}
 test: armor;[Armor];==;0;broken armor;armor
 result: weapon;enchanting-weapon;Weapon Power;2
-result: broken armor;enchanting-broken-armor;Armor;3
 result: armor;enchanting-armor;Armor;2
+result: broken armor;enchanting-broken-armor;Armor;3

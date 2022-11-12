@@ -1,0 +1,4 @@
+title: Meat Grinder
+story: You make some noise and yell a couple obscenities at the monsters, fairly sure they can't understand what you're saying, but it does grab their attention. You quickly start running back and they give chase. You're closing in on the area with the traps and ensure the monsters are right behind you. A risky play but it seems to work, you run through the traps, activating the blades as they strike against one monster after another. By the time they realize what's happening, most of them are dead and the rest are too distracted trying to avoid the blades to focus on you. Your plan worked and you're now free to continue onwards. As you progress through the dark halls, you notice a door on the side of the corridor, with light shining from behind it.
+choice: Investigate it.{result: next}
+result: next;alchemy

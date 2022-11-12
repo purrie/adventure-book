@@ -1,0 +1,4 @@
+title: A Sneak
+story: You carefully observe the monsters and how they act and decide to make your move. You stick to the shadows, avoiding getting near the group and being thankful they're doing pretty good job of distracting themselves. It is a tense situation but you manage to avoid getting spotted and can now move in deeper.
+choice: There seem to be light coming from around the corner. A door?{result: next}
+result: next;alchemy

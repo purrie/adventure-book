@@ -9,8 +9,8 @@ choice: Sneak up to the troll and attempt to kill it.{test: assassin}
 choice: Forget the treasure and lock the door so you can focus on more important task.{result: leave}
 test: treasure;1d20 + [Stamina];>;15;treasure yes;treasure no
 test: assassin;1d20 + [Stamina];>;20;ass yes;ass no
-result: leave;troll-leave
 result: treasure yes;troll-treasure-success;treasure;1
+result: leave;troll-leave
 result: ass no;troll-assassin-failure
 result: ass yes;troll-assassin-success;troll;-2d[Weapon Power]
 result: treasure no;troll-treasure-failure

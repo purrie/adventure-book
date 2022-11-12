@@ -2,6 +2,16 @@ title: Monsters!
 story: As you continue on, you start hearing weird noises that turn into various yips and yaps. You're certain you encountered a group of monsters, half a dozen maybe. You carefully move up and put out your torch as you can now see light coming from around the corner. And as soon as you peek around it, you're greeted by the sight of those things. They're maybe about your waist in height with scaled bodies and little wings on their backs. Some walk about on their hind legs while others crawl on all fours. Those could be dragon's offspring, or maybe something else. You're not sure.
 
 What you are sure about is that they're standing in your way as behind them is the only path leading deeper into the dungeon. Sneaking past them is a fool's gamble, tho, there are far more of them than there is you so fighting them, you would have to rely on a surprise attack.
-choice: Attempt to sneak past them anyway{result: game over}
-choice: Try stealth attack, take as many of them out as you can before they can react.{result: game over}
-choice: Lead them back into the blade trap.{result: game over}
+choice: Attempt to sneak past them anyway{test: sneak}
+choice: Try stealth attack, take as many of them out as you can before they can react.{test: assassin}
+choice: Lead them back into the blade trap.{condition: trap}{test: trap}
+condition: trap;[trap];==;0
+test: trap;1d20;>;8;trap;trapn't
+test: assassin;1d20;>;10;assassin;assassino
+test: sneak;1d20;>;12;sneak;sneakn't
+result: sneakn't;monsters-sneak-no
+result: assassin;monsters-assassinated;monsters health;-1d[Weapon Power]
+result: trapn't;monsters-trap-no;trap;1
+result: trap;monsters-trapped;trap;1
+result: sneak;monsters-sneaked
+result: assassino;monsters-assassi-no

@@ -2,5 +2,5 @@ title: Burning flame
 story: The explosion of sickly green flames envelops you before you can move away. It burns, it's nothing like normal fire. It feels like it's entering your body with each lick of flame against your skin, making you feel sick and wanting to throw up.
 choice: Pull yourself together and get back into the fight{test: battle}
 test: battle;[Health];<=;0;dead;alive
-result: dead;death
 result: alive;wizard-attack
+result: dead;death

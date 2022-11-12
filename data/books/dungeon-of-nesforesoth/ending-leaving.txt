@@ -1,10 +1,10 @@
 title: Back on the road again
-story: You're allowed a couple days in the village to recuperate and then you take the reward you're owed and leave the lands to continue adventuring. This might be for the better as it is a life you quite enjoy. 
+story: You're allowed a couple days in the village to recuperate and then you take the reward you're owed and leave the lands to continue adventuring. This might be for the better as it is a life you quite enjoy.
 choice: Need to find a new quest soon.{condition: poor}{result: poor}
 choice: You have a little bit of extra reward.{condition: has munies}{test: munies}
 condition: has munies;[treasure];>;0
 condition: poor;[treasure];<=;0
 test: munies;[treasure];>;1;rich;wealthy
+result: poor;ending-treasure-none
 result: wealthy;ending-treasure-some
 result: rich;ending-treasure-all
-result: poor;ending-treasure-none

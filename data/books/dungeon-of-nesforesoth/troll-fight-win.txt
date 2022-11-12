@@ -3,8 +3,8 @@ story: With the last hit, the lumbering monster seems to stumble on its feet. It
 choice: Wipe your sweat away and proceed to loot the treasure.{condition: space for treasure}{result: loot}
 choice: Move on deeper into the dungeon.{result: continue}
 choice: This money is not worth it. It only serves as a dead weight. Throw away what you already gathered.{condition: has treasure}{result: discard loot}
-condition: has treasure;[treasure];>;0
 condition: space for treasure;[treasure];<;2
+condition: has treasure;[treasure];>;0
+result: loot;troll-fight-loot;treasure;2 - [treasure]
 result: discard loot;prison;treasure;-[treasure]
 result: continue;prison
-result: loot;troll-fight-loot;treasure;2 - [treasure]

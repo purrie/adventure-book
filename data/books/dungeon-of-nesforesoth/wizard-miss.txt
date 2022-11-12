@@ -3,8 +3,8 @@ story: You think you've found an opportunity to strike at the mage. Closing in, 
 choice: Jump back before it's too late.{test: dodge}
 choice: Put all your strength into dodging the attack.{condition: stamina}{test: power dodge}
 condition: stamina;[Stamina];>;0
-test: power dodge;1d20;>;8 + [treasure];super avoid;hurt
 test: dodge;1d20;>;10 + [treasure];avoid;hurt
+test: power dodge;1d20;>;8 + [treasure];super avoid;hurt
+result: super avoid;wizard-defend;Stamina;-1
 result: hurt;wizard-hurt;Health;-2d3 + [Armor]
 result: avoid;wizard-defend
-result: super avoid;wizard-defend;Stamina;-1

@@ -5,6 +5,6 @@ choice: You think you hear sobing from there, approach the cells carefully.{cond
 condition: alive;[peasants];<;10
 condition: all dead;[peasants];>=;10
 test: people;[peasants];<;5;people alive;some dead
-result: people alive;prison-all-alive
 result: people dead;prison-all-dead
+result: people alive;prison-all-alive
 result: some dead;prison-some-alive

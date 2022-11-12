@@ -1,0 +1,4 @@
+title: Need maintenance
+story: You attract the attention of the monsters, provoking them to chase after you as you lead them to the trap. You ensure they are following closely after you so the trap hits them as you run through it. However, as you do, and trigger the trap, you can only hear an ear piercing screech of metal as the trap fails to activate and breaks apart, proving useless against the little monsters. You will have to face them in traditional combat.
+choice: Draw your [weapon] and face the creatures.{result: fight}
+result: fight;monsters-attack
