@@ -16,8 +16,6 @@ If a page doesn't have any choices declared, the game should create a dummy choi
 There need to be some way to automatically check for any issues or unused elements in the pages.
 ** TODO Autosave
 There are situations where the program may close unexpectedly. Every save operation should be committed to drive to prevent loss of work.
-** TODO Help Pages
-It seems I can make a folder with html documents and call upon them through FLTK dialog
 * Known issues
 ** FIXME Titles in play mode are not displayed
 ** FIXME Variable editors don't rescale properly
