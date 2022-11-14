@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fs::create_dir, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, fs::create_dir_all, path::PathBuf, rc::Rc};
 
 use dirs::data_dir;
 use fltk::{
@@ -16,7 +16,7 @@ use fltk::{
 
 use crate::{
     adventure::{Adventure, Name, Record},
-    file::{is_on_adventure_path, paths, save_adventure, PROJECT_PATH_NAME},
+    file::{is_on_adventure_path, user_paths, save_adventure, PROJECT_PATH_NAME},
 };
 
 /// Displays a simple alert dialog with provided formatable message
@@ -113,7 +113,7 @@ pub fn ask_for_new_adventure() -> Option<Adventure> {
     name.set_buffer(TextBuffer::default());
     // new root location not supported yet
     //sel.add("New Root Location");
-    paths!("books")
+    user_paths!("books")
         .iter()
         .for_each(|x| sel.add(x.to_str().unwrap()));
     sel.set_callback(|x| {
@@ -121,7 +121,7 @@ pub fn ask_for_new_adventure() -> Option<Adventure> {
             Some(n) if n == "New Root Location" => {
                 // opening a dialog to let user choose a new location
                 let mut dialog = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseDir);
-                dialog.set_directory(&paths!("books")[0]).unwrap();
+                dialog.set_directory(&user_paths!("books")[0]).unwrap();
                 dialog.show();
                 let mut dir = dialog.directory();
                 // first we have to test if the chosen path is where program will be able to read it
@@ -173,7 +173,7 @@ pub fn ask_for_new_adventure() -> Option<Adventure> {
                 dir.pop();
                 dir.set_extension("");
             } else {
-                if let Err(e) = create_dir(&dir) {
+                if let Err(e) = create_dir_all(&dir) {
                     signal_error!("Error creating a directory: {}", e);
                     return None;
                 }

@@ -21,8 +21,9 @@ pub enum FileError {
     FileNonExistent(PathBuf),
 }
 pub const PROJECT_PATH_NAME: &str = "adventure-book";
-// Expected paths where adventure data is stored
-macro_rules! paths {
+/// Expected paths where adventure data is stored for user created content on windows
+#[cfg(target_os = "windows")]
+macro_rules! user_paths {
     ($path:expr) => {
         [
             [
@@ -36,7 +37,56 @@ macro_rules! paths {
         ]
     };
 }
-pub(crate) use paths;
+/// Expected paths where adventure data is stored for user created content on linux
+#[cfg(target_os = "linux")]
+macro_rules! user_paths {
+    ($path:expr) => {
+        [
+            [
+                data_dir().unwrap().to_str().unwrap(),
+                PROJECT_PATH_NAME,
+                $path,
+            ]
+            .iter()
+            .collect::<PathBuf>(),
+        ]
+    };
+}
+/// Expected paths where adventure and core program data is stored on windows
+#[cfg(target_os = "windows")]
+macro_rules! all_paths {
+    ($path:expr) => {
+        [
+            [
+                data_dir().unwrap().to_str().unwrap(),
+                PROJECT_PATH_NAME,
+                $path,
+            ]
+            .iter()
+            .collect::<PathBuf>(),
+            [".", "data", $path].iter().collect::<PathBuf>(),
+        ]
+    };
+}
+/// Expected paths where adventure and core program data is stored on linux
+#[cfg(target_os = "linux")]
+macro_rules! all_paths {
+    ($path:expr) => {
+        [
+            [
+                data_dir().unwrap().to_str().unwrap(),
+                PROJECT_PATH_NAME,
+                $path,
+            ]
+            .iter()
+            .collect::<PathBuf>(),
+            [".", "data", $path].iter().collect::<PathBuf>(),
+            ["/", "usr", "share", PROJECT_PATH_NAME, $path].iter().collect::<PathBuf>(),
+        ]
+    };
+}
+pub(crate) use all_paths;
+pub(crate) use user_paths;
 
 impl Display for FileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -72,7 +122,7 @@ pub fn capture_adventures() -> Vec<Adventure> {
     let mut ret = Vec::<Adventure>::new();
 
     // going over the paths
-    for path in paths!("books") {
+    for path in all_paths!("books") {
         // reading all the directories on path
         if let Ok(it) = read_dir(path) {
             // going over directories, those are adventure folders
@@ -134,7 +184,7 @@ pub fn is_adventure_on_path(path: &PathBuf) -> bool {
 }
 /// Tests if the path is within a path from adventures can be read
 pub fn is_on_adventure_path(path: &PathBuf) -> bool {
-    let expected_paths = paths!("books").map(|x| {
+    let expected_paths = user_paths!("books").map(|x| {
         if x.is_absolute() {
             return x;
         } else {
@@ -301,7 +351,7 @@ pub fn read_page(path: &String, name: &String) -> Result<Page, FileError> {
 ///
 /// Function scans all known data paths in search of the image, supports png images only
 pub fn get_image_png(name: &str) -> Result<PngImage, String> {
-    for mut path in paths!("images") {
+    for mut path in all_paths!("images") {
         path.push(name);
         if path.exists() {
             match PngImage::load(path) {
@@ -316,7 +366,7 @@ pub fn get_image_png(name: &str) -> Result<PngImage, String> {
 ///
 /// Only the name is necessary, the function will apply the extension and the path
 pub fn open_help(name: &str) {
-    for mut path in paths!("help") {
+    for mut path in all_paths!("help") {
         path.push(name);
         path.set_extension("html");
         if path.exists() {
