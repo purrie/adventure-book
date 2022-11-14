@@ -28,6 +28,7 @@ pub(crate) use variable_receiver;
 pub struct VariableEditor {
     scroll: Scroll,
     button: Button,
+    help: Button,
     children: usize,
     record: bool,
 }
@@ -70,6 +71,7 @@ impl VariableEditor {
         Self {
             scroll,
             button,
+            help,
             children: 0,
             record: is_record,
         }
@@ -173,11 +175,13 @@ impl VariableEditor {
     /// Displays the editor
     pub fn show(&mut self) {
         self.button.show();
+        self.help.show();
         self.scroll.show();
     }
     /// Hides the editor
     pub fn hide(&mut self) {
         self.button.hide();
+        self.help.hide();
         self.scroll.hide();
     }
 }
