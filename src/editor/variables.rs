@@ -1,5 +1,12 @@
 use fltk::{
-    app, button::Button, draw::Rect, frame::Frame, group::Scroll, image::SvgImage, prelude::*, enums::{Align, FrameType},
+    app,
+    button::Button,
+    draw::Rect,
+    enums::{Align, FrameType},
+    frame::Frame,
+    group::Scroll,
+    image::SvgImage,
+    prelude::*,
 };
 type HandleEvent = fltk::enums::Event;
 
@@ -8,7 +15,7 @@ use crate::{
     icons::{BIN_ICON, GEAR_ICON},
 };
 
-use super::{emit, help, Event, highlight_color};
+use super::{emit, help, highlight_color, Event};
 
 /// Sets up handle event for drag and drop receiver from variable editor
 macro_rules! variable_receiver {
@@ -95,9 +102,6 @@ impl VariableEditor {
         let mut w = self.scroll.w();
         let h = 20;
 
-        let mut frame = Frame::new(x, y, w, h, None);
-        frame.set_frame(fltk::enums::FrameType::EngravedFrame);
-
         let (sender, _) = app::channel();
 
         let edit;
@@ -129,6 +133,7 @@ impl VariableEditor {
         w -= 20;
 
         let mut label = Frame::new(x, y, w, h, None);
+        label.set_frame(FrameType::EngravedFrame);
         label.set_label(variable);
 
         let mut extra_label = Frame::new(x, y, w, h, None);
@@ -146,13 +151,32 @@ impl VariableEditor {
                             app::dnd();
                             true
                         }
+                        HandleEvent::Resize => {
+                            let parent = l.parent().unwrap();
+                            let w = parent.w() - 40;
+                            let h = l.h();
+                            l.set_size(w, h);
+                            false
+                        }
                         _ => false,
                     }
                 }
             });
+        } else {
+            label.handle(move |l, ev| -> bool {
+                match ev {
+                    HandleEvent::Resize => {
+                        let parent = l.parent().unwrap();
+                        let w = parent.w() - 40;
+                        let h = l.h();
+                        l.set_size(w, h);
+                        false
+                    }
+                    _ => false,
+                }
+            })
         }
 
-        self.scroll.add(&frame);
         self.scroll.add(&butt_edit);
         self.scroll.add(&butt_delete);
         self.scroll.add(&label);
