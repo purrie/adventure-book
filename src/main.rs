@@ -61,8 +61,6 @@ fn main() {
                 Event::DisplayAdventureSelect => {
                     if adventures.len() > 0 {
                         main_window.main_menu.fill_adventure_choices(&adventures);
-                        let adventure = &adventures[selected_adventure];
-                        main_window.main_menu.set_adventure_preview_text(adventure);
                         main_window.switch_to_adventure_choice();
                     } else {
                         signal_error!("Could not find any adventures!");

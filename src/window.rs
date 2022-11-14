@@ -234,6 +234,12 @@ impl MainMenu {
             .iter()
             .filter(|x| x.is_playable())
             .for_each(|x| picker.add(x.title.clone()));
+        if let Some(sel) = picker.selected_text() {
+            drop(picker);
+            if let Some(find) = adventures.iter().position(|x| x.title == sel) {
+                self.set_adventure_preview_text(adventures.get(find).unwrap());
+            }
+        }
     }
 }
 
