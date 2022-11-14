@@ -326,9 +326,10 @@ impl GameWindow {
     /// don't call more than once per game
     /// use update_records to update the screen
     pub fn fill_records(&mut self, records: &HashMap<String, Record>) {
-        for rec in records.iter() {
-            self.records.set_record(rec.1);
-        }
+        records
+            .iter()
+            .filter(|x| x.1.category != "hidden")
+            .for_each(|x| self.records.set_record(x.1));
     }
     /// Updates choices window
     ///

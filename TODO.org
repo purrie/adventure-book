@@ -20,5 +20,4 @@ There are situations where the program may close unexpectedly. Every save operat
 It seems I can make a folder with html documents and call upon them through FLTK dialog
 * Known issues
 ** FIXME Titles in play mode are not displayed
-** FIXME Hidden group isn't hidden
 ** FIXME Variable editors don't rescale properly
