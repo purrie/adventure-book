@@ -53,6 +53,7 @@ struct ChoiceWindow {
 }
 /// Subwindow of a GameWindow responsible for displaying story text
 struct StoryWindow {
+    title: Frame,
     text: TextRenderer,
 }
 
@@ -314,7 +315,8 @@ impl GameWindow {
         self.game_window.hide();
     }
     /// fills the story window with provided text
-    pub fn display_story(&mut self, story: String) {
+    pub fn display_story(&mut self, title: &str, story: String) {
+        self.story.set_title(title);
         self.story.set_text(&story);
     }
     /// Clears record window
@@ -473,8 +475,14 @@ impl StoryWindow {
     /// The story window is where the main story events are displayed
     fn create(area: Rect) -> Self {
         let text = TextRenderer::new(area.x + 30, area.y + 100, area.w - 80, area.h - 100, "");
+        let mut title = Frame::new(area.x + 30, area.y + 40, area.w - 80, 21, None);
+        title.set_label_size(21);
 
-        StoryWindow { text }
+        StoryWindow { title, text }
+    }
+    /// Sets page's title
+    fn set_title(&mut self, text: &str) {
+        self.title.set_label(text);
     }
     /// Sets text to the display
     fn set_text(&mut self, text: &str) {
