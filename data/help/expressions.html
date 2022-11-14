@@ -1,0 +1,45 @@
+<h1>Expressions</h1>
+<p>You can use various expressions described here for writing Tests, Conditions or Modifications for Records in Results.</p>
+<p>First, you have access to a random number generator, structured to work similarly to rolling dice. You can also use Records, which will be evaluated into their value before they're used in the calculations. You have also basic mathematical operations that you can use.</p>
+<table border="1p">
+  <tr>
+    <th>Example</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>1d20</td>
+    <td>Simulates rolling a die. The first number is the number of dice to roll while the second represents how many sides each has.</td>
+  </tr>
+  <tr>
+    <td>[keyword]d4</td>
+    <td>Record keywords can be inserted into the expression at any point and they will be replaced by their value. Including using them in a die expression.</td>
+  </tr>
+  <tr>
+    <td>2d6p4</td>
+    <td>Adding p after the die expression will treat it as a dice pool. It will roll the dice as normal, but the value will be the count of how many of the dice rolled equal or above the p number.</td>
+  </tr>
+  <tr>
+    <td>2d6q4</td>
+    <td>Similar to above, with exception it will count how many dice rolled at or below the q number.</td>
+  </tr>
+  <tr>
+    <td>2x6</td>
+    <td>Exploding dice. If a die results in the highest number, 6 in this example, another die will be added to the roll. This can potentially result in a very large values as there is no cap on how many times a die can explode.</td>
+  </tr>
+  <tr>
+    <td>1 + 5 - 8 * 2 / 3</td>
+    <td>Basic mathematical operations are supported. You can also use round brackets to group operations together to get around normal order of operations.</td>
+  </tr>
+  <tr>
+    <td>1d20h1d20</td>
+    <td>Putting h in between two dice roll expressions will roll both and choose the higher of the values.</td>
+  </tr>
+  <tr>
+    <td>1d20l1d20</td>
+    <td>Similarly as above, except the lower result will be chosen.</td>
+  </tr>
+</table>
+<h1>Order of Operations</h1>
+<p>First, all record names are evaluated into numbers, then all the random dice expressions are evaluated and lastly, the rest of evaluation is handled according to rules of mathematics. You can use brackets to group operations together to change the order of evaluation for the final math part.</p>
+<h1>Example</h1>
+<p>1d20 + ([strength] - 10) / 2</p>
