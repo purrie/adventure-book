@@ -68,8 +68,9 @@ macro_rules! all_paths {
         ]
     };
 }
-/// Expected paths where adventure and core program data is stored on linux
+/// Expected paths where adventure and core program data is stored on dev builds
 #[cfg(target_os = "linux")]
+#[cfg(debug_assertions)]
 macro_rules! all_paths {
     ($path:expr) => {
         [
@@ -81,6 +82,23 @@ macro_rules! all_paths {
             .iter()
             .collect::<PathBuf>(),
             [".", "data", $path].iter().collect::<PathBuf>(),
+            ["/", "usr", "share", PROJECT_PATH_NAME, $path].iter().collect::<PathBuf>(),
+        ]
+    };
+}
+/// Expected paths where adventure and core program data is stored on Linux
+#[cfg(target_os = "linux")]
+#[cfg(not(debug_assertions))]
+macro_rules! all_paths {
+    ($path:expr) => {
+        [
+            [
+                data_dir().unwrap().to_str().unwrap(),
+                PROJECT_PATH_NAME,
+                $path,
+            ]
+            .iter()
+            .collect::<PathBuf>(),
             ["/", "usr", "share", PROJECT_PATH_NAME, $path].iter().collect::<PathBuf>(),
         ]
     };
