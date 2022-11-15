@@ -257,7 +257,7 @@ Each adventure is stored in a separate folder in one of the following locations:
 |----------------------------------------------------------+------------------------------------------------|
 | .\data\books\                                            | Intended for both debugging and Windows builds |
 | C\Users\[user]\AppData\Roaming\adventure-book\data\books | Windows                                        |
-| /home/[user]/.local/share/adventure-book/data/books      | Linux                                          |
+| $HOME/.local/share/adventure-book/data/books             | Linux                                          |
 * Contributing
 This is an open project and contributions in form of adventures, bug reports, code or art or other are accepted. For small additions, changes and fixes, simply fork the project and create your changes in a new branch, then send a merge request. For larger changes, first post an issue to discuss what you want to do to avoid waste of time in case the change would be outside of the scope of this project.
 
