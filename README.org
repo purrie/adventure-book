@@ -1,0 +1,279 @@
+#+title: Adventure Book
+#+description: Adventure book is a text based game in choose your own adventure style.
+
+* Table of Contents :toc:
+- [[#about][About]]
+- [[#building-and-installation][Building and Installation]]
+  - [[#releases][Releases]]
+  - [[#dependencies][Dependencies]]
+  - [[#building][Building]]
+- [[#creating-adventures][Creating adventures]]
+  - [[#editor][Editor]]
+  - [[#data-structure][Data Structure]]
+  - [[#supported-expressions][Supported Expressions]]
+  - [[#data-paths][Data Paths]]
+- [[#contributing][Contributing]]
+- [[#license][License]]
+  - [[#program][Program]]
+  - [[#art][Art]]
+  - [[#stories][Stories]]
+
+* About
+This is a choose your own adventure style text game. You can use it to play through pre-made adventures or create your own using the integrated adventure editor. To play it, simply run the executable and click play in the main menu, then choose the adventure. During the play, you will be presented with choices regarding the current progress in the adventure which will lead you through it.
+
+Currently included adventures are:
+- Damsel in Distress by Purrie, A short example adventure focusing on a knight rescuing a kidnapped princess from a dragon.
+- Arena by Purrie, Combat focused story about a gladiator seeking to gain glory and fame through arena combat competitions.
+- Dungeon of Nesforesoth by Purrie, A story about a brave hero entering a lair of a dragon Nesforesoth in hopes of rescuing kidnapped villagers and slaying the monster.
+* Building and Installation
+** Releases
+The game is packaged for both Linux and Windows platforms, prebuilt game is available through Releases on the side.
+*** Linux
+For Linux, there is a basic .deb file you can use for installation and a tarball which has appropriate management script.
+
+*** Windows
+The provided zip file is ready to be extracted and placed to your preferred location.
+
+** Dependencies
+For running the game, there are no additional dependencies.
+
+All direct dependencies for building are automatically acquired through Cargo. The only exception is [[https://github.com/fltk-rs/fltk-rs][FLTK]] which has its own dependencies that you may need to satisfy to do a build.
+
+** Building
+The project uses [[https://github.com/casey/just][Just]] command runner for automating the building process. There are recipes available for building for both Linux and Windows platforms as well as packing the program into several archive formats.
+
+You can install Just through Cargo.
+#+BEGIN_SRC shell
+cargo install just
+#+END_SRC
+
+For Linux users, there are install, remove and purge recipes available for building and installing from source.
+#+BEGIN_SRC shell
+just install
+#+END_SRC
+Remove will delete everything except for any adventure books, it is useful if you wish to preserve created or downloaded adventures.
+#+BEGIN_SRC shell
+just remove
+#+END_SRC
+Purge will remove both binary and all program data, leaving no traces behind.
+#+BEGIN_SRC shell
+just purge
+#+END_SRC
+
+The justfile also has recipes for automatic package building. You can preview all available recipes with:
+#+BEGIN_SRC shell
+just -l
+#+END_SRC
+
+* Creating adventures
+** Editor
+Adventure editor is accessible from the main menu of the game. You can use it to edit existing adventures or to add new ones. The controls are somewhat self explanatory but you should read through the rest of the Creating Adventures chapter to learn details on how all the pieces fit together.
+** Data Structure
+Preferred method of creating and editing adventures is through the editor, however, if you choose to edit adventure files manually, or wish to learn how the files are constructed, this chapter describes the contents of the files.
+
+Adventure is divided into its metadata file that holds basic information about it, and page files that each can be imagined as being a page in a book that you flip through, one leading to another and the player being send to specific pages based on the choices presented on the current page
+
+*** Metadata
+Each adventure has an adventure file that holds metadata for the adventure, including its name, description and list of records and names used within the adventure.
+
+Metadata files are always called 'adventure.txt' and live in the same folder as all the pages associated with the adventure. They contain the tags described below, keep in mind that each of those tags are case sensitive.
+Examine files of one of the included adventures if you wish to learn more how it looks.
+
+**** Title
+The title is displayed in the adventure choice menu when the player chooses which adventure to play through. You can set it using the following tag.
+#+BEGIN_SRC
+title: Great Adventure
+#+END_SRC
+Anything after the tag "title:" will be used as name of the adventure. Keep in mind that all tags are case sensitive.
+
+**** Description
+This is the second part shown to the player when they are on the adventure choice menu. The description is shown when the player clicks on the adventure name and serves purpose of providing more details about what the adventure is about.
+#+BEGIN_SRC
+description: This is a great adventure about great deeds performed by great heroes.
+#+END_SRC
+
+**** Start Point
+This is simply a name of the file for the first page to be shown when player starts the adventure. Declare it like this.
+#+BEGIN_SRC
+start: intro.txt
+#+END_SRC
+
+**** Records and Names
+Records and names are designed to be used for storing numerical values for Records, and strings for Names. You can use Records in tests and conditions to create branching paths in the story while names serve purpose of holding text that you can modify during the story progression, it can also be used to store commonly used names for things that you don't want to reenter multiple times.
+#+BEGIN_SRC
+record: keyword; category; value;
+#+END_SRC
+For Records, you can omit category but it's useful for grouping Records when you have more than one and want to label them under common name. The keyword, category and value will be displayed to player at all times unless you set the category to be 'hidden' like this.
+#+BEGIN_SRC
+record: secret; hidden; 42;
+#+END_SRC
+
+Names are similar but they don't have category and they are never displayed to the player unless their keyword is put into page story text or choice.
+#+BEGIN_SRC
+name: keyword; value;
+#+END_SRC
+
+*** Pages
+Each page is stored within its own file and the names of the files are used to link pages together so it is important to keep that in mind especially if you decide to manually modify the files.
+
+Each page is composed of a title and story text that is presented to the player when the page becomes active. The page also has at least one choice element that has text associated with it that will be displayed to the player together with the story text.
+
+Each choice can have a condition assigned to it, making it unavailable depending on whatever the condition is satisfied or not.
+
+Choices also need to have one of either a Test assigned to it, or a Result. Tests are composed of two expressions that are evaluated and compared and based on that comparison, one of two results is triggered. Results always lead to another page but can also have a list of Records or Names together with expressions associated with them. In case of Records, the result of the expression is evaluated and added to the Record, while Name value is replaced with a new value.
+
+All data of the page is tagged with specific tags that start the line. Keep in mind that all of the tags are case sensitive.
+**** Title
+The title will be displayed above story text and can be used as summary. It can be omitted from the adventure page and it will simply not be displayed.
+#+BEGIN_SRC
+title: title of your page
+#+END_SRC
+The line declaring the title needs to start with "title:" tag, all in lower case.
+
+**** Story
+Text displayed to the player is tagged with 'story:' tag. the keyword needs to be all lower case as shown in the example below.
+#+BEGIN_SRC
+story: You approach your destination, a haunted castle where great evil resides. How do you proceed?
+#+END_SRC
+The text can span multiple lines and all of it will be displayed until it reaches another page data tag.
+
+Story text can also contain keywords of Records and Names, those will be evaluated to their correct values before being displayed to the player.
+
+**** Choices
+Choices represent possible player response to described story. Each choice contains text which describes what kind of response it represents.
+
+A choice can be declared by starting a line with choice keyword like this.
+#+BEGIN_SRC
+choice: Proceed with confidence.
+#+END_SRC
+The line will be treated as a choice that player can choose. Anything after "choice:" will be shown to player.
+
+***** Choices can have conditions that determine whatever player can choose them
+A condition can be added to a choice by adding following pattern in any point in choice declaration. There can only be one condition per choice. The name of the condition can be multiple words, all trailing and preceding white spaces are trimmed when evaluating it so those are irrelevant.
+#+BEGIN_SRC
+{condition: condition name}
+#+END_SRC
+For example, a full choice declaration could look like this.
+#+BEGIN_SRC
+choice: Proceed with confidence. {condition: confident}
+#+END_SRC
+
+***** Choices can perform tests when they're chosen
+If you include name of the test with following pattern in choice declaration, a test will be performed when the choice is chosen. The same rules apply as to condition described above. There can be only one test per choice, name is trimmed of white spaces but spaces in between words matter if you have multiple words in a name. Tho, the test also is incompatible with declaring a result since tests lead to different results depending on success or failure. The test declaration can be in any position in the line after choice tag and it will not be shown to player. Names of tests are case sensitive.
+#+BEGIN_SRC
+choice: Proceed with confidence {test: challenge bravery}
+#+END_SRC
+
+***** Choices must declare either a test or a result
+Result can be declared the same way as tests.
+#+BEGIN_SRC
+choice: Proceed with confidence {result: brave}
+#+END_SRC
+This will invoke result named "brave". As with tests, result names are case sensitive.
+***** Game Over
+A choice can be set to end the game if you include the following result, the name is reserved and will always lead to end of the current adventure.
+#+BEGIN_SRC
+choice: The story is over {result: game over}
+#+END_SRC
+
+**** Conditions
+A condition can be declared with a tag 'condition:'
+#+BEGIN_SRC
+condition: name of condition; left side expression; comparison; right side expression;
+#+END_SRC
+For example, the following condition will test if Record named "confidence" is higher than 3.
+#+BEGIN_SRC
+condition: confident; [confidence]; >; 3;
+#+END_SRC
+Condition names are case sensitive.
+
+**** Tests
+Tests are declared with following pattern.
+#+BEGIN_SRC
+test: test name; left side expression; comparison; right side expression; truth result; false result;
+#+END_SRC
+
+For example, the following test can be called with name "challenge bravery" and it will invoke result named "brave" if the 20 sided die rolls under the confidence Record or "cowardly" on otherwise.
+#+BEGIN_SRC
+test: challenge bravery; 1d20; <; [confidence]; brave; cowardly;
+#+END_SRC
+
+**** Results
+You can declare results as in the example below.
+#+BEGIN_SRC
+result: name; story page name;
+#+END_SRC
+
+Tag "result" is case sensitive and should be all lower case. It has to be followed with next adventure book page file name. When the result is triggered, the game will read the file with that name and load it as next adventure book page, presenting its story text, choices and all other elements.
+#+BEGIN_SRC
+result: brave; battle.txt;
+#+END_SRC
+Page file name should be treated as both case sensitive and insensitive to ensure compatibility between platforms. Meaning, file names should be in all lower case, preferably no spaces, instead either underscore or dashes should be used.
+
+Results can also modify Records and Names.
+#+BEGIN_SRC
+result: name; page file name; keyword; expression;
+#+END_SRC
+
+Expression follows all the rules explained in the Expressions chapter and will be added to the value of the Record or subtracted if it evaluates to a negative number. In case of Names, the expression will replace the value instead, use the Name's keyword in the expression to append or prepend text to it.
+#+BEGIN_SRC
+result: brave; battle.txt; confidence; 1;
+#+END_SRC
+
+** Supported Expressions
+Those are used in tests and conditions. Left and right side expression will be evaluated according to following rules and then compared.
+| Example           | Description                                                                                                                              |
+|-------------------+------------------------------------------------------------------------------------------------------------------------------------------|
+| 1d20              | Simulates rolling a die, the first number representing how many dice, the second how many sides each have.                               |
+| [keyword]d4       | Record keywords can be inserted into expressions at any point                                                                            |
+| 2d6p4             | Adding p after the die expression will treat it as a dice pool, it will count the dice that roll equal or higher than the number after p |
+| 2d6q4             | Similar to above but only dice that roll below or equal q number will be counted.                                                        |
+| 2x6               | The exploding dice. Highest roll on a die will add a new die to the roll, increasing the total value potentially indefinitely.           |
+| 1 + 5 - 8 * 2 / 3 | All values can be added, subtracted, multiplied or divided.                                                                              |
+| 1d20h1d20         | Using h symbol between two expressions lets you roll two sets of dice and choose the higher result of the two                            |
+| 1d20l1d20         | l works similarly to the above but the lowest value is chosen instead.                                                                   |
+
+*** Comparison
+Following comparisons are available.
+| Comparison | Description                                                                                         |
+|------------+-----------------------------------------------------------------------------------------------------|
+| >          | Will evaluate to truth if left side expression is a higher number than the right side expression.   |
+| <          | Opposite of the above                                                                               |
+| >=         | Will evaluate to truth if the left side expression is higher or equal to the right side expression. |
+| <=         | Like above but will be truth if right side is greater or equal to left                              |
+| =          | Will evaluate to truth if both side expressions are equal.                                          |
+| !          | Opposite of the above                                                                               |
+*** Order of Operation
+First, all record names are evaluated into numbers, then all the random dice expressions are evaluated and lastly, the rest of evaluation is handled according to rules of mathematics. You can use brackets to group operations together to change the order of evaluation for the final math part.
+
+Example of an expression could look like this.
+#+BEGIN_SRC
+1d20 + ([strength] - 10) / 2
+#+END_SRC
+
+** Data Paths
+Each adventure is stored in a separate folder in one of the following locations:
+| Path                                                     | Description                                    |
+|----------------------------------------------------------+------------------------------------------------|
+| .\data\books\                                            | Intended for both debugging and Windows builds |
+| C\Users\[user]\AppData\Roaming\adventure-book\data\books | Windows                                        |
+| /home/[user]/.local/share/adventure-book/data/books      | Linux                                          |
+* Contributing
+This is an open project and contributions in form of adventures, bug reports, code or art or other are accepted. For small additions, changes and fixes, simply fork the project and create your changes in a new branch, then send a merge request. For larger changes, first post an issue to discuss what you want to do to avoid waste of time in case the change would be outside of the scope of this project.
+
+Originally I created this game as a way to practice Rust and learn how to use FLTK GUI framework within Rust environment and as the project reached a state I'm satisfied with, my own involvement will be limited.
+* License
+** Program
+Copyright (C) 2022 Purrie Brightstar
+
+This program is free software; you can redistribute it and/or modify it under the terms of the [[https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html][GNU General Public License version 2]] as published by the Free Software Foundation;
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+** Art
+Copyright (C) 2022 Purrie Brightstar
+All included art is under [[https://creativecommons.org/licenses/by-sa/4.0/legalcode][Creative Commons BY-SA v4]] license unless stated otherwise.
+
+Included svg icons are under Public Domain license.
+** Stories
+Copyright (C) 2022 Purrie Brightstar
+All stories included in the program are under [[https://creativecommons.org/licenses/by-sa/4.0/legalcode][Creative Commons BY-SA v4]] license unless stated otherwise.
